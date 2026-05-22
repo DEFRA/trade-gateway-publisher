@@ -27,6 +27,8 @@ RUN dotnet tool restore
 # Copy solution and project files for restore
 
 COPY src/TradeGatewayPublisher/TradeGatewayPublisher.csproj src/TradeGatewayPublisher/TradeGatewayPublisher.csproj
+COPY src/CronJob/CronJob.csproj src/CronJob/CronJob.csproj
+COPY src/Data/Data.csproj src/Data/Data.csproj
 COPY tests/TradeGatewayPublisher.Tests/TradeGatewayPublisher.Tests.csproj tests/TradeGatewayPublisher.Tests/TradeGatewayPublisher.Tests.csproj
 COPY tests/TradeGatewayPublisher.IntegrationTests/*.csproj tests/TradeGatewayPublisher.IntegrationTests/
 #COPY tests/TestFixtures/TestFixtures.csproj tests/TestFixtures/TestFixtures.csproj
@@ -40,6 +42,8 @@ RUN dotnet restore
 
 # Copy source code
 COPY src/TradeGatewayPublisher src/TradeGatewayPublisher
+COPY src/CronJob src/CronJob
+COPY src/Data src/Data
 COPY tests/TradeGatewayPublisher.Tests tests/TradeGatewayPublisher.Tests
 COPY tests/TradeGatewayPublisher.IntegrationTests tests/TradeGatewayPublisher.IntegrationTests
 #COPY tests/TestFixtures tests/TestFixtures
