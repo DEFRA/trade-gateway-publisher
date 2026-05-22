@@ -45,11 +45,11 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
-          tags: trade-tracesnt-stub:latest
+          tags: trade-gateway-publisher:latest
       - name: Check with Trivy
         run: |
           docker run -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:0.69.3 image \
+            aquasec/trivy:0.70.0 image \
             --ignore-unfixed \
             --exit-code 1 \
             trade-gateway-publisher:latest
