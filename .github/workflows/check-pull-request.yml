@@ -23,7 +23,7 @@ jobs:
         with:
           dotnet-version: |
             10.0
-      - run: dotnet test
+      - name: dotnet test
         run: |
           dotnet test --project tests/TradeGatewayPublisher.Test/TradeGatewayPublisher.Test.csproj --filter-not-trait Category=IntegrationTests
       - name: Run integration tests
