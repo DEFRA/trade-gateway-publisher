@@ -28,7 +28,7 @@ RUN dotnet tool restore
 
 COPY src/TradeGatewayPublisher/TradeGatewayPublisher.csproj src/TradeGatewayPublisher/TradeGatewayPublisher.csproj
 COPY tests/TradeGatewayPublisher.Tests/TradeGatewayPublisher.Tests.csproj tests/TradeGatewayPublisher.Tests/TradeGatewayPublisher.Tests.csproj
-#COPY tests/TradeGatewayPublisher.IntegrationTests/*.csproj tests/TradeGatewayPublisher.IntegrationTests/
+COPY tests/TradeGatewayPublisher.IntegrationTests/*.csproj tests/TradeGatewayPublisher.IntegrationTests/
 #COPY tests/TestFixtures/TestFixtures.csproj tests/TestFixtures/TestFixtures.csproj
 
 COPY TradeGatewayPublisher.sln TradeGatewayPublisher.sln
@@ -41,7 +41,7 @@ RUN dotnet restore
 # Copy source code
 COPY src/TradeGatewayPublisher src/TradeGatewayPublisher
 COPY tests/TradeGatewayPublisher.Tests tests/TradeGatewayPublisher.Tests
-#COPY tests/TradeGatewayPublisher.IntegrationTests tests/TradeGatewayPublisher.IntegrationTests
+COPY tests/TradeGatewayPublisher.IntegrationTests tests/TradeGatewayPublisher.IntegrationTests
 #COPY tests/TestFixtures tests/TestFixtures
 
 # Check code formatting
