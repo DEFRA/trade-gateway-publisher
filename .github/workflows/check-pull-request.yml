@@ -25,11 +25,11 @@ jobs:
             10.0
       - name: dotnet test
         run: |
-          dotnet test --project tests/TradeGatewayPublisher.Test/TradeGatewayPublisher.Test.csproj --filter-not-trait Category=IntegrationTests
+          dotnet test --project tests/TradeGatewayPublisher.Test/TradeGatewayPublisher.Test.csproj
       - name: Run integration tests
         run: |
           docker compose up -d
-          dotnet test --project tests/TradeGatewayPublisher.IntegrationTests/TradeGatewayPublisher.IntegrationTests.csproj --filter-trait Category=IntegrationTest
+          dotnet test --project tests/TradeGatewayPublisher.IntegrationTests/TradeGatewayPublisher.IntegrationTests.csproj
       - name: Docker Compose Logs
         if: always()
         run: |
