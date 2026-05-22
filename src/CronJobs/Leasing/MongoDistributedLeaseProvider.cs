@@ -1,16 +1,14 @@
 using Data;
+using Data.Entities;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
 namespace CronJobs.Leasing;
 
-public sealed class JobLeaseProvider(IMongoDbClientFactory mongoDbClientFactory, ILogger<JobLeaseProvider> logger)
+public sealed class JobLeaseProvider(IDbContext db, ILogger<JobLeaseProvider> logger)
     : IJobLeaseProvider
 {
-    private const string CollectionName = "job_leases";
-
-    private readonly IMongoCollection<JobLeaseDocument> _collection =
-        mongoDbClientFactory.GetCollection<JobLeaseDocument>(CollectionName);
+    private readonly IMongoCollectionSet<JobLeaseEntity> _collection = db.Set<JobLeaseEntity>();
 
     private readonly string _instanceId = $"{Environment.MachineName}-{Guid.NewGuid():N}";
 
@@ -24,22 +22,23 @@ public sealed class JobLeaseProvider(IMongoDbClientFactory mongoDbClientFactory,
 
         var expiresAt = now.Add(duration);
 
-        var filter = Builders<JobLeaseDocument>.Filter.And(
-            Builders<JobLeaseDocument>.Filter.Eq(x => x.Name, leaseName),
-            Builders<JobLeaseDocument>.Filter.Lte(x => x.ExpiresAtUtc, now)
+        var filter = Builders<JobLeaseEntity>.Filter.And(
+            Builders<JobLeaseEntity>.Filter.Eq(x => x.Id, leaseName),
+            Builders<JobLeaseEntity>.Filter.Lte(x => x.ExpiresAtUtc, now)
         );
 
-        var replacement = new JobLeaseDocument
+        var replacement = new JobLeaseEntity
         {
-            Name = leaseName,
+            Id = leaseName,
             Owner = _instanceId,
             ExpiresAtUtc = expiresAt,
+            ETag = Guid.CreateVersion7().ToString(),
         };
 
         try
         {
             // Try replacing expired lease
-            var result = await _collection.ReplaceOneAsync(
+            var result = await _collection.Collection.ReplaceOneAsync(
                 filter,
                 replacement,
                 new ReplaceOptions { IsUpsert = true },
@@ -50,7 +49,7 @@ public sealed class JobLeaseProvider(IMongoDbClientFactory mongoDbClientFactory,
             {
                 logger.LogInformation("Acquired lease {LeaseName} until {ExpiresAt}", leaseName, expiresAt);
 
-                return new JobLeaseHandle(_collection, leaseName, _instanceId);
+                return new JobLeaseHandle(_collection.Collection, leaseName, _instanceId);
             }
 
             logger.LogInformation("Lease {LeaseName} already held by another instance", leaseName);
@@ -63,24 +62,5 @@ public sealed class JobLeaseProvider(IMongoDbClientFactory mongoDbClientFactory,
 
             return null;
         }
-    }
-
-    public static async Task EnsureIndexesAsync(IMongoDatabase database, CancellationToken cancellationToken = default)
-    {
-        var collection = database.GetCollection<JobLeaseDocument>(CollectionName);
-
-        // unique lease name
-        var uniqueIndex = new CreateIndexModel<JobLeaseDocument>(
-            Builders<JobLeaseDocument>.IndexKeys.Ascending(x => x.Name),
-            new CreateIndexOptions { Unique = true }
-        );
-
-        // automatic cleanup
-        var ttlIndex = new CreateIndexModel<JobLeaseDocument>(
-            Builders<JobLeaseDocument>.IndexKeys.Ascending(x => x.ExpiresAtUtc),
-            new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }
-        );
-
-        await collection.Indexes.CreateManyAsync([uniqueIndex, ttlIndex], cancellationToken);
     }
 }

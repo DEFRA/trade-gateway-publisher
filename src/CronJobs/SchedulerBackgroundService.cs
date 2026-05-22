@@ -1,30 +1,36 @@
+using System.Text.Json;
 using Cronos;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CronJobs;
 
 public sealed class SchedulerBackgroundService(
     IEnumerable<ICronJob> cronJobs,
     IJobExecutor jobExecutor,
-    SchedulerSettings settings,
+    IOptions<SchedulerSettings> settings,
     ILogger<SchedulerBackgroundService> logger
 ) : BackgroundService
 {
-    private readonly SchedulerSettings _settings = settings ?? new SchedulerSettings();
+    private readonly SchedulerSettings _settings = settings.Value ?? new SchedulerSettings()
+    {
+        Jobs = new Dictionary<string, JobSettings>()
+        {
+            ["ExampleJob"] = new() { Cron = "* * * * *"}
+        }
+    };
 
     private readonly List<(ICronJob Job, CronExpression Expression)> _jobs =
     [
         .. cronJobs.Select(job =>
-            (Job: job, Expression: CronExpression.Parse(settings?.Jobs[job.Name].Cron ?? string.Empty))
+            (Job: job, Expression: CronExpression.Parse(settings.Value?.Jobs[job.Name].Cron ?? string.Empty))
         ),
     ];
 
     private readonly TimeZoneInfo _timeZoneInfo = TimeZoneInfo.Local;
 
-    private readonly SemaphoreSlim _semaphore = new(
-        settings is { MaxConcurrentJobs: > 0 } ? settings.MaxConcurrentJobs : 1
-    );
+    private readonly SemaphoreSlim _semaphore = new(settings.Value!.MaxConcurrentJobs);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

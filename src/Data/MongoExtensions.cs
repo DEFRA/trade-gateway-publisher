@@ -1,19 +1,19 @@
-using MongoDB.Driver;
-using MongoDB.Driver.Authentication.AWS;
+////using MongoDB.Driver;
+////using MongoDB.Driver.Authentication.AWS;
 
-namespace Data;
+////namespace Data;
 
-public static class MongoExtensions
-{
-    private static int s_initialized;
+////public static class MongoExtensions
+////{
+////    private static int s_initialized;
 
-    public static void Register()
-    {
-        if (Interlocked.Exchange(ref s_initialized, 1) == 1)
-        {
-            return;
-        }
+////    public static void Register()
+////    {
+////        if (Interlocked.Exchange(ref s_initialized, 1) == 1)
+////        {
+////            return;
+////        }
 
-        MongoClientSettings.Extensions.AddAWSAuthentication();
-    }
-}
+////        MongoClientSettings.Extensions.AddAWSAuthentication();
+////    }
+////}

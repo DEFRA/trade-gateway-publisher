@@ -1,12 +1,12 @@
-using System.ComponentModel.DataAnnotations;
+////using System.ComponentModel.DataAnnotations;
 
-namespace Data;
+////namespace Data;
 
-public class MongoConfig
-{
-    [Required]
-    public required string DatabaseUri { get; init; }
+////public class MongoConfig
+////{
+////    [Required]
+////    public required string DatabaseUri { get; init; }
 
-    [Required]
-    public required string DatabaseName { get; init; }
-}
+////    [Required]
+////    public required string DatabaseName { get; init; }
+////}

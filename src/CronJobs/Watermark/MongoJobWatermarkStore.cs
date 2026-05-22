@@ -1,20 +1,18 @@
+using Data;
+using Data.Entities;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
 namespace CronJobs.Watermark;
 
-public sealed class MongoJobWatermarkStore(IMongoDatabase database, ILogger<MongoJobWatermarkStore> logger)
+public sealed class MongoJobWatermarkStore(IDbContext database, ILogger<MongoJobWatermarkStore> logger)
     : IJobWatermarkStore
 {
-    private const string CollectionName = "job_watermarks";
-
-    private readonly IMongoCollection<JobWatermarkDocument> _collection = database.GetCollection<JobWatermarkDocument>(
-        CollectionName
-    );
+    private readonly IMongoCollection<JobWatermarkEntity> _collection = database.Set<JobWatermarkEntity>().Collection;
 
     public async Task<DateTimeOffset?> GetAsync(string jobName, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<JobWatermarkDocument>.Filter.Eq(x => x.Id, jobName);
+        var filter = Builders<JobWatermarkEntity>.Filter.Eq(x => x.Id, jobName);
 
         var document = await _collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
 
@@ -34,9 +32,9 @@ public sealed class MongoJobWatermarkStore(IMongoDatabase database, ILogger<Mong
     {
         var now = DateTime.UtcNow;
 
-        var filter = Builders<JobWatermarkDocument>.Filter.Eq(x => x.Id, jobName);
+        var filter = Builders<JobWatermarkEntity>.Filter.Eq(x => x.Id, jobName);
 
-        var update = Builders<JobWatermarkDocument>
+        var update = Builders<JobWatermarkEntity>
             .Update.Set(x => x.WatermarkUtc, watermark.UtcDateTime)
             .Set(x => x.UpdatedAtUtc, now);
 

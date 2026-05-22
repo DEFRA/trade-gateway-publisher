@@ -1,22 +1,32 @@
 using System.Diagnostics.CodeAnalysis;
+using CronJobs;
+using CronJobs.Extensions;
 using Data;
+using Data.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 using Serilog;
+using TradeGatewayPublisher.Jobs;
 using TradeGatewayPublisher.Utils;
 using TradeGatewayPublisher.Utils.Http;
 using TradeGatewayPublisher.Utils.Logging;
 using MongoConfig = TradeGatewayPublisher.Config.MongoConfig;
 
+
+
 var app = BuildApp(args);
 await app.RunAsync();
+
+
 
 [ExcludeFromCodeCoverage]
 static WebApplication BuildApp(string[] args)
 {
     var builder = WebApplication.CreateBuilder(args);
-
+    var integrationTest = args.Contains("--integrationTest=true");
     ConfigureHost(builder);
-    ConfigureServices(builder);
+    ConfigureServices(builder, integrationTest);
 
     var app = builder.Build();
 
@@ -33,8 +43,10 @@ static void ConfigureHost(WebApplicationBuilder builder)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureServices(WebApplicationBuilder builder)
+static void ConfigureServices(WebApplicationBuilder builder, bool integrationTest)
 {
+    const string Extended = "extended";
+
     var services = builder.Services;
     var configuration = builder.Configuration;
 
@@ -48,9 +60,29 @@ static void ConfigureServices(WebApplicationBuilder builder)
 
     ConfigureHeaderPropagation(services, configuration);
     ConfigureHttpClients(services);
-    ConfigureMongo(services, configuration);
+    ConfigureMongo(services, configuration, integrationTest);
 
-    services.AddHealthChecks();
+    services.AddHealthChecks()
+        .AddMongoDb(
+            provider => provider.GetRequiredService<IMongoDatabase>(),
+            timeout: TimeSpan.FromSeconds(10),
+            tags: [Extended]
+        );
+        ////.AddSns(
+        ////    "Upserts topic",
+        ////    sp => sp.GetRequiredService<IOptions<ResourceEventOptions>>().Value.TopicArn,
+        ////    tags: [Extended],
+        ////    timeout: TimeSpan.FromSeconds(10)
+        ////)
+        ////.AddSqs(
+        ////    configuration,
+        ////    "Data events SQS queue",
+        ////    _ =>
+        ////        configuration.GetValue<string>("DATA_EVENTS_QUEUE_NAME")
+        ////        ?? throw new InvalidOperationException("Missing DATA_EVENTS_QUEUE_NAME"),
+        ////    timeout: TimeSpan.FromSeconds(10),
+        ////    tags: [Extended]
+        ////);
 
     // App services
     ////services.AddSingleton<IExamplePersistence, ExamplePersistence>();
@@ -80,18 +112,11 @@ static void ConfigureHttpClients(IServiceCollection services)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureMongo(IServiceCollection services, IConfiguration configuration)
+static void ConfigureMongo(IServiceCollection services, IConfiguration configuration, bool integrationTest)
 {
-    MongoExtensions.Register();
-    MongoConventions.Register();
-
-    services
-        .AddOptions<MongoConfig>()
-        .Bind(configuration.GetRequiredSection("Mongo"))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
+    services.AddScheduler(configuration);
+    services.AddDbContext(configuration, integrationTest);
+    services.AddSingleton<ICronJob, ExampleJob>();
 }
 
 [ExcludeFromCodeCoverage]
