@@ -35,8 +35,9 @@ COPY tests/TradeGatewayPublisher.IntegrationTests/*.csproj tests/TradeGatewayPub
 
 COPY TradeGatewayPublisher.sln TradeGatewayPublisher.sln
 COPY Directory.Build.props Directory.Build.props
-COPY NuGet.config NuGet.config
 
+COPY NuGet.config NuGet.config
+ARG DEFRA_NUGET_PAT
 
 RUN dotnet restore
 
