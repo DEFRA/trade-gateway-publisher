@@ -24,8 +24,8 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
   </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Data\Data.csproj" />
-      <ProjectReference Include="..\..\src\CronJobs\CronJobs.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Data\Data.csproj" />
+    <ProjectReference Include="..\..\src\CronJobs\CronJobs.csproj" />
+  </ItemGroup>
 </Project>
