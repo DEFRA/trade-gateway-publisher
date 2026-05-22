@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using TradeGatewayPublisher.Example.Models;
 
-namespace TradeGatewayPublisher.Test.Example.Models;
+namespace TradeGatewayPublisher.Tests.Example.Models;
 
 public class CreateExampleRequestTest
 {

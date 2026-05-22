@@ -2,8 +2,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using TradeGatewayPublisher.Example.Models;
 
-namespace TradeGatewayPublisher.Test.Example.Models;
+namespace TradeGatewayPublisher.IntegrationTests.Example.Models;
 
+[Trait("Category", "IntegrationTests")]
 public class CreateExampleRequestTest
 {
     [Fact]
