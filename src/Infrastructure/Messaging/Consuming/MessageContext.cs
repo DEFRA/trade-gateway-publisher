@@ -1,0 +1,21 @@
+using Amazon.SQS.Model;
+
+namespace Infrastructure.Messaging.Consuming;
+
+public class MessageContext
+{
+    public required Message Message { get; init; }
+
+    public required string QueueUrl { get; init; }
+
+    public string Body => Message.Body;
+
+    public string MessageId => Message.MessageId;
+
+    public IReadOnlyDictionary<string, MessageAttributeValue> Headers => Message.MessageAttributes.AsReadOnly();
+
+    public string? GetHeader(string key)
+    {
+        return Headers.TryGetValue(key, out var value) ? value.StringValue : null;
+    }
+}

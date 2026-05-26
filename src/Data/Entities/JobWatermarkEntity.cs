@@ -12,6 +12,7 @@ namespace Data.Entities
         public required string ETag { get; set; }
         public DateTime Created { get; set; }
         public DateTime Updated { get; set; }
+
         public void OnSave()
         {
             throw new NotImplementedException();

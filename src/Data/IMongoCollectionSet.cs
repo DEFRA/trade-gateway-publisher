@@ -17,8 +17,6 @@ public interface IMongoCollectionSet<T> : IQueryable<T>
 
     void Update(T item, string etag);
 
-    void Update(T item, Action<IFieldUpdateBuilder<T>> patch, string etag);
-
     Task Save(CancellationToken cancellationToken);
 
     void Upsert(T item, string etag);

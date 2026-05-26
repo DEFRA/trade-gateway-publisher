@@ -52,14 +52,11 @@ public class MongoCollectionSet<T>(MongoDbContext dbContext, string collectionNa
 
         if (_entitiesToUpdate.Count != 0)
         {
-            var session = GetSession();
-
             foreach (var item in _entitiesToUpdate)
             {
                 var filter = builder.Eq(x => x.Id, item.Item.Id) & builder.Eq(x => x.ETag, item.Etag);
 
                 var updateResult = await Collection.ReplaceOneAsync(
-                    session,
                     filter,
                     item.Item,
                     cancellationToken: cancellationToken
@@ -74,21 +71,15 @@ public class MongoCollectionSet<T>(MongoDbContext dbContext, string collectionNa
 
         if (_entitiesToPatch.Count != 0)
         {
-            var session = GetSession();
-
             foreach (var item in _entitiesToPatch)
             {
                 var filter = builder.Eq(x => x.Id, item.Id) & builder.Eq(x => x.ETag, item.Etag);
 
-                var updateResult =
-                    session == null
-                        ? await Collection.UpdateOneAsync(filter, item.Patch, cancellationToken: cancellationToken)
-                        : await Collection.UpdateOneAsync(
-                            session,
-                            filter,
-                            item.Patch,
-                            cancellationToken: cancellationToken
-                        );
+                var updateResult = await Collection.UpdateOneAsync(
+                    filter,
+                    item.Patch,
+                    cancellationToken: cancellationToken
+                );
 
                 if (updateResult.ModifiedCount == 0)
                     throw new ConcurrencyException(item.Id, item.Etag);
@@ -102,20 +93,13 @@ public class MongoCollectionSet<T>(MongoDbContext dbContext, string collectionNa
     {
         if (_entitiesToInsert.Count != 0)
         {
-            var session = GetSession();
-
             foreach (var item in _entitiesToInsert)
             {
-                await Collection.InsertOneAsync(session, item, cancellationToken: cancellationToken);
+                await Collection.InsertOneAsync(item, cancellationToken: cancellationToken);
             }
 
             _entitiesToInsert.Clear();
         }
-    }
-
-    private IClientSessionHandle? GetSession()
-    {
-        return dbContext.ActiveTransaction?.Session;
     }
 
     public void Insert(T item)
@@ -143,37 +127,5 @@ public class MongoCollectionSet<T>(MongoDbContext dbContext, string collectionNa
         item.OnSave();
 
         _entitiesToUpdate.Add(new ValueTuple<T, string>(item, etag));
-    }
-
-    public void Update(T item, Action<IFieldUpdateBuilder<T>> patch, string etag)
-    {
-        if (_entitiesToInsert.Exists(x => x.Id == item.Id))
-            throw new InvalidOperationException("Cannot patch an entity due for insert");
-
-        if (_entitiesToUpdate.Exists(x => x.Item.Id == item.Id))
-            throw new InvalidOperationException("Cannot patch an entity due for update");
-
-        ArgumentNullException.ThrowIfNull(etag);
-
-        _entitiesToPatch.RemoveAll(x => x.Id == item.Id);
-
-        var fieldUpdateBuilder = new MongoFieldUpdateBuilder<T>();
-        patch(fieldUpdateBuilder);
-
-        // Update in memory item now but will only be saved if Save is called
-        item.Updated = DateTime.UtcNow;
-        item.ETag = BsonObjectIdGenerator.Instance.GenerateId(null, null).ToString()!;
-
-        _entitiesToPatch.Add(
-            new ValueTuple<string, UpdateDefinition<T>, string>(
-                item.Id,
-                Builders<T>
-                    .Update.Combine(fieldUpdateBuilder.Build())
-                    // Update fields based on in memory item values
-                    .Set(x => x.Updated, item.Updated)
-                    .Set(x => x.ETag, item.ETag),
-                etag
-            )
-        );
     }
 }

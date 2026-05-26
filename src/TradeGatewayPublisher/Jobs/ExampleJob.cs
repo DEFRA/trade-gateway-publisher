@@ -1,18 +1,15 @@
-using CronJobs;
-using CronJobs.Watermark;
+using Infrastructure.Scheduler;
 
 namespace TradeGatewayPublisher.Jobs;
 
-public sealed class ExampleJob(IJobWatermarkStore watermarkStore, ILogger<ExampleJob> logger)
-    : CronJobWithWatermarkJob(watermarkStore)
+public sealed class ExampleJob(ILogger<ExampleJob> logger) : ICronJob
 {
-    public override string Name => "ExampleJob";
+    public string Name => "ExampleJob";
 
-    public override async Task DoExecuteAsync(WatermarkJobContext context, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(JobContext context, CancellationToken cancellationToken)
     {
         logger.LogInformation("Doing work...");
-
-        await Task.Delay(1000, cancellationToken);
+        await Task.Delay(30000, cancellationToken);
 
         logger.LogInformation("Work complete");
     }

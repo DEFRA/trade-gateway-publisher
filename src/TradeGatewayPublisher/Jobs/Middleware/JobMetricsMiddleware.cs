@@ -1,14 +1,10 @@
-using CronJobs;
+using Infrastructure.Scheduler;
 
 namespace TradeGatewayPublisher.Jobs.Middleware;
 
 public sealed class JobMetricsMiddleware(ILogger<JobMetricsMiddleware> logger) : IJobMiddleware
 {
-    public async Task InvokeAsync(
-        CronJobWithWatermarkJob.JobContext context,
-        CancellationToken cancellationToken,
-        JobExecutionDelegate next
-    )
+    public async Task InvokeAsync(JobContext context, CancellationToken cancellationToken, JobExecutionDelegate next)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
 

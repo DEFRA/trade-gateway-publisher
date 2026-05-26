@@ -5,10 +5,9 @@ using MongoDB.Driver;
 
 namespace CronJobs.Leasing;
 
-public sealed class JobLeaseProvider(IDbContext db, ILogger<JobLeaseProvider> logger)
-    : IJobLeaseProvider
+public sealed class JobLeaseProvider(IDbContext db, ILogger<JobLeaseProvider> logger) : IJobLeaseProvider
 {
-    private readonly IMongoCollectionSet<JobLeaseEntity> _collection = db.Set<JobLeaseEntity>();
+    private readonly IMongoCollectionSet<LeaseEntity> _collection = db.Set<LeaseEntity>();
 
     private readonly string _instanceId = $"{Environment.MachineName}-{Guid.NewGuid():N}";
 
@@ -22,12 +21,12 @@ public sealed class JobLeaseProvider(IDbContext db, ILogger<JobLeaseProvider> lo
 
         var expiresAt = now.Add(duration);
 
-        var filter = Builders<JobLeaseEntity>.Filter.And(
-            Builders<JobLeaseEntity>.Filter.Eq(x => x.Id, leaseName),
-            Builders<JobLeaseEntity>.Filter.Lte(x => x.ExpiresAtUtc, now)
+        var filter = Builders<LeaseEntity>.Filter.And(
+            Builders<LeaseEntity>.Filter.Eq(x => x.Id, leaseName),
+            Builders<LeaseEntity>.Filter.Lte(x => x.ExpiresAtUtc, now)
         );
 
-        var replacement = new JobLeaseEntity
+        var replacement = new LeaseEntity
         {
             Id = leaseName,
             Owner = _instanceId,

@@ -14,10 +14,7 @@ namespace CronJobs.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddScheduler(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
+    public static IServiceCollection AddScheduler(this IServiceCollection services, IConfiguration configuration)
     {
         services
             .AddOptions<SchedulerSettings>()
@@ -25,9 +22,9 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddHostedService<SchedulerBackgroundService>();
-       services.AddSingleton<IJobExecutor, JobExecutor>();
-       services.AddSingleton<IJobWatermarkStore, MongoJobWatermarkStore>();
-       services.AddSingleton<IJobLeaseProvider, JobLeaseProvider>();
+        services.AddSingleton<IJobExecutor, JobExecutor>();
+        services.AddSingleton<IJobWatermarkStore, MongoJobWatermarkStore>();
+        services.AddSingleton<IJobLeaseProvider, JobLeaseProvider>();
 
         return services;
     }

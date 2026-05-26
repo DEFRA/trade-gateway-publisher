@@ -1,18 +1,14 @@
-using CronJobs;
-using CronJobs.Leasing;
+using Infrastructure.Leasing;
+using Infrastructure.Scheduler;
 
 namespace TradeGatewayPublisher.Jobs.Middleware;
 
-public sealed class JobLeaseJobMiddleware(IJobLeaseProvider leaseProvider, ILogger<JobLeaseJobMiddleware> logger)
+public sealed class JobLeaseJobMiddleware(ILeaseProvider leaseProvider, ILogger<JobLeaseJobMiddleware> logger)
     : IJobMiddleware
 {
     private static readonly TimeSpan s_defaultLeaseDuration = TimeSpan.FromMinutes(5);
 
-    public async Task InvokeAsync(
-        CronJobWithWatermarkJob.JobContext context,
-        CancellationToken cancellationToken,
-        JobExecutionDelegate next
-    )
+    public async Task InvokeAsync(JobContext context, CancellationToken cancellationToken, JobExecutionDelegate next)
     {
         var leaseName = $"job:{context.Name}";
 

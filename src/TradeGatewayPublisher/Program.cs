@@ -1,24 +1,19 @@
 using System.Diagnostics.CodeAnalysis;
-using CronJobs;
-using CronJobs.Extensions;
-using Data;
-using Data.Extensions;
+using Infrastructure.Data.Extensions;
+using Infrastructure.Scheduler;
+using Infrastructure.Scheduler.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Serilog;
 using TradeGatewayPublisher.Jobs;
+using TradeGatewayPublisher.Jobs.Middleware;
 using TradeGatewayPublisher.Utils;
 using TradeGatewayPublisher.Utils.Http;
 using TradeGatewayPublisher.Utils.Logging;
 using MongoConfig = TradeGatewayPublisher.Config.MongoConfig;
 
-
-
 var app = BuildApp(args);
 await app.RunAsync();
-
-
 
 [ExcludeFromCodeCoverage]
 static WebApplication BuildApp(string[] args)
@@ -62,27 +57,28 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
     ConfigureHttpClients(services);
     ConfigureMongo(services, configuration, integrationTest);
 
-    services.AddHealthChecks()
+    services
+        .AddHealthChecks()
         .AddMongoDb(
             provider => provider.GetRequiredService<IMongoDatabase>(),
             timeout: TimeSpan.FromSeconds(10),
             tags: [Extended]
         );
-        ////.AddSns(
-        ////    "Upserts topic",
-        ////    sp => sp.GetRequiredService<IOptions<ResourceEventOptions>>().Value.TopicArn,
-        ////    tags: [Extended],
-        ////    timeout: TimeSpan.FromSeconds(10)
-        ////)
-        ////.AddSqs(
-        ////    configuration,
-        ////    "Data events SQS queue",
-        ////    _ =>
-        ////        configuration.GetValue<string>("DATA_EVENTS_QUEUE_NAME")
-        ////        ?? throw new InvalidOperationException("Missing DATA_EVENTS_QUEUE_NAME"),
-        ////    timeout: TimeSpan.FromSeconds(10),
-        ////    tags: [Extended]
-        ////);
+    ////.AddSns(
+    ////    "Upserts topic",
+    ////    sp => sp.GetRequiredService<IOptions<ResourceEventOptions>>().Value.TopicArn,
+    ////    tags: [Extended],
+    ////    timeout: TimeSpan.FromSeconds(10)
+    ////)
+    ////.AddSqs(
+    ////    configuration,
+    ////    "Data events SQS queue",
+    ////    _ =>
+    ////        configuration.GetValue<string>("DATA_EVENTS_QUEUE_NAME")
+    ////        ?? throw new InvalidOperationException("Missing DATA_EVENTS_QUEUE_NAME"),
+    ////    timeout: TimeSpan.FromSeconds(10),
+    ////    tags: [Extended]
+    ////);
 
     // App services
     ////services.AddSingleton<IExamplePersistence, ExamplePersistence>();
@@ -117,6 +113,7 @@ static void ConfigureMongo(IServiceCollection services, IConfiguration configura
     services.AddScheduler(configuration);
     services.AddDbContext(configuration, integrationTest);
     services.AddSingleton<ICronJob, ExampleJob>();
+    services.AddSingleton<IJobMiddleware, JobLeaseJobMiddleware>();
 }
 
 [ExcludeFromCodeCoverage]

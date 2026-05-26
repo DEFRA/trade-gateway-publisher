@@ -13,13 +13,12 @@ public sealed class SchedulerBackgroundService(
     ILogger<SchedulerBackgroundService> logger
 ) : BackgroundService
 {
-    private readonly SchedulerSettings _settings = settings.Value ?? new SchedulerSettings()
-    {
-        Jobs = new Dictionary<string, JobSettings>()
+    private readonly SchedulerSettings _settings =
+        settings.Value
+        ?? new SchedulerSettings()
         {
-            ["ExampleJob"] = new() { Cron = "* * * * *"}
-        }
-    };
+            Jobs = new Dictionary<string, JobSettings>() { ["ExampleJob"] = new() { Cron = "* * * * *" } },
+        };
 
     private readonly List<(ICronJob Job, CronExpression Expression)> _jobs =
     [

@@ -1,0 +1,53 @@
+using Infrastructure.Data.Mongo;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
+using MongoDB.Driver.Authentication.AWS;
+
+namespace Infrastructure.Data.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddDbContext(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        bool integrationTest
+    )
+    {
+        services
+            .AddOptions<MongoDbOptions>()
+            .Bind(configuration.GetSection(MongoDbOptions.SectionName))
+            .ValidateOnStart();
+
+        if (integrationTest)
+            return services;
+
+        services.AddHostedService<MongoMigrationHostedService>();
+        services.AddSingleton<IDbContext, MongoDbContext>();
+        services.AddSingleton(sp =>
+        {
+            MongoClientSettings.Extensions.AddAWSAuthentication();
+
+            var options =
+                sp.GetService<IOptions<MongoDbOptions>>() ?? throw new InvalidOperationException("Options not found");
+            var settings = MongoClientSettings.FromConnectionString(options.Value.DatabaseUri);
+
+            var client = new MongoClient(settings);
+            var conventionPack = new ConventionPack
+            {
+                new CamelCaseElementNameConvention(),
+                new EnumRepresentationConvention(BsonType.String),
+                new IgnoreExtraElementsConvention(true),
+            };
+
+            ConventionRegistry.Register(nameof(conventionPack), conventionPack, _ => true);
+
+            return client.GetDatabase(options.Value.DatabaseName);
+        });
+
+        return services;
+    }
+}

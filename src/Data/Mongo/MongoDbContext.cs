@@ -15,46 +15,14 @@ public class MongoDbContext : IDbContext
         _logger = logger;
 
         Database = database;
-        ////ImportPreNotifications = new MongoCollectionSet<ImportPreNotificationEntity>(this);
-        ////ImportPreNotificationUpdates = new MongoCollectionSet<ImportPreNotificationUpdateEntity>(this);
-        ////CustomsDeclarations = new MongoCollectionSet<CustomsDeclarationEntity>(this);
-        ////Gmrs = new MongoCollectionSet<GmrEntity>(this);
-        ////ProcessingErrors = new MongoCollectionSet<ProcessingErrorEntity>(this);
-        ////ResourceEvents = new MongoCollectionSet<ResourceEventEntity>(this);
     }
 
     internal IMongoDatabase Database { get; }
-    internal MongoDbTransaction? ActiveTransaction { get; private set; }
 
-    ////public IMongoCollectionSet<ImportPreNotificationEntity> ImportPreNotifications { get; }
-    ////public IMongoCollectionSet<ImportPreNotificationUpdateEntity> ImportPreNotificationUpdates { get; }
-    ////public IMongoCollectionSet<CustomsDeclarationEntity> CustomsDeclarations { get; }
-    ////public IMongoCollectionSet<GmrEntity> Gmrs { get; }
-    ////public IMongoCollectionSet<ProcessingErrorEntity> ProcessingErrors { get; }
-    ////public IMongoCollectionSet<ResourceEventEntity> ResourceEvents { get; }
-
-    public IMongoCollectionSet<T> Set<T>() where T : class, IDataEntity
+    public IMongoCollectionSet<T> Set<T>()
+        where T : class, IDataEntity
     {
         return new MongoCollectionSet<T>(this);
-
-    }
-
-    public async Task StartTransaction(CancellationToken cancellationToken)
-    {
-        var session = await Database.Client.StartSessionAsync(cancellationToken: cancellationToken);
-        session.StartTransaction();
-
-        ActiveTransaction = new MongoDbTransaction(session);
-    }
-
-    public async Task CommitTransaction(CancellationToken cancellationToken)
-    {
-        if (ActiveTransaction is null)
-            throw new InvalidOperationException("No active transaction");
-
-        await ActiveTransaction.Commit(cancellationToken);
-
-        ActiveTransaction = null;
     }
 
     public async Task SaveChanges(CancellationToken cancellationToken)
