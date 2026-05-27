@@ -58,12 +58,9 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
 
     ConfigureHeaderPropagation(services, configuration);
     ConfigureHttpClients(services);
-    ConfigureMongo(services, configuration, integrationTest);
+    ConfigureAppServices(services, configuration, integrationTest);
 
     services.AddHealth();
-
-    // App services
-    ////services.AddSingleton<IExamplePersistence, ExamplePersistence>();
 }
 
 [ExcludeFromCodeCoverage]
@@ -87,7 +84,7 @@ static void ConfigureHttpClients(IServiceCollection services)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureMongo(IServiceCollection services, IConfiguration configuration, bool integrationTest)
+static void ConfigureAppServices(IServiceCollection services, IConfiguration configuration, bool integrationTest)
 {
     services.AddOptions<LocalStackOptions>().Bind(configuration);
     services
