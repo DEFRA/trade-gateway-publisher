@@ -9,8 +9,9 @@ public sealed class JobWatermarkMiddleware(IJobWatermarkStore watermarkStore) : 
     {
         var watermark =
             await watermarkStore.GetAsync(context.Name, cancellationToken) ?? DateTimeOffset.UtcNow.AddMinutes(-5);
-        context.Set(new WatermarkContext(watermark, DateTimeOffset.UtcNow));
+        var watermarkContext = new WatermarkContext(watermark, DateTimeOffset.UtcNow);
+        context.Set(watermarkContext);
         await next(context, cancellationToken);
-        await watermarkStore.SetAsync(context.Name, DateTimeOffset.UtcNow, cancellationToken);
+        await watermarkStore.SetAsync(context.Name, watermarkContext.Now, cancellationToken);
     }
 }
