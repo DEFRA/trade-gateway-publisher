@@ -17,13 +17,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Test
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
           dotnet-version: |
             10.0
-      - run: dotnet test
+      - name: Update NuGet.config
+        run: |
+          dotnet nuget remove source defra --configfile ./NuGet.config
+          dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile ./NuGet.config
+      
+      - name: Run unit tests
+        run: |
+          dotnet test --filter "Category!=IntegrationTest"
+      - name: Run integration tests
+        run: |
+          docker compose up -d
+          dotnet test --filter "Category=IntegrationTest"
+      - name: Docker Compose Logs
+        if: always()
+        run: |
+          docker compose logs
+      - name: Check Dockerfile Builds
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: trade-gateway-publisher:latest
+      - name: Check with Trivy
+        run: |
+          docker run -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.70.0 image \
+            --ignore-unfixed \
+            --exit-code 1 \
+            trade-gateway-publisher:latest
     ## SonarCloud
     ## Uncomment to unable SonarCloud scan
     ## Requires project to be set up in SonarCloud
