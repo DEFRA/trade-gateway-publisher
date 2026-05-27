@@ -12,7 +12,6 @@ using Serilog;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Health;
 using TradeGatewayPublisher.Jobs;
-using TradeGatewayPublisher.Jobs.Middleware;
 using TradeGatewayPublisher.Utils;
 using TradeGatewayPublisher.Utils.Http;
 using TradeGatewayPublisher.Utils.Logging;
@@ -141,7 +140,6 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddScheduler(configuration);
     services.AddDbContext(configuration, integrationTest);
     services.AddSingleton<ICronJob, ExampleJob>();
-    services.AddScoped<IJobMiddleware, JobLeaseJobMiddleware>();
 }
 
 [ExcludeFromCodeCoverage]
