@@ -10,11 +10,7 @@ namespace Infrastructure.Data.Entities
         public required string Id { get; set; }
         public DateTime Created { get; set; }
         public DateTime Updated { get; set; }
-
-        [BsonElement("owner")]
         public required string Owner { get; set; }
-
-        [BsonElement("expiresAtUtc")]
-        public DateTime ExpiresAtUtc { get; set; }
+        public DateTime ExpiresAt { get; set; }
     }
 }

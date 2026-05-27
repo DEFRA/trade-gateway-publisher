@@ -1,6 +1,7 @@
 using Infrastructure.Data;
 using Infrastructure.Data.Entities;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 namespace Infrastructure.Leasing;
 
@@ -24,7 +25,7 @@ public sealed class LeaseProvider(IDbContext db, ILogger<LeaseProvider> logger) 
         {
             Id = leaseName,
             Owner = _instanceId,
-            ExpiresAtUtc = expiresAt,
+            ExpiresAt = expiresAt,
         };
 
         try
@@ -33,6 +34,11 @@ public sealed class LeaseProvider(IDbContext db, ILogger<LeaseProvider> logger) 
             await _collection.Save(cancellationToken);
             logger.LogInformation("Acquired lease {LeaseName} until {ExpiresAt}", leaseName, expiresAt);
             return new LeaseHandle(_collection, leaseName, _instanceId);
+        }
+        catch (MongoWriteException ex)
+        {
+            logger.LogDebug(ex, "Lease already exists for {LeaseName}", leaseName);
+            return null;
         }
         catch (Exception ex)
         {

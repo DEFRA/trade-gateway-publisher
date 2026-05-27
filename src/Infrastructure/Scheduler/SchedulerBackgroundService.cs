@@ -1,4 +1,5 @@
 using Cronos;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -6,35 +7,38 @@ using Microsoft.Extensions.Options;
 namespace Infrastructure.Scheduler;
 
 public class SchedulerBackgroundService(
-    IEnumerable<ICronJob> cronJobs,
-    IJobExecutor jobExecutor,
+    IServiceScopeFactory scopeFactory,
     IOptions<SchedulerSettings> settings,
     ILogger<SchedulerBackgroundService> logger
 ) : BackgroundService
 {
     private readonly SchedulerSettings _settings = settings.Value;
 
-    private readonly List<(ICronJob Job, CronExpression Expression)> _jobs =
-    [
-        .. cronJobs.Select(job =>
-            (
-                Job: job,
-                Expression: CronExpression.Parse(
-                    settings.Value?.Jobs[job.Name].Cron ?? string.Empty,
-                    CronFormat.IncludeSeconds
-                )
-            )
-        ),
-    ];
-
     private readonly TimeZoneInfo _timeZoneInfo = TimeZoneInfo.Local;
 
-    private readonly SemaphoreSlim _semaphore = new(settings.Value!.MaxConcurrentJobs);
+    private readonly SemaphoreSlim _semaphore = new(settings.Value.MaxConcurrentJobs);
+
+    private List<(string JobName, CronExpression Expression)> _jobs = [];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var cronJobs = scope.ServiceProvider.GetRequiredService<IEnumerable<ICronJob>>();
+
+            _jobs =
+            [
+                .. cronJobs.Select(job =>
+                    (
+                        JobName: job.Name,
+                        Expression: CronExpression.Parse(_settings.Jobs[job.Name].Cron, CronFormat.IncludeSeconds)
+                    )
+                ),
+            ];
+        }
+
         var nextRuns = _jobs.ToDictionary(
-            x => x.Job.Name,
+            x => x.JobName,
             x => x.Expression.GetNextOccurrence(DateTimeOffset.Now, _timeZoneInfo)
         );
 
@@ -48,20 +52,20 @@ public class SchedulerBackgroundService(
         {
             var now = DateTimeOffset.Now;
 
-            foreach (var (job, expression) in _jobs)
+            foreach (var (jobName, expression) in _jobs)
             {
-                var next = nextRuns[job.Name];
+                var next = nextRuns[jobName];
 
                 if (!next.HasValue || next.Value > now)
                 {
                     continue;
                 }
 
-                _ = RunJobAsync(job, stoppingToken);
+                _ = RunJobAsync(jobName, stoppingToken);
 
-                nextRuns[job.Name] = expression.GetNextOccurrence(now.AddSeconds(1), _timeZoneInfo);
+                nextRuns[jobName] = expression.GetNextOccurrence(now.AddSeconds(1), _timeZoneInfo);
 
-                logger.LogInformation("Next run of {Job} scheduled at {NextRun}", job.Name, nextRuns[job.Name]);
+                logger.LogInformation("Next run of {Job} scheduled at {NextRun}", jobName, nextRuns[jobName]);
             }
 
             try
@@ -77,7 +81,7 @@ public class SchedulerBackgroundService(
         logger.LogInformation("Scheduler stopped");
     }
 
-    private async Task RunJobAsync(ICronJob job, CancellationToken cancellationToken)
+    private async Task RunJobAsync(string jobName, CancellationToken cancellationToken)
     {
         var acquired = false;
 
@@ -87,6 +91,14 @@ public class SchedulerBackgroundService(
 
             acquired = true;
 
+            using var scope = scopeFactory.CreateScope();
+
+            var cronJobs = scope.ServiceProvider.GetRequiredService<IEnumerable<ICronJob>>();
+
+            var jobExecutor = scope.ServiceProvider.GetRequiredService<IJobExecutor>();
+
+            var job = cronJobs.Single(x => x.Name == jobName);
+
             logger.LogInformation("Running job {Job}", job.Name);
 
             var jobSettings = _settings.Jobs[job.Name];
@@ -95,11 +107,11 @@ public class SchedulerBackgroundService(
         }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex, "{Job} cancelled before execution", job.Name);
+            logger.LogWarning(ex, "{Job} cancelled before execution", jobName);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected scheduler error for {Job}", job.Name);
+            logger.LogError(ex, "Unexpected scheduler error for {Job}", jobName);
         }
         finally
         {

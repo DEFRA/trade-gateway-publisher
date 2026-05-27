@@ -28,7 +28,7 @@ public class JobWatermarkStoreTests
 
         var items = new List<JobWatermarkEntity>
         {
-            new JobWatermarkEntity { Id = "other-job", WatermarkUtc = expectedWatermark.DateTime },
+            new JobWatermarkEntity { Id = "other-job", Watermark = expectedWatermark.DateTime },
         };
 
         var db = new MemoryDbContext();
@@ -88,7 +88,7 @@ public class JobWatermarkStoreTests
 
         var items = new List<JobWatermarkEntity>
         {
-            new() { Id = "existing-job", WatermarkUtc = originalWatermark.UtcDateTime },
+            new() { Id = "existing-job", Watermark = originalWatermark.UtcDateTime },
         };
 
         var db = new MemoryDbContext();
@@ -124,8 +124,8 @@ public class JobWatermarkStoreTests
 
         var items = new List<JobWatermarkEntity>
         {
-            new() { Id = "job-a", WatermarkUtc = untouchedWatermark.UtcDateTime },
-            new() { Id = "job-b", WatermarkUtc = untouchedWatermark.UtcDateTime },
+            new() { Id = "job-a", Watermark = untouchedWatermark.UtcDateTime },
+            new() { Id = "job-b", Watermark = untouchedWatermark.UtcDateTime },
         };
 
         var db = new MemoryDbContext();

@@ -1,7 +1,9 @@
 #nullable enable
+
 using Cronos;
 using Infrastructure.Scheduler;
 using MartinCostello.Logging.XUnit;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -21,12 +23,7 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
 
         var settings = CreateSettings(maxConcurrency: 1, ("scheduled-job", CronExpression.EverySecond.ToString()));
 
-        var sut = new TestSchedulerBackgroundService(
-            [job],
-            executor,
-            settings,
-            NullLogger<SchedulerBackgroundService>.Instance
-        );
+        var sut = CreateSut([job], executor, settings);
 
         // Act
         await sut.StartAsync(CancellationToken.None);
@@ -39,7 +36,9 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
 
         Assert.True(success);
 
-        Assert.Contains(executor.ExecutedJobs, x => x == "scheduled-job");
+        Assert.Contains("scheduled-job", executor.ExecutedJobs);
+
+        await sut.StopAsync(CancellationToken.None);
     }
 
     [Fact]
@@ -57,27 +56,23 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
             ("job-2", CronExpression.EverySecond.ToString())
         );
 
-        var sut = new TestSchedulerBackgroundService(
-            [job1, job2],
-            executor,
-            settings,
-            NullLogger<SchedulerBackgroundService>.Instance
-        );
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        var sut = CreateSut([job1, job2], executor, settings);
 
         // Act
-        await sut.StartAsync(cts.Token);
+        await sut.StartAsync(CancellationToken.None);
 
         // Assert
         var success = await WaitHelper.WaitUntilAsync(
-            () => executor.ExecutionCount > 1,
+            () => executor.ExecutionCount >= 2,
             timeout: TimeSpan.FromSeconds(60)
         );
 
         Assert.True(success);
+
         Assert.Contains("job-1", executor.ExecutedJobs);
         Assert.Contains("job-2", executor.ExecutedJobs);
+
+        await sut.StopAsync(CancellationToken.None);
     }
 
     [Fact]
@@ -90,12 +85,7 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
 
         var settings = CreateSettings(maxConcurrency: 1, ("cancel-job", CronExpression.EverySecond.ToString()));
 
-        var sut = new TestSchedulerBackgroundService(
-            [job],
-            executor,
-            settings,
-            NullLogger<SchedulerBackgroundService>.Instance
-        );
+        var sut = CreateSut([job], executor, settings);
 
         using var cts = new CancellationTokenSource();
 
@@ -128,20 +118,21 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
 
         var settings = CreateSettings(maxConcurrency: 1, ("failing-job", CronExpression.EverySecond.ToString()));
 
-        var sut = new TestSchedulerBackgroundService([job], executor, settings, logger);
+        var sut = CreateSut([job], executor, settings, logger);
 
         // Act
         await sut.StartAsync(CancellationToken.None);
 
+        // Assert
         var success = await WaitHelper.WaitUntilAsync(
             () => executor.ExecutionAttempts > 0,
             timeout: TimeSpan.FromSeconds(60)
         );
 
         Assert.True(success);
-
-        // Assert
         Assert.True(executor.ExecutionAttempts > 0);
+
+        await sut.StopAsync(CancellationToken.None);
     }
 
     [Fact]
@@ -161,19 +152,12 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
             ("job-3", CronExpression.EverySecond.ToString())
         );
 
-        var sut = new TestSchedulerBackgroundService(
-            [job1, job2, job3],
-            executor,
-            settings,
-            NullLogger<SchedulerBackgroundService>.Instance
-        );
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+        var sut = CreateSut([job1, job2, job3], executor, settings);
 
         // Act
-        await sut.StartAsync(cts.Token);
+        await sut.StartAsync(CancellationToken.None);
 
-        await Task.Delay(3000, CancellationToken.None);
+        await Task.Delay(3000);
 
         await sut.StopAsync(CancellationToken.None);
 
@@ -189,27 +173,46 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
 
         var executor = new TestJobExecutor();
 
-        // yearly cron unlikely to execute during test
         var settings = CreateSettings(maxConcurrency: 1, ("future-job", "0 0 1 1 * *"));
 
-        var sut = new TestSchedulerBackgroundService(
-            [job],
-            executor,
-            settings,
-            NullLogger<SchedulerBackgroundService>.Instance
-        );
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        var sut = CreateSut([job], executor, settings);
 
         // Act
-        await sut.StartAsync(cts.Token);
+        await sut.StartAsync(CancellationToken.None);
 
-        await Task.Delay(1500, CancellationToken.None);
+        await Task.Delay(1500);
 
         await sut.StopAsync(CancellationToken.None);
 
         // Assert
         Assert.Equal(0, executor.ExecutionCount);
+    }
+
+    private static SchedulerBackgroundService CreateSut(
+        IEnumerable<ICronJob> jobs,
+        IJobExecutor executor,
+        IOptions<SchedulerSettings> settings,
+        ILogger<SchedulerBackgroundService>? logger = null
+    )
+    {
+        var services = new ServiceCollection();
+
+        services.AddScoped<IJobExecutor>(_ => executor);
+
+        foreach (var job in jobs)
+        {
+            services.AddScoped<ICronJob>(_ => job);
+        }
+
+        var provider = services.BuildServiceProvider();
+
+        var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+
+        return new SchedulerBackgroundService(
+            scopeFactory,
+            settings,
+            logger ?? NullLogger<SchedulerBackgroundService>.Instance
+        );
     }
 
     private static IOptions<SchedulerSettings> CreateSettings(
@@ -233,13 +236,6 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
 
         return Options.Create(settings);
     }
-
-    private sealed class TestSchedulerBackgroundService(
-        IEnumerable<ICronJob> jobs,
-        IJobExecutor executor,
-        IOptions<SchedulerSettings> settings,
-        ILogger<SchedulerBackgroundService> logger
-    ) : SchedulerBackgroundService(jobs, executor, settings, logger);
 
     private sealed class TestCronJob(string name) : ICronJob
     {

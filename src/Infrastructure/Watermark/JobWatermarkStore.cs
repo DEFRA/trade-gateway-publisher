@@ -19,14 +19,14 @@ public sealed class JobWatermarkStore(IDbContext database, ILogger<JobWatermarkS
             return null;
         }
 
-        logger.LogDebug("Loaded watermark {Watermark} for job {JobName}", document.WatermarkUtc, jobName);
+        logger.LogDebug("Loaded watermark {Watermark} for job {JobName}", document.Watermark, jobName);
 
-        return new DateTimeOffset(DateTime.SpecifyKind(document.WatermarkUtc, DateTimeKind.Utc));
+        return new DateTimeOffset(DateTime.SpecifyKind(document.Watermark, DateTimeKind.Utc));
     }
 
     public async Task SetAsync(string jobName, DateTimeOffset watermark, CancellationToken cancellationToken = default)
     {
-        var entity = new JobWatermarkEntity() { Id = jobName, WatermarkUtc = watermark.UtcDateTime };
+        var entity = new JobWatermarkEntity() { Id = jobName, Watermark = watermark.UtcDateTime };
         _collection.Upsert(entity);
         await _collection.Save(cancellationToken);
         logger.LogInformation("Updated watermark for {JobName} to {Watermark}", jobName, watermark);

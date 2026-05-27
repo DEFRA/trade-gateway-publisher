@@ -27,11 +27,11 @@ RUN dotnet tool restore
 # Copy solution and project files for restore
 
 COPY src/TradeGatewayPublisher/TradeGatewayPublisher.csproj src/TradeGatewayPublisher/TradeGatewayPublisher.csproj
-COPY src/CronJobs/CronJobs.csproj src/CronJobs/CronJobs.csproj
-COPY src/Data/Data.csproj src/Data/Data.csproj
+COPY src/Infrastructure/Infrastructure.csproj src/Infrastructure/Infrastructure.csproj
+COPY tests/Infrastructure.Tests/Infrastructure.Tests.csproj tests/Infrastructure.Tests/Infrastructure.Tests.csproj
 COPY tests/TradeGatewayPublisher.Tests/TradeGatewayPublisher.Tests.csproj tests/TradeGatewayPublisher.Tests/TradeGatewayPublisher.Tests.csproj
 COPY tests/TradeGatewayPublisher.IntegrationTests/*.csproj tests/TradeGatewayPublisher.IntegrationTests/
-#COPY tests/TestFixtures/TestFixtures.csproj tests/TestFixtures/TestFixtures.csproj
+COPY tests/Testing/Testing.csproj tests/Testing/Testing.csproj
 
 COPY TradeGatewayPublisher.sln TradeGatewayPublisher.sln
 COPY Directory.Build.props Directory.Build.props
@@ -43,11 +43,11 @@ RUN dotnet restore
 
 # Copy source code
 COPY src/TradeGatewayPublisher src/TradeGatewayPublisher
-COPY src/CronJobs src/CronJobs
-COPY src/Data src/Data
+COPY src/Infrastructure src/Infrastructure
+COPY tests/Infrastructure.Tests tests/Infrastructure.Tests
 COPY tests/TradeGatewayPublisher.Tests tests/TradeGatewayPublisher.Tests
 COPY tests/TradeGatewayPublisher.IntegrationTests tests/TradeGatewayPublisher.IntegrationTests
-#COPY tests/TestFixtures tests/TestFixtures
+COPY tests/Testing tests/Testing
 
 # Check code formatting
 RUN dotnet csharpier check .

@@ -34,7 +34,7 @@ public class LeaseProviderTests
         Assert.NotNull(persisted.Owner);
         Assert.NotEqual(string.Empty, persisted.Owner);
 
-        Assert.True(persisted.ExpiresAtUtc > DateTime.UtcNow, "Lease expiration should be in the future.");
+        Assert.True(persisted.ExpiresAt > DateTime.UtcNow, "Lease expiration should be in the future.");
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class LeaseProviderTests
         {
             Id = "existing-lease",
             Owner = "existing-owner",
-            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
         };
 
         var db = new MemoryDbContext();
@@ -83,7 +83,7 @@ public class LeaseProviderTests
         {
             Id = "lease-a",
             Owner = "owner-a",
-            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(15),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15),
         };
 
         var db = new MemoryDbContext();
@@ -138,8 +138,8 @@ public class LeaseProviderTests
         var maxExpected = after.Add(duration);
 
         Assert.True(
-            persisted!.ExpiresAtUtc >= minExpected && persisted.ExpiresAtUtc <= maxExpected,
-            $"Expected expiration between {minExpected:o} and {maxExpected:o} but found {persisted.ExpiresAtUtc:o}"
+            persisted!.ExpiresAt >= minExpected && persisted.ExpiresAt <= maxExpected,
+            $"Expected expiration between {minExpected:o} and {maxExpected:o} but found {persisted.ExpiresAt:o}"
         );
     }
 

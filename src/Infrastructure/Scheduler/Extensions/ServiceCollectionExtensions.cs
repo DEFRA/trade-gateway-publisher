@@ -15,9 +15,9 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddHostedService<SchedulerBackgroundService>();
-        services.AddSingleton<IJobExecutor, JobExecutor>();
-        services.AddSingleton<IJobWatermarkStore, JobWatermarkStore>();
-        services.AddSingleton<ILeaseProvider, LeaseProvider>();
+        services.AddScoped<IJobExecutor, JobExecutor>();
+        services.AddScoped<IJobWatermarkStore, JobWatermarkStore>();
+        services.AddScoped<ILeaseProvider, LeaseProvider>();
 
         return services;
     }

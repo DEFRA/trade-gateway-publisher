@@ -15,7 +15,7 @@ public class AddJobLeaseEntityIndexes() : Migration("Add indexes to Job_Lease co
         await CreateTtlIndex(
             collection,
             "ExpiresAtTtlIdx",
-            Builders<LeaseEntity>.IndexKeys.Ascending(x => x.ExpiresAtUtc),
+            Builders<LeaseEntity>.IndexKeys.Ascending(x => x.ExpiresAt),
             cancellationToken: context.CancellationToken
         );
     }

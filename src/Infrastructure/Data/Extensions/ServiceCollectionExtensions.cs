@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
             return services;
 
         services.AddHostedService<MongoMigrationHostedService>();
-        services.AddSingleton<IDbContext, MongoDbContext>();
+        services.AddScoped<IDbContext, MongoDbContext>();
         services.AddSingleton(sp =>
         {
             MongoClientSettings.Extensions.AddAWSAuthentication();
