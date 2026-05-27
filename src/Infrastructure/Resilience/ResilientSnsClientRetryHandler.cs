@@ -56,7 +56,7 @@ public class ResilientSnsClientRetryHandler(ILogger logger)
                     ct
                 );
 
-                if (result.Failed.Count == 0)
+                if (result.Failed == null || result.Failed.Count == 0)
                 {
                     return result;
                 }
