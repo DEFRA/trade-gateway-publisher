@@ -1,4 +1,6 @@
+using System.Diagnostics.Metrics;
 using Infrastructure.Leasing;
+using Infrastructure.Scheduler.Metrics;
 using Infrastructure.Watermark;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IJobExecutor, JobExecutor>();
         services.AddScoped<IJobWatermarkStore, JobWatermarkStore>();
         services.AddScoped<ILeaseProvider, LeaseProvider>();
-
+        services.AddSingleton(sp => new JobMetrics(sp.GetRequiredService<IMeterFactory>(), MetricNames.MeterName));
         return services;
     }
 }

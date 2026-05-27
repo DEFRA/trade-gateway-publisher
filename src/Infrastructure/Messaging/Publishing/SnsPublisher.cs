@@ -1,4 +1,5 @@
-﻿using Amazon.SimpleNotificationService;
+using System.Text.Json;
+using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 
 namespace Infrastructure.Messaging.Publishing;
@@ -59,5 +60,22 @@ public class SnsPublisher(
         }
 
         await pipeline();
+    }
+
+    public Task PublishAsync<T>(
+        string topicArn,
+        T message,
+        Dictionary<string, string>? headers = null,
+        string? subject = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (string.IsNullOrWhiteSpace(topicArn))
+            throw new ArgumentException("Topic ARN is required.", nameof(topicArn));
+
+        if (message is null)
+            throw new ArgumentException("Message is required.", nameof(message));
+
+        return PublishAsync(topicArn, JsonSerializer.Serialize(message), headers, subject, cancellationToken);
     }
 }

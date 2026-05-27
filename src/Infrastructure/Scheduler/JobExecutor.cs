@@ -23,14 +23,15 @@ public sealed class JobExecutor(IEnumerable<IJobMiddleware> middlewares, ILogger
 
                 return;
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                ////logger.LogInformation("{Job} cancelled during execution", job.Name);
-
-                throw;
-            }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    logger.LogInformation(ex, "{Job} cancelled during execution", job.Name);
+
+                    throw;
+                }
+
                 var isLastAttempt = attempt > maxRetries;
 
                 if (isLastAttempt)

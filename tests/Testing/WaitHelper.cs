@@ -1,4 +1,4 @@
-namespace Infrastructure.Tests
+namespace Testing
 {
     public static class WaitHelper
     {
