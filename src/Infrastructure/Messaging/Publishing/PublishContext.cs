@@ -19,6 +19,7 @@ namespace Infrastructure.Messaging.Publishing
                 TopicArn = TopicArn,
                 Message = MessageBody,
                 Subject = Subject,
+                MessageGroupId = Subject ?? Guid.CreateVersion7().ToString("N"),
             };
 
             foreach (var header in Headers)

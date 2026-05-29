@@ -3,15 +3,22 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
+using Defra.TradeImports.EmfExporter;
+using Infrastructure;
 using Infrastructure.Data.Extensions;
+using Infrastructure.Messaging.Consuming;
+using Infrastructure.Messaging.Extensions;
 using Infrastructure.Resilience;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
+using Infrastructure.TracesGateway.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
 using TradeGatewayPublisher.Config;
+using TradeGatewayPublisher.Consumers;
 using TradeGatewayPublisher.Health;
 using TradeGatewayPublisher.Jobs;
+using TradeGatewayPublisher.Jobs.Middleware;
 using TradeGatewayPublisher.Utils;
 using TradeGatewayPublisher.Utils.Http;
 using TradeGatewayPublisher.Utils.Logging;
@@ -31,6 +38,7 @@ static WebApplication BuildApp(string[] args)
 
     ConfigureMiddleware(app);
     ConfigureEndpoints(app);
+    app.UseEmfExporter(MetricNames.MeterName);
 
     return app;
 }
@@ -52,7 +60,12 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
 
     services.AddProblemDetails();
     services.AddValidation();
-
+    services.AddTracesGateway(configuration);
+    services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
+    services.AddMessaging(
+        configuration,
+        sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
+    );
     services.AddHttpContextAccessor();
 
     ConfigureHeaderPropagation(services, configuration);
@@ -137,9 +150,12 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
         );
     });
 
+    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
+    services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();
+    services.AddScoped<IJobMiddleware, JobWatermarkMiddleware>();
     services.AddScheduler(configuration);
     services.AddDbContext(configuration, integrationTest);
-    services.AddSingleton<ICronJob, ExampleJob>();
+    services.AddSingleton<ICronJob, TracesIntraChangesJob>();
 }
 
 [ExcludeFromCodeCoverage]

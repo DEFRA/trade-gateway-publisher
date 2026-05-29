@@ -18,14 +18,20 @@ public static class ServiceCollectionExtensions
                 tags: [WebApplicationExtensions.Extended]
             )
             .AddSns(
-                "SNS",
-                sp => sp.GetRequiredService<IOptions<TracesUpdatePublisherOptions>>().Value.TopicArn,
+                "SNS - Intra Internal ",
+                sp => sp.GetRequiredService<IOptions<TracesUpdatePublisherOptions>>().Value.IntraInternalTopicArn,
+                tags: [WebApplicationExtensions.Extended],
+                timeout: TimeSpan.FromSeconds(10)
+            )
+            .AddSns(
+                "SNS - Intra External ",
+                sp => sp.GetRequiredService<IOptions<TracesUpdatePublisherOptions>>().Value.IntraTopicArn,
                 tags: [WebApplicationExtensions.Extended],
                 timeout: TimeSpan.FromSeconds(10)
             )
             .AddSqs(
-                "SQS",
-                sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.QueueUrl,
+                "SQS - Intra Internal",
+                sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl,
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
             );

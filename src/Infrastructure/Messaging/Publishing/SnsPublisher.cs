@@ -16,6 +16,7 @@ public class SnsPublisher(
         string messageBody,
         Dictionary<string, string>? headers = null,
         string? subject = null,
+        string? duplicationId = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -47,6 +48,7 @@ public class SnsPublisher(
         Task PublishCore()
         {
             var request = context.ToPublishRequest();
+            request.MessageDeduplicationId = duplicationId;
             return snsClient.PublishAsync(request, cancellationToken);
         }
 
@@ -69,6 +71,7 @@ public class SnsPublisher(
         string? subject = null,
         CancellationToken cancellationToken = default
     )
+        where T : IMessage
     {
         if (string.IsNullOrWhiteSpace(topicArn))
             throw new ArgumentException("Topic ARN is required.", nameof(topicArn));
@@ -76,6 +79,13 @@ public class SnsPublisher(
         if (message is null)
             throw new ArgumentException("Message is required.", nameof(message));
 
-        return PublishAsync(topicArn, JsonSerializer.Serialize(message), headers, subject, cancellationToken);
+        return PublishAsync(
+            topicArn,
+            JsonSerializer.Serialize(message),
+            headers,
+            subject,
+            message.DuplicationId,
+            cancellationToken
+        );
     }
 }

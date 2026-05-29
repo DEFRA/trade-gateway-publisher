@@ -9,7 +9,8 @@ services:
       - 'compose/aws.env'
     environment:
       FLOCI_DEFAULT_REGION: eu-west-2
-
+      FLOCI_HOSTNAME: floci
+      FLOCI_STORAGE_MODE: hybrid
     healthcheck:
       test:
         [
@@ -21,7 +22,23 @@ services:
       retries: 20
       start_period: 15s
     volumes:
-       - ./compose/floci/ready.d:/etc/floci/init/ready.d:ro
+      - ./compose/floci/ready.d:/etc/floci/init/ready.d:ro
+    networks:
+      - cdp-tenant
+
+  floci-ui:
+    build:
+      context: https://github.com/floci-io/floci-ui.git
+    container_name: floci-ui
+    ports:
+      - "3000:3000"
+    environment:
+      AWS_ENDPOINT_URL: http://floci:4566
+      AWS_REGION: eu-west-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    depends_on:
+      - floci
     networks:
       - cdp-tenant
 
@@ -72,6 +89,20 @@ services:
       Mongo__DatabaseUri: mongodb://mongodb:27017/
     networks:
       - cdp-tenant
+
+  wiremock:
+    image: "holomekc/wiremock-gui:latest"
+    container_name: my_wiremock
+    ports:
+      # This is just an example of a port mapping
+      - "8088:8089"
+      - "8084:8088"
+    command:
+      "--port 8089 --https-port 8088 --max-request-journal 1000 --local-response-templating"
+    volumes:
+      - ./root-dir:/home/wiremock
+    environment:
+      WIREMOCK_MY_VAR: "systemValue response templating feature"
 
 ################################################################################
 

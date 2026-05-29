@@ -5,30 +5,41 @@ set -e
 AWS_ENDPOINT="http://floci:4566"
 REGION="eu-west-2"
 
-TOPIC_NAME="trade-gateway-traces-updates.fifo"
-QUEUE_NAME="trade-gateway-traces-update.fifo"
-DLQUEUE_NAME="trade-gateway-traces-update-deadletter.fifo"
+INTRA_INTERNAL_TOPIC_NAME="trade_gateway_intra_stream_internal.fifo"
+INTRA_TOPIC_NAME="trade_gateway_intra_updates.fifo"
+INTRA_INTERNAL_QUEUE_NAME="trade_gateway_intra_stream_publisher_internal.fifo"
+INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_intra_stream_publisher_internal-deadletter.fifo"
 
 echo "Creating SNS FIFO topic..."
-TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
-  --name "$TOPIC_NAME" \
+INTRA_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
+  --name "$INTRA_INTERNAL_TOPIC_NAME" \
   --attributes FifoTopic=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'TopicArn' \
   --output text)
 
-echo "Topic ARN: $TOPIC_ARN"
+echo "Topic ARN: $INTRA_TOPIC_ARN"
+
+
+INTRA_INTERNAL_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
+  --name "$INTRA_TOPIC_NAME" \
+  --attributes FifoTopic=true,ContentBasedDeduplication=true \
+  --region $REGION \
+  --query 'TopicArn' \
+  --output text)
+
+echo "Topic ARN: $INTRA_INTERNAL_TOPIC_ARN"
 
 echo "Creating SQS FIFO queue..."
 QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
-  --queue-name "$QUEUE_NAME" \
+  --queue-name "$INTRA_INTERNAL_QUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'QueueUrl' \
   --output text)
 
 DLQUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
-  --queue-name "$DLQUEUE_NAME" \
+  --queue-name "$INTRA_INTERNAL_DLQUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'QueueUrl' \
@@ -49,12 +60,13 @@ echo "Applying SQS policy to allow SNS publishing..."
 
 
 
-echo "Subscribing queue to topic..."
+echo "Subscribing queue: "$QUEUE_ARN" to topic: $INTRA_TOPIC_ARN"
 
 aws --endpoint-url=$AWS_ENDPOINT sns subscribe \
-  --topic-arn "$TOPIC_ARN" \
+  --topic-arn "$INTRA_TOPIC_ARN" \
   --protocol sqs \
   --notification-endpoint "$QUEUE_ARN" \
+  --attributes '{"RawMessageDelivery": "true"}' \
   --region $REGION
 
 echo "Done."
@@ -65,9 +77,9 @@ aws --endpoint-url=$AWS_ENDPOINT sqs set-queue-attributes --queue-url $QUEUE_URL
 
 
 function is_ready() {
-    aws --endpoint-url=$AWS_ENDPOINT sns list-topics --query "Topics[?ends_with(TopicArn, ':${TOPIC_NAME}')].TopicArn" || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${QUEUE_NAME} || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${DLQUEUE_NAME} || return 1
+    aws --endpoint-url=$AWS_ENDPOINT sns list-topics --query "Topics[?ends_with(TopicArn, ':${INTRA_INTERNAL_TOPIC_NAME}')].TopicArn" || return 1
+    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_INTERNAL_QUEUE_NAME} || return 1
+    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_INTERNAL_DLQUEUE_NAME} || return 1
     return 0
 }
 
