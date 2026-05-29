@@ -7,5 +7,5 @@ public class TracesUpdateConsumerOptions
     public const string SectionName = "TracesUpdateConsumer";
 
     [Required]
-    public required string QueueUrl { get; init; }
+    public required string IntraQueueUrl { get; init; }
 }

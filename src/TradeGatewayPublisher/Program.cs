@@ -6,6 +6,7 @@ using Amazon.SQS;
 using Defra.TradeImports.EmfExporter;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
+using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Resilience;
 using Infrastructure.Scheduler;
@@ -14,6 +15,7 @@ using Infrastructure.TracesGateway.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
 using TradeGatewayPublisher.Config;
+using TradeGatewayPublisher.Consumers;
 using TradeGatewayPublisher.Health;
 using TradeGatewayPublisher.Jobs;
 using TradeGatewayPublisher.Jobs.Middleware;
@@ -59,7 +61,11 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
     services.AddProblemDetails();
     services.AddValidation();
     services.AddTracesGateway(configuration);
-    services.AddMessaging(configuration);
+    services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
+    services.AddMessaging(
+        configuration,
+        sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
+    );
     services.AddHttpContextAccessor();
 
     ConfigureHeaderPropagation(services, configuration);

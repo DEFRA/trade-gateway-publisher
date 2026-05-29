@@ -7,6 +7,7 @@ public interface ISnsPublisher
         string messageBody,
         Dictionary<string, string>? headers = null,
         string? subject = null,
+        string? duplicationId = null,
         CancellationToken cancellationToken = default
     );
 
@@ -16,5 +17,6 @@ public interface ISnsPublisher
         Dictionary<string, string>? headers = null,
         string? subject = null,
         CancellationToken cancellationToken = default
-    );
+    )
+        where T : IMessage;
 }

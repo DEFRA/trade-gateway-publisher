@@ -1,3 +1,4 @@
+using Infrastructure.Messaging;
 using Refit;
 
 namespace Infrastructure.TracesGateway
@@ -19,5 +20,8 @@ namespace Infrastructure.TracesGateway
 
     public record FindIntraUpdatesResponse(List<FindIntraUpdatesResponseRecord> Data);
 
-    public record FindIntraUpdatesResponseRecord(string Id, DateTime Timestamp);
+    public record FindIntraUpdatesResponseRecord(string Id, DateTime Timestamp) : IMessage
+    {
+        public string DuplicationId { get; } = Id;
+    }
 }

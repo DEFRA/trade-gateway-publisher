@@ -18,7 +18,13 @@ public class TracesIntraChangesJobTests
 
     public TracesIntraChangesJobTests()
     {
-        _options = Options.Create(new TracesUpdatePublisherOptions { TopicArn = "test-topic" });
+        _options = Options.Create(
+            new TracesUpdatePublisherOptions
+            {
+                IntraTopicArn = "test-topic",
+                IntraInternalTopicArn = "test-internal-topic",
+            }
+        );
 
         _sut = new TracesIntraChangesJob(_gateway, _sns, _options);
     }

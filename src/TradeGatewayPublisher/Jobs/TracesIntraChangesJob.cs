@@ -35,7 +35,11 @@ public sealed class TracesIntraChangesJob(
             foreach (var update in updatesResponse.Data)
             {
                 // Publish each update to SNS - this could prob become a batch
-                await snsPublisher.PublishAsync(options.Value.TopicArn, update, cancellationToken: cancellationToken);
+                await snsPublisher.PublishAsync(
+                    options.Value.IntraInternalTopicArn,
+                    update,
+                    cancellationToken: cancellationToken
+                );
             }
             if (hasMoreUpdates)
                 offset += pageSize;
