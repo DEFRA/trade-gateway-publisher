@@ -57,7 +57,13 @@ public class TracesIntraChangesJobTests
 
         // Assert
         await _sns.Received(2)
-            .PublishAsync("test-internal-topic", Arg.Any<IMessage>(), Arg.Any<Dictionary<string, string>>(), Arg.Any<string>(), cancellationToken: Arg.Any<CancellationToken>());
+            .PublishAsync(
+                "test-internal-topic",
+                Arg.Any<IMessage>(),
+                Arg.Any<Dictionary<string, string>>(),
+                Arg.Any<string>(),
+                cancellationToken: Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
