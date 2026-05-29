@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Infrastructure.TracesGateway;
@@ -56,7 +57,7 @@ public class TracesIntraChangesJobTests
 
         // Assert
         await _sns.Received(2)
-            .PublishAsync("test-topic", Arg.Any<object>(), cancellationToken: Arg.Any<CancellationToken>());
+            .PublishAsync("test-topic", Arg.Any<IMessage>(), Arg.Any<Dictionary<string, string>>(), Arg.Any<string>(), cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -84,7 +85,7 @@ public class TracesIntraChangesJobTests
         await _sns.DidNotReceive()
             .PublishAsync(
                 Arg.Any<string>(),
-                Arg.Any<object>(),
+                Arg.Any<IMessage>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Any<CancellationToken>()
