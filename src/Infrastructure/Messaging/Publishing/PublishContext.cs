@@ -20,6 +20,7 @@ namespace Infrastructure.Messaging.Publishing
                 Message = MessageBody,
                 Subject = Subject,
                 MessageGroupId = Subject ?? Guid.CreateVersion7().ToString("N"),
+                MessageAttributes = [],
             };
 
             foreach (var header in Headers)
@@ -28,6 +29,18 @@ namespace Infrastructure.Messaging.Publishing
             }
 
             return request;
+        }
+
+        public void SetTraceId(string? traceId)
+        {
+            if (!string.IsNullOrEmpty(traceId))
+            {
+                Headers[MetricNames.TraceKey] = new MessageAttributeValue
+                {
+                    DataType = "String",
+                    StringValue = traceId,
+                };
+            }
         }
     }
 }

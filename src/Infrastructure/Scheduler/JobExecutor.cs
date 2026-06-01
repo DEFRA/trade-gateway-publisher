@@ -1,13 +1,19 @@
+using Defra.TradeImports.Tracing;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Scheduler;
 
-public sealed class JobExecutor(IEnumerable<IJobMiddleware> middlewares, ILogger<JobExecutor> logger) : IJobExecutor
+public sealed class JobExecutor(
+    IEnumerable<IJobMiddleware> middlewares,
+    ILogger<JobExecutor> logger,
+    ITraceContextAccessor traceContextAccessor
+) : IJobExecutor
 {
     private readonly IReadOnlyList<IJobMiddleware> _middlewares = middlewares.ToList();
 
     public async Task ExecuteAsync(ICronJob job, JobSettings settings, CancellationToken cancellationToken)
     {
+        traceContextAccessor.Context = new TraceContext() { TraceId = Guid.CreateVersion7().ToString("N") };
         var context = new JobContext(Guid.CreateVersion7().ToString(), job.Name);
         var maxRetries = Math.Max(0, settings.MaxRetries);
 

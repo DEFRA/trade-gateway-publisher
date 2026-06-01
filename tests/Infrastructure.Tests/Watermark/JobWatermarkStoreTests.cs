@@ -1,9 +1,12 @@
 #nullable enable
 using System.Globalization;
+using System.Linq.Expressions;
 using Infrastructure.Data.Entities;
 using Infrastructure.Watermark;
 using Microsoft.Extensions.Logging.Abstractions;
-using Testing.Data.InMemoryData;
+using MongoDB.Driver;
+using NSubstitute;
+using Testing.Data;
 
 namespace Infrastructure.Tests.Watermark;
 
@@ -31,10 +34,10 @@ public class JobWatermarkStoreTests
             new JobWatermarkEntity { Id = "other-job", Watermark = expectedWatermark.DateTime },
         };
 
-        var db = new MemoryDbContext();
-        db.Watermarks.AddTestData(items);
+        var collection = new FakeCollection<JobWatermarkEntity>();
+        collection.AddRange(items);
 
-        var sut = new JobWatermarkStore(db, NullLogger<JobWatermarkStore>.Instance);
+        var sut = new JobWatermarkStore(collection.Collection, NullLogger<JobWatermarkStore>.Instance);
 
         // Act
         var result = await sut.GetAsync(jobName, CancellationToken.None);
@@ -57,9 +60,9 @@ public class JobWatermarkStoreTests
     public async Task SetAsync_NewJob_PersistsWatermark()
     {
         // Arrange
-        var db = new MemoryDbContext();
+        var collection = new FakeCollection<JobWatermarkEntity>();
 
-        var sut = new JobWatermarkStore(db, NullLogger<JobWatermarkStore>.Instance);
+        var sut = new JobWatermarkStore(collection.Collection, NullLogger<JobWatermarkStore>.Instance);
 
         var watermark = DateTimeOffset.Parse("2026-05-26T12:30:45.0000000+00:00", CultureInfo.InvariantCulture);
 
@@ -91,10 +94,10 @@ public class JobWatermarkStoreTests
             new() { Id = "existing-job", Watermark = originalWatermark.UtcDateTime },
         };
 
-        var db = new MemoryDbContext();
-        db.Watermarks.AddTestData(items);
+        var collection = new FakeCollection<JobWatermarkEntity>();
+        collection.AddRange(items);
 
-        var sut = new JobWatermarkStore(db, NullLogger<JobWatermarkStore>.Instance);
+        var sut = new JobWatermarkStore(collection.Collection, NullLogger<JobWatermarkStore>.Instance);
 
         // Act
         await sut.SetAsync("existing-job", updatedWatermark, CancellationToken.None);
@@ -128,10 +131,10 @@ public class JobWatermarkStoreTests
             new() { Id = "job-b", Watermark = untouchedWatermark.UtcDateTime },
         };
 
-        var db = new MemoryDbContext();
-        db.Watermarks.AddTestData(items);
+        var collection = new FakeCollection<JobWatermarkEntity>();
+        collection.AddRange(items);
 
-        var sut = new JobWatermarkStore(db, NullLogger<JobWatermarkStore>.Instance);
+        var sut = new JobWatermarkStore(collection.Collection, NullLogger<JobWatermarkStore>.Instance);
 
         // Act
         await sut.SetAsync("job-b", newWatermark, CancellationToken.None);
@@ -157,9 +160,9 @@ public class JobWatermarkStoreTests
 
         var expectedUtc = input.ToUniversalTime();
 
-        var db = new MemoryDbContext();
+        var collection = new FakeCollection<JobWatermarkEntity>();
 
-        var sut = new JobWatermarkStore(db, NullLogger<JobWatermarkStore>.Instance);
+        var sut = new JobWatermarkStore(collection.Collection, NullLogger<JobWatermarkStore>.Instance);
 
         // Act
         await sut.SetAsync("utc-job", input, CancellationToken.None);

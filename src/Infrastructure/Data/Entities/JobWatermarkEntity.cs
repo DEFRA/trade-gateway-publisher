@@ -1,15 +1,11 @@
-using Infrastructure.Data.Configuration;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Infrastructure.Data.Entities
+namespace Infrastructure.Data.Entities;
+
+public sealed class JobWatermarkEntity : IDataEntity
 {
-    [DbCollection("job_watermarks")]
-    public sealed class JobWatermarkEntity : IDataEntity
-    {
-        [BsonId]
-        public required string Id { get; set; }
-        public DateTime Created { get; set; }
-        public DateTime Updated { get; set; }
-        public DateTime Watermark { get; set; }
-    }
+    [BsonId]
+    public required string Id { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime Watermark { get; set; }
 }

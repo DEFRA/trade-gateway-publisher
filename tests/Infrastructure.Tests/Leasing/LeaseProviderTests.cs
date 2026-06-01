@@ -2,7 +2,8 @@
 using Infrastructure.Data.Entities;
 using Infrastructure.Leasing;
 using Microsoft.Extensions.Logging.Abstractions;
-using Testing.Data.InMemoryData;
+using Testing.Data;
+using Xunit.Abstractions;
 
 namespace Infrastructure.Tests.Leasing;
 
@@ -17,9 +18,9 @@ public class LeaseProviderTests
     public async Task TryAcquireAsync_WhenLeaseDoesNotExist_ReturnsLeaseHandle()
     {
         // Arrange
-        var db = new MemoryDbContext();
+        var collection = new FakeCollection<LeaseEntity>();
 
-        var sut = new LeaseProvider(db, NullLogger<LeaseProvider>.Instance);
+        var sut = new LeaseProvider(collection.Collection, NullLogger<LeaseProvider>.Instance);
 
         // Act
         var result = await sut.TryAcquireAsync("test-lease", TimeSpan.FromMinutes(5), CancellationToken.None);
@@ -27,7 +28,7 @@ public class LeaseProviderTests
         // Assert
         Assert.NotNull(result);
 
-        var persisted = await db.Leases.Find("test-lease", CancellationToken.None);
+        var persisted = collection._items.Find(x => x.Id == "test-lease");
 
         Assert.NotNull(persisted);
         Assert.Equal("test-lease", persisted!.Id);
@@ -53,10 +54,10 @@ public class LeaseProviderTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
         };
 
-        var db = new MemoryDbContext();
-        db.Leases.AddTestData([existingLease]);
+        var collection = new FakeCollection<LeaseEntity>();
+        collection.Add(existingLease);
 
-        var sut = new LeaseProvider(db, NullLogger<LeaseProvider>.Instance);
+        var sut = new LeaseProvider(collection.Collection, NullLogger<LeaseProvider>.Instance);
 
         // Act
         var result = await sut.TryAcquireAsync("existing-lease", TimeSpan.FromMinutes(5), CancellationToken.None);
@@ -64,7 +65,7 @@ public class LeaseProviderTests
         // Assert
         Assert.Null(result);
 
-        var persisted = await db.Leases.Find("existing-lease", CancellationToken.None);
+        var persisted = collection._items.Find(x => x.Id == "existing-lease");
 
         Assert.NotNull(persisted);
         Assert.Equal("existing-owner", persisted!.Owner);
@@ -86,10 +87,10 @@ public class LeaseProviderTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(15),
         };
 
-        var db = new MemoryDbContext();
-        db.Leases.AddTestData([existingLease]);
+        var collection = new FakeCollection<LeaseEntity>();
+        collection.Add(existingLease);
 
-        var sut = new LeaseProvider(db, NullLogger<LeaseProvider>.Instance);
+        var sut = new LeaseProvider(collection.Collection, NullLogger<LeaseProvider>.Instance);
 
         // Act
         var result = await sut.TryAcquireAsync("lease-b", TimeSpan.FromMinutes(5), CancellationToken.None);
@@ -97,8 +98,8 @@ public class LeaseProviderTests
         // Assert
         Assert.NotNull(result);
 
-        var leaseA = await db.Leases.Find("lease-a", CancellationToken.None);
-        var leaseB = await db.Leases.Find("lease-b", CancellationToken.None);
+        var leaseA = collection._items.Find(x => x.Id == "lease-a");
+        var leaseB = collection._items.Find(x => x.Id == "lease-b");
 
         Assert.NotNull(leaseA);
         Assert.NotNull(leaseB);
@@ -116,9 +117,9 @@ public class LeaseProviderTests
     public async Task TryAcquireAsync_SetsExpectedExpiration()
     {
         // Arrange
-        var db = new MemoryDbContext();
+        var collection = new FakeCollection<LeaseEntity>();
 
-        var sut = new LeaseProvider(db, NullLogger<LeaseProvider>.Instance);
+        var sut = new LeaseProvider(collection.Collection, NullLogger<LeaseProvider>.Instance);
 
         var duration = TimeSpan.FromMinutes(10);
 
@@ -130,7 +131,7 @@ public class LeaseProviderTests
         var after = DateTime.UtcNow;
 
         // Assert
-        var persisted = await db.Leases.Find("timed-lease", CancellationToken.None);
+        var persisted = collection._items.Find(x => x.Id == "timed-lease");
 
         Assert.NotNull(persisted);
 
@@ -152,9 +153,9 @@ public class LeaseProviderTests
     public async Task TryAcquireAsync_DisposingHandle_ReleasesLease()
     {
         // Arrange
-        var db = new MemoryDbContext();
+        var collection = new FakeCollection<LeaseEntity>();
 
-        var sut = new LeaseProvider(db, NullLogger<LeaseProvider>.Instance);
+        var sut = new LeaseProvider(collection.Collection, NullLogger<LeaseProvider>.Instance);
 
         // Act
         var handle = await sut.TryAcquireAsync("disposable-lease", TimeSpan.FromMinutes(5), CancellationToken.None);
@@ -164,7 +165,7 @@ public class LeaseProviderTests
         await handle!.DisposeAsync();
 
         // Assert
-        var persisted = await db.Leases.Find("disposable-lease", CancellationToken.None);
+        var persisted = collection._items.Find(x => x.Id == "disposable-lease");
 
         Assert.Null(persisted);
     }

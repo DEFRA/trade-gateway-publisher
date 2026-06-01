@@ -66,7 +66,12 @@ public class SqsConsumerBackgroundService(
 
     private async Task ProcessMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        var context = new MessageContext { Message = message, QueueUrl = QueueUrl };
+        var context = new MessageContext
+        {
+            Message = message,
+            QueueUrl = QueueUrl,
+            ConsumerType = consumer.GetType(),
+        };
 
         Task ConsumerCore()
         {

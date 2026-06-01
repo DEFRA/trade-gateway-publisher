@@ -4,6 +4,7 @@ using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Defra.TradeImports.EmfExporter;
+using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
 using Infrastructure.Messaging.Consuming;
@@ -15,9 +16,8 @@ using Infrastructure.TracesGateway.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
 using TradeGatewayPublisher.Config;
-using TradeGatewayPublisher.Consumers;
+using TradeGatewayPublisher.Features.IntraChanges;
 using TradeGatewayPublisher.Health;
-using TradeGatewayPublisher.Jobs;
 using TradeGatewayPublisher.Jobs.Middleware;
 using TradeGatewayPublisher.Utils;
 using TradeGatewayPublisher.Utils.Http;
@@ -67,6 +67,7 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
         sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
     );
     services.AddHttpContextAccessor();
+    services.AddTraceContextAccessor(configuration);
 
     ConfigureHeaderPropagation(services, configuration);
     ConfigureHttpClients(services);
@@ -98,7 +99,6 @@ static void ConfigureHttpClients(IServiceCollection services)
 [ExcludeFromCodeCoverage]
 static void ConfigureAppServices(IServiceCollection services, IConfiguration configuration, bool integrationTest)
 {
-    services.AddOptions<LocalStackOptions>().Bind(configuration);
     services
         .AddOptions<TracesUpdatePublisherOptions>()
         .Bind(configuration.GetSection(TracesUpdatePublisherOptions.SectionName))
@@ -107,48 +107,6 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
         .AddOptions<TracesUpdateConsumerOptions>()
         .Bind(configuration.GetSection(TracesUpdateConsumerOptions.SectionName))
         .ValidateOnStart();
-    services.AddSingleton<IAmazonSimpleNotificationService>(sp =>
-    {
-        var logger = sp.GetRequiredService<ILogger<ResilientSnsClient>>();
-
-        var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
-        if (localStackOptions.UseLocalStack == false)
-            return new ResilientSnsClient(logger);
-
-        return new ResilientSnsClient(
-            logger,
-            new BasicAWSCredentials(localStackOptions.AccessKeyId, localStackOptions.SecretAccessKey),
-            new AmazonSimpleNotificationServiceConfig
-            {
-                // https://github.com/aws/aws-sdk-net/issues/1781
-                AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
-                RegionEndpoint = RegionEndpoint.GetBySystemName(
-                    localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
-                ),
-                ServiceURL = localStackOptions.SnsEndpoint,
-            }
-        );
-    });
-
-    services.AddSingleton<IAmazonSQS>(sp =>
-    {
-        var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
-        if (localStackOptions.UseLocalStack == false)
-            return new AmazonSQSClient();
-
-        return new AmazonSQSClient(
-            new BasicAWSCredentials(localStackOptions.AccessKeyId, localStackOptions.SecretAccessKey),
-            new AmazonSQSConfig
-            {
-                // https://github.com/aws/aws-sdk-net/issues/1781
-                AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
-                RegionEndpoint = RegionEndpoint.GetBySystemName(
-                    localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
-                ),
-                ServiceURL = localStackOptions.SqsEndpoint,
-            }
-        );
-    });
 
     services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();

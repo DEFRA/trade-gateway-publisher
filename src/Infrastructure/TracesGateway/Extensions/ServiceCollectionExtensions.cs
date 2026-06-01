@@ -27,8 +27,10 @@ public static class ServiceCollectionExtensions
                     var options = sp.GetRequiredService<IOptions<TracesGatewayOptions>>().Value;
                     c.BaseAddress = new Uri(options.BaseUrl);
                 }
-            );
+            )
+            .AddHttpMessageHandler<TracingDelegatingHandler>();
 
+        services.AddSingleton<TracingDelegatingHandler>();
         return services;
     }
 }
