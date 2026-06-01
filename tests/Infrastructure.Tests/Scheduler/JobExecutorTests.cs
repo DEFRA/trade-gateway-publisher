@@ -1,4 +1,5 @@
 #nullable enable
+using Defra.TradeImports.Tracing;
 using Infrastructure.Scheduler;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -14,7 +15,7 @@ public class JobExecutorTests
 
         var settings = new JobSettings { MaxRetries = 3, RetryDelaySeconds = 1 };
 
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
 
         // Act
         await sut.ExecuteAsync(job, settings, CancellationToken.None);
@@ -31,7 +32,7 @@ public class JobExecutorTests
 
         var settings = new JobSettings { MaxRetries = 3, RetryDelaySeconds = 0 };
 
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
 
         // Act
         await sut.ExecuteAsync(job, settings, CancellationToken.None);
@@ -48,7 +49,7 @@ public class JobExecutorTests
 
         var settings = new JobSettings { MaxRetries = 2, RetryDelaySeconds = 0 };
 
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -72,7 +73,7 @@ public class JobExecutorTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
 
         // Act & Assert
         await Assert.ThrowsAsync<OperationCanceledException>(() => sut.ExecuteAsync(job, settings, cts.Token));
@@ -90,7 +91,7 @@ public class JobExecutorTests
 
         var settings = new JobSettings { MaxRetries = 3, RetryDelaySeconds = 0 };
 
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
 
         // Act & Assert
         await Assert.ThrowsAsync<OperationCanceledException>(() => sut.ExecuteAsync(job, settings, cts.Token));
@@ -112,7 +113,11 @@ public class JobExecutorTests
 
         var settings = new JobSettings { MaxRetries = 0, RetryDelaySeconds = 0 };
 
-        var sut = new JobExecutor([middleware1, middleware2], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor(
+            [middleware1, middleware2],
+            NullLogger<JobExecutor>.Instance,
+            new TraceContextAccessor()
+        );
 
         // Act
         await sut.ExecuteAsync(job, settings, CancellationToken.None);
@@ -132,7 +137,7 @@ public class JobExecutorTests
 
         var settings = new JobSettings { MaxRetries = -10, RetryDelaySeconds = 0 };
 
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance);
+        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>

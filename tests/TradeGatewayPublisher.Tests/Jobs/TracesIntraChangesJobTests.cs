@@ -6,7 +6,7 @@ using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using TradeGatewayPublisher.Config;
-using TradeGatewayPublisher.Jobs;
+using TradeGatewayPublisher.Features.IntraChanges;
 
 namespace TradeGatewayPublisher.Tests.Jobs;
 

@@ -1,14 +1,12 @@
-using Infrastructure.Data;
 using Infrastructure.Data.Entities;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
 namespace Infrastructure.Leasing;
 
-public sealed class LeaseProvider(IDbContext db, ILogger<LeaseProvider> logger) : ILeaseProvider
+public sealed class LeaseProvider(IMongoCollection<LeaseEntity> collection, ILogger<LeaseProvider> logger)
+    : ILeaseProvider
 {
-    private readonly IMongoCollectionSet<LeaseEntity> _collection = db.Leases;
-
     private readonly string _instanceId = $"{Environment.MachineName}-{Guid.NewGuid():N}";
 
     public async Task<IAsyncDisposable?> TryAcquireAsync(
@@ -26,14 +24,14 @@ public sealed class LeaseProvider(IDbContext db, ILogger<LeaseProvider> logger) 
             Id = leaseName,
             Owner = _instanceId,
             ExpiresAt = expiresAt,
+            CreatedAt = now,
         };
 
         try
         {
-            _collection.Insert(replacement);
-            await _collection.Save(cancellationToken);
+            await collection.InsertOneAsync(replacement, cancellationToken: cancellationToken);
             logger.LogInformation("Acquired lease {LeaseName} until {ExpiresAt}", leaseName, expiresAt);
-            return new LeaseHandle(_collection, leaseName, _instanceId);
+            return new LeaseHandle(collection, leaseName, _instanceId);
         }
         catch (MongoWriteException ex)
         {

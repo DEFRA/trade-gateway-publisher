@@ -4,7 +4,7 @@ using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
 using TradeGatewayPublisher.Config;
 
-namespace TradeGatewayPublisher.Jobs;
+namespace TradeGatewayPublisher.Features.IntraChanges;
 
 public sealed class TracesIntraChangesJob(
     ITracesGateway tracesGateway,

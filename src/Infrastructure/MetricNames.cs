@@ -6,4 +6,5 @@ namespace Infrastructure;
 public static class MetricNames
 {
     public const string MeterName = "Trade.Gateway.Publisher";
+    public const string TraceKey = "x-cdp-request-id";
 }

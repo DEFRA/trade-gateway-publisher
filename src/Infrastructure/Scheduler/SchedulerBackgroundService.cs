@@ -31,7 +31,7 @@ public class SchedulerBackgroundService(
                 .. cronJobs.Select(job =>
                     (
                         JobName: job.Name,
-                        Expression: CronExpression.Parse(_settings.Jobs[job.Name].Cron, CronFormat.IncludeSeconds)
+                        Expression: CronExpression.Parse(_settings.Jobs[job.Name].Cron, CronFormat.Standard)
                     )
                 ),
             ];

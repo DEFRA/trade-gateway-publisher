@@ -1,16 +1,19 @@
-using Infrastructure.Data;
 using Infrastructure.Data.Entities;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 namespace Infrastructure.Watermark;
 
-public sealed class JobWatermarkStore(IDbContext database, ILogger<JobWatermarkStore> logger) : IJobWatermarkStore
+public sealed class JobWatermarkStore(
+    IMongoCollection<JobWatermarkEntity> collection,
+    ILogger<JobWatermarkStore> logger
+) : IJobWatermarkStore
 {
-    private readonly IMongoCollectionSet<JobWatermarkEntity> _collection = database.Watermarks;
-
     public async Task<DateTimeOffset?> GetAsync(string jobName, CancellationToken cancellationToken = default)
     {
-        var document = await _collection.Find(jobName, cancellationToken);
+        var document = await (
+            await collection.FindAsync(x => x.Id == jobName, cancellationToken: cancellationToken)
+        ).FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
         if (document is null)
         {
@@ -26,9 +29,18 @@ public sealed class JobWatermarkStore(IDbContext database, ILogger<JobWatermarkS
 
     public async Task SetAsync(string jobName, DateTimeOffset watermark, CancellationToken cancellationToken = default)
     {
-        var entity = new JobWatermarkEntity() { Id = jobName, Watermark = watermark.UtcDateTime };
-        _collection.Upsert(entity);
-        await _collection.Save(cancellationToken);
+        var entity = new JobWatermarkEntity()
+        {
+            Id = jobName,
+            Watermark = watermark.UtcDateTime,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        await collection.ReplaceOneAsync(
+            x => x.Id == jobName,
+            entity,
+            new ReplaceOptions() { IsUpsert = true },
+            cancellationToken
+        );
         logger.LogInformation("Updated watermark for {JobName} to {Watermark}", jobName, watermark);
     }
 }

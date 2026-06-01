@@ -11,6 +11,4 @@ public class MongoDbOptions
 
     [Required]
     public string? DatabaseName { get; set; }
-
-    public bool QueryLogging { get; set; }
 }

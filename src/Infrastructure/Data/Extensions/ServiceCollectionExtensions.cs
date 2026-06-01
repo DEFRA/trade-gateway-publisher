@@ -1,4 +1,4 @@
-using Infrastructure.Data.Mongo;
+using Infrastructure.Data.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -25,8 +25,6 @@ public static class ServiceCollectionExtensions
         if (integrationTest)
             return services;
 
-        services.AddHostedService<MongoMigrationHostedService>();
-        services.AddScoped<IDbContext, MongoDbContext>();
         services.AddSingleton(sp =>
         {
             MongoClientSettings.Extensions.AddAWSAuthentication();
@@ -47,6 +45,35 @@ public static class ServiceCollectionExtensions
 
             return client.GetDatabase(options.Value.DatabaseName);
         });
+
+        services.AddSingleton<IMongoCollection<LeaseEntity>>(sp =>
+        {
+            var collection = sp.GetRequiredService<IMongoDatabase>().GetCollection<LeaseEntity>("leases");
+
+            var indexModel = new CreateIndexModel<LeaseEntity>(
+                Builders<LeaseEntity>.IndexKeys.Ascending(x => x.ExpiresAt),
+                new CreateIndexOptions
+                {
+                    Name = "ExpiresAtTtlIdx",
+                    Background = true,
+                    ExpireAfter = TimeSpan.FromMinutes(5),
+                }
+            );
+            try
+            {
+                collection.Indexes.CreateOne(indexModel);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            return collection;
+        });
+
+        services.AddSingleton<IMongoCollection<JobWatermarkEntity>>(sp =>
+            sp.GetRequiredService<IMongoDatabase>().GetCollection<JobWatermarkEntity>("job_watermarks")
+        );
 
         return services;
     }

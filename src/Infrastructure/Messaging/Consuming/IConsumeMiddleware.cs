@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Messaging.Consuming;
+namespace Infrastructure.Messaging.Consuming;
 
 public interface IConsumeMiddleware
 {

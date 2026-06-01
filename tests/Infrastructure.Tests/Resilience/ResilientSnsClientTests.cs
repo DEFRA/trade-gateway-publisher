@@ -4,20 +4,20 @@ using Amazon.SimpleNotificationService.Model;
 using AwesomeAssertions;
 using Infrastructure.Resilience;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 
 namespace Infrastructure.Tests.Resilience;
 
 public class ResilientSnsClientTests
 {
-    private readonly ResilientSnsClientRetryHandler _handler = new(Mock.Of<ILogger<ResilientSnsClientTests>>());
+    private readonly ResilientSnsClientRetryHandler _handler = new(Substitute.For<ILogger<ResilientSnsClientTests>>());
 
     [Fact]
     public async Task PublishWithRetryAsync_WhenTransientEntryFailuresOccur_RetriesOnlyFailedEntries()
     {
         var entries = Enumerable
             .Range(5, 5)
-            .Select(i => new PublishBatchRequestEntry { Id = $"mrn-${i}-gmr123", Message = "gmr-data" })
+            .Select(i => new PublishBatchRequestEntry { Id = $"mrn-{i}-gmr123", Message = "gmr-data" })
             .ToList();
 
         var request = new PublishBatchRequest { TopicArn = "topicArn", PublishBatchRequestEntries = entries };
@@ -65,10 +65,12 @@ public class ResilientSnsClientTests
         var request = new PublishBatchRequest { TopicArn = "topicArn", PublishBatchRequestEntries = entries };
 
         var callCount = 0;
+
         await _handler.PublishWithRetryAsync(
             (req, _) =>
             {
                 callCount++;
+
                 return Task.FromResult(
                     new PublishBatchResponse
                     {
@@ -107,6 +109,7 @@ public class ResilientSnsClientTests
             (req, _) =>
             {
                 attempts++;
+
                 if (attempts == 1)
                 {
                     throw transientException;

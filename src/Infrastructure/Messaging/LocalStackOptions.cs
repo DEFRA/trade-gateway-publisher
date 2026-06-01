@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Configuration;
 
-namespace TradeGatewayPublisher.Config;
+namespace Infrastructure.Messaging;
 
 [ExcludeFromCodeCoverage]
 public class LocalStackOptions
