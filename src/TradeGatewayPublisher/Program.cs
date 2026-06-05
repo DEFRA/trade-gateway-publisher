@@ -1,21 +1,17 @@
 using System.Diagnostics.CodeAnalysis;
-using Amazon;
-using Amazon.Runtime;
-using Amazon.SimpleNotificationService;
-using Amazon.SQS;
 using Defra.TradeImports.EmfExporter;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Extensions;
-using Infrastructure.Resilience;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
 using Infrastructure.TracesGateway.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
 using TradeGatewayPublisher.Config;
+using TradeGatewayPublisher.Features.ChedChanges;
 using TradeGatewayPublisher.Features.IntraChanges;
 using TradeGatewayPublisher.Health;
 using TradeGatewayPublisher.Jobs.Middleware;
@@ -61,7 +57,6 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
     services.AddProblemDetails();
     services.AddValidation();
     services.AddTracesGateway(configuration);
-    services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
     services.AddMessaging(
         configuration,
         sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
@@ -114,6 +109,10 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddScheduler(configuration);
     services.AddDbContext(configuration, integrationTest);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
+    services.AddSingleton<ICronJob, TracesChedChangesJob>();
+
+    services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
+    services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
 }
 
 [ExcludeFromCodeCoverage]
@@ -128,7 +127,4 @@ static void ConfigureMiddleware(WebApplication app)
 static void ConfigureEndpoints(WebApplication app)
 {
     app.MapHealth();
-
-    // Remove before deploying
-    ////app.MapExampleEndpoints();
 }

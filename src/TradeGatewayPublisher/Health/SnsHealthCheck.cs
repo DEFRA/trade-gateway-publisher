@@ -17,8 +17,6 @@ public class SnsHealthCheck(IAmazonSimpleNotificationService simpleNotificationS
     {
         try
         {
-            var topics = await simpleNotificationService.ListTopicsAsync(cancellationToken);
-            Console.WriteLine(topics);
             var response = await simpleNotificationService.GetTopicAttributesAsync(
                 new GetTopicAttributesRequest { TopicArn = topicArn },
                 cancellationToken

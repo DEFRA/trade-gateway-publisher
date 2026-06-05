@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IConsumeMiddleware, TracingConsumeMiddleware>();
         services.AddSingleton<IConsumeMiddleware, MetricsConsumeMiddleware>();
+        services.AddSingleton<IConsumeMiddleware, LoggingConsumeMiddleware>();
 
         services.AddSingleton<ConsumerMetrics>(sp => new ConsumerMetrics(
             sp.GetRequiredService<IMeterFactory>(),
@@ -48,7 +49,7 @@ public static class ServiceCollectionExtensions
             var logger = sp.GetRequiredService<ILogger<ResilientSnsClient>>();
 
             var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
-            if (!useLocalStack)
+            if (localStackOptions.UseLocalStack == false)
                 return new ResilientSnsClient(logger);
 
             return new ResilientSnsClient(
