@@ -6,28 +6,31 @@ using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using TradeGatewayPublisher.Config;
+using TradeGatewayPublisher.Features.ChedChanges;
 using TradeGatewayPublisher.Features.IntraChanges;
 
-namespace TradeGatewayPublisher.Tests.Jobs;
+namespace TradeGatewayPublisher.Tests.Features.ChedChanges;
 
-public class TracesIntraChangesJobTests
+public class TracesChedChangesJobTests
 {
     private readonly ITracesGateway _gateway = Substitute.For<ITracesGateway>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
     private readonly IOptions<TracesUpdatePublisherOptions> _options;
-    private readonly TracesIntraChangesJob _sut;
+    private readonly TracesChedChangesJob _sut;
 
-    public TracesIntraChangesJobTests()
+    public TracesChedChangesJobTests()
     {
         _options = Options.Create(
             new TracesUpdatePublisherOptions
             {
                 IntraTopicArn = "test-topic",
                 IntraInternalTopicArn = "test-internal-topic",
+                ChedTopicArn = "test-ched-topic",
+                ChedInternalTopicArn = "test-ched-internal-topic",
             }
         );
 
-        _sut = new TracesIntraChangesJob(_gateway, _sns, _options);
+        _sut = new TracesChedChangesJob(_gateway, _sns, _options);
     }
 
     [Fact]
@@ -38,18 +41,18 @@ public class TracesIntraChangesJobTests
 
         var updates = new[]
         {
-            new FindIntraUpdatesResponseRecord("1", DateTime.UtcNow),
-            new FindIntraUpdatesResponseRecord("2", DateTime.UtcNow),
+            new FindChedUpdatesResponseRecord("1", DateTime.UtcNow),
+            new FindChedUpdatesResponseRecord("2", DateTime.UtcNow),
         };
 
         _gateway
-            .FindIntraUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 0, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new FindIntraUpdatesResponse(updates.ToList())));
+            .FindChedUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 0, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new FindChedUpdatesResponse(updates.ToList())));
 
         _gateway
-            .FindIntraUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 100, Arg.Any<CancellationToken>())
+            .FindChedUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 100, Arg.Any<CancellationToken>())
             .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
+                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
             );
 
         // Act
@@ -58,7 +61,7 @@ public class TracesIntraChangesJobTests
         // Assert
         await _sns.Received(2)
             .PublishAsync(
-                "test-internal-topic",
+                "test-ched-internal-topic",
                 Arg.Any<IMessage>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
@@ -73,7 +76,7 @@ public class TracesIntraChangesJobTests
         var context = CreateContext();
 
         _gateway
-            .FindIntraUpdates(
+            .FindChedUpdates(
                 Arg.Any<DateTime>(),
                 Arg.Any<DateTime>(),
                 Arg.Any<int>(),
@@ -81,7 +84,7 @@ public class TracesIntraChangesJobTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
+                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
             );
 
         // Act
@@ -110,7 +113,7 @@ public class TracesIntraChangesJobTests
         var context = CreateContext(watermark);
 
         _gateway
-            .FindIntraUpdates(
+            .FindChedUpdates(
                 Arg.Any<DateTime>(),
                 Arg.Any<DateTime>(),
                 Arg.Any<int>(),
@@ -118,7 +121,7 @@ public class TracesIntraChangesJobTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
+                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
             );
 
         // Act
@@ -127,7 +130,7 @@ public class TracesIntraChangesJobTests
         // Assert
         await _gateway
             .Received(1)
-            .FindIntraUpdates(
+            .FindChedUpdates(
                 watermark.Watermark.UtcDateTime,
                 watermark.Now.UtcDateTime,
                 Arg.Any<int>(),
@@ -145,7 +148,7 @@ public class TracesIntraChangesJobTests
         var callOffsets = new List<int>();
 
         _gateway
-            .FindIntraUpdates(
+            .FindChedUpdates(
                 Arg.Any<DateTime>(),
                 Arg.Any<DateTime>(),
                 Arg.Any<int>(),
@@ -158,12 +161,12 @@ public class TracesIntraChangesJobTests
                 callOffsets.Add(offset);
 
                 return Task.FromResult(
-                    new FindIntraUpdatesResponse([new FindIntraUpdatesResponseRecord("1", DateTime.UtcNow)])
+                    new FindChedUpdatesResponse([new FindChedUpdatesResponseRecord("1", DateTime.UtcNow)])
                 );
             });
 
         _gateway
-            .FindIntraUpdates(
+            .FindChedUpdates(
                 Arg.Any<DateTime>(),
                 Arg.Any<DateTime>(),
                 Arg.Any<int>(),
@@ -171,7 +174,7 @@ public class TracesIntraChangesJobTests
                 Arg.Any<CancellationToken>()
             )
             .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
+                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
             );
 
         // Act

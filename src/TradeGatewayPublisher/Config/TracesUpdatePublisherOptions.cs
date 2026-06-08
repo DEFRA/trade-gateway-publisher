@@ -11,4 +11,10 @@ public class TracesUpdatePublisherOptions
 
     [Required]
     public required string IntraTopicArn { get; init; }
+
+    [Required]
+    public required string ChedInternalTopicArn { get; init; }
+
+    [Required]
+    public required string ChedTopicArn { get; init; }
 }

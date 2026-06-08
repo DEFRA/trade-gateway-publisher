@@ -29,9 +29,27 @@ public static class ServiceCollectionExtensions
                 tags: [WebApplicationExtensions.Extended],
                 timeout: TimeSpan.FromSeconds(10)
             )
+            .AddSns(
+                "SNS - Ched Internal ",
+                sp => sp.GetRequiredService<IOptions<TracesUpdatePublisherOptions>>().Value.ChedInternalTopicArn,
+                tags: [WebApplicationExtensions.Extended],
+                timeout: TimeSpan.FromSeconds(10)
+            )
+            .AddSns(
+                "SNS - Ched External ",
+                sp => sp.GetRequiredService<IOptions<TracesUpdatePublisherOptions>>().Value.ChedTopicArn,
+                tags: [WebApplicationExtensions.Extended],
+                timeout: TimeSpan.FromSeconds(10)
+            )
             .AddSqs(
                 "SQS - Intra Internal",
                 sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl,
+                timeout: TimeSpan.FromSeconds(10),
+                tags: [WebApplicationExtensions.Extended]
+            )
+            .AddSqs(
+                "SQS - Ched Internal",
+                sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrl,
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
             );

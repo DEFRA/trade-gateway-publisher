@@ -5,9 +5,9 @@ using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
 using TradeGatewayPublisher.Config;
 
-namespace TradeGatewayPublisher.Features.IntraChanges
+namespace TradeGatewayPublisher.Features.ChedChanges
 {
-    public class IntraUpdateConsumer(
+    public class ChedUpdateConsumer(
         ITracesGateway tracesGateway,
         ISnsPublisher snsPublisher,
         IOptions<TracesUpdatePublisherOptions> options
@@ -15,13 +15,13 @@ namespace TradeGatewayPublisher.Features.IntraChanges
     {
         public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
         {
-            var message = JsonSerializer.Deserialize<FindIntraUpdatesResponseRecord>(context.Body);
+            var message = JsonSerializer.Deserialize<FindChedUpdatesResponseRecord>(context.Body);
 
-            var response = await tracesGateway.GetIntraCertification(message!.Id, cancellationToken);
+            var response = await tracesGateway.GetChedCertification(message!.Id, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             await snsPublisher.PublishAsync(
-                options.Value.IntraTopicArn,
+                options.Value.ChedTopicArn,
                 await response.Content.ReadAsStringAsync(cancellationToken),
                 cancellationToken: cancellationToken
             );
