@@ -25,6 +25,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddOptions<LocalStackOptions>().Bind(configuration);
         services.AddSingleton<ISnsPublisher, SnsPublisher>();
+
+        services.AddSingleton<IPublishMiddleware, MetricsPublishMiddleware>();
         services.AddSingleton<IPublishMiddleware, TracingPublishMiddleware>();
 
         services.AddSingleton<IConsumeMiddleware, TracingConsumeMiddleware>();
@@ -32,6 +34,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConsumeMiddleware, LoggingConsumeMiddleware>();
 
         services.AddSingleton<ConsumerMetrics>(sp => new ConsumerMetrics(
+            sp.GetRequiredService<IMeterFactory>(),
+            MetricNames.MeterName
+        ));
+
+        services.AddSingleton<PublishMetrics>(sp => new PublishMetrics(
             sp.GetRequiredService<IMeterFactory>(),
             MetricNames.MeterName
         ));
