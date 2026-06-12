@@ -5,15 +5,15 @@ set -e
 AWS_ENDPOINT="http://floci:4566"
 REGION="eu-west-2"
 
-INTRA_INTERNAL_TOPIC_NAME="trade_gateway_intra_stream_internal.fifo"
-INTRA_TOPIC_NAME="trade_gateway_intra_updates.fifo"
-INTRA_INTERNAL_QUEUE_NAME="trade_gateway_intra_stream_publisher_internal.fifo"
-INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_intra_stream_publisher_internal-deadletter.fifo"
+INTRA_INTERNAL_TOPIC_NAME="trade_gateway_publisher_intra_stream_internal.fifo"
+INTRA_TOPIC_NAME="trade_gateway_publisher_intra_updates.fifo"
+INTRA_INTERNAL_QUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher.fifo"
+INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher-deadletter.fifo" 
 
-CHED_INTERNAL_TOPIC_NAME="trade_gateway_ched_stream_internal.fifo"
-CHED_TOPIC_NAME="trade_gateway_ched_updates.fifo"
-CHED_INTERNAL_QUEUE_NAME="trade_gateway_ched_stream_publisher_internal.fifo"
-CHED_INTERNAL_DLQUEUE_NAME="trade_gateway_ched_stream_publisher_internal-deadletter.fifo"
+CHED_INTERNAL_TOPIC_NAME="trade_gateway_publisher_ched_stream_internal.fifo"
+CHED_TOPIC_NAME="trade_gateway_publisher_ched_updates.fifo"
+CHED_INTERNAL_QUEUE_NAME="trade_gateway_publisher_ched_stream_internal_publisher.fifo"
+CHED_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_ched_stream_internal_publisher-deadletter.fifo"
 
 echo "Creating SNS FIFO topic..."
 INTRA_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
