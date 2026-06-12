@@ -23,24 +23,6 @@ services:
       start_period: 15s
     volumes:
       - ./compose/floci/ready.d:/etc/floci/init/ready.d:ro
-    networks:
-      - cdp-tenant
-
-  floci-ui:
-    build:
-      context: https://github.com/floci-io/floci-ui.git
-    container_name: floci-ui
-    ports:
-      - "3000:3000"
-    environment:
-      AWS_ENDPOINT_URL: http://floci:4566
-      AWS_REGION: eu-west-2
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-    depends_on:
-      - floci
-    networks:
-      - cdp-tenant
 
   aws-init:
     image: amazon/aws-cli
@@ -54,13 +36,9 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: eu-west-2
     entrypoint: ["/bin/sh", "/init-aws.sh"]
-    networks:
-      - cdp-tenant
 
   mongodb:
     image: mongo:7.0.28
-    networks:
-      - cdp-tenant
     ports:
       - '27017:27017'
     volumes:
@@ -87,8 +65,13 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8085
       Mongo__DatabaseUri: mongodb://mongodb:27017/
-    networks:
-      - cdp-tenant
+      TracesUpdateConsumer__IntraQueueUrl: http://floci:4566/000000000000/trade_gateway_intra_stream_publisher_internal.fifo
+      TracesUpdateConsumer__ChedQueueUrl: http://floci:4566/000000000000/trade_gateway_ched_stream_publisher_internal.fifo
+      TracesUpdatePublisher__IntraInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_intra_stream_internal.fifo
+      TracesUpdatePublisher__IntraTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_intra_updates.fifo
+      TracesUpdatePublisher__ChedInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_ched_stream_internal.fifo
+      TracesUpdatePublisher__ChedTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_ched_updates.fifo
+      TracesGateway__BaseUrl: http://wiremock:8088
 
   wiremock:
     image: "holomekc/wiremock-gui:latest"
@@ -108,7 +91,3 @@ services:
 
 volumes:
   mongodb-data:
-
-networks:
-  cdp-tenant:
-    driver: bridge
