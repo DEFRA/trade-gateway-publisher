@@ -1,5 +1,9 @@
 using System.Diagnostics.Metrics;
+using Amazon;
+using Amazon.Runtime;
+using Amazon.SecurityToken;
 using Infrastructure.Leasing;
+using Infrastructure.Messaging;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Metrics;
 using Infrastructure.Watermark;
@@ -19,6 +23,25 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(TracesGatewayOptions.SectionName))
             .ValidateOnStart();
 
+        services.AddSingleton<IAmazonSecurityTokenService>(sp =>
+        {
+            var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
+            if (localStackOptions.UseLocalStack == false)
+                return new AmazonSecurityTokenServiceClient();
+
+            return new AmazonSecurityTokenServiceClient(
+                new BasicAWSCredentials(localStackOptions.AccessKeyId, localStackOptions.SecretAccessKey),
+                new AmazonSecurityTokenServiceConfig
+                {
+                    AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
+                    RegionEndpoint = RegionEndpoint.GetBySystemName(
+                        localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
+                    ),
+                    ServiceURL = localStackOptions.StsEndpoint,
+                }
+            );
+        });
+
         services
             .AddRefitClient<ITracesGateway>()
             .ConfigureHttpClient(
@@ -28,8 +51,10 @@ public static class ServiceCollectionExtensions
                     c.BaseAddress = new Uri(options.BaseUrl);
                 }
             )
+            .AddHttpMessageHandler<StsAuthDelegatingHandler>()
             .AddHttpMessageHandler<TracingDelegatingHandler>();
 
+        services.AddSingleton<StsAuthDelegatingHandler>();
         services.AddSingleton<TracingDelegatingHandler>();
         return services;
     }
