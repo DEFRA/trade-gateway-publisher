@@ -43,7 +43,7 @@ public class SqsConsumerBackgroundService(
                     stoppingToken
                 );
 
-                if (response.Messages.Count == 0)
+                if (response.Messages == null || response.Messages.Count == 0)
                     continue;
 
                 foreach (var message in response.Messages)
