@@ -34,6 +34,8 @@ public sealed class JobExecutor(
                 if (cancellationToken.IsCancellationRequested)
                 {
                     logger.LogInformation(ex, "{Job} cancelled during execution", job.Name);
+
+                    throw;
                 }
 
                 var isLastAttempt = attempt > maxRetries;
@@ -41,6 +43,8 @@ public sealed class JobExecutor(
                 if (isLastAttempt)
                 {
                     logger.LogError(ex, "{Job} failed after {Attempts} attempts", job.Name, attempt);
+
+                    throw;
                 }
 
                 var delay = GetBackoffDelay(attempt, settings);
