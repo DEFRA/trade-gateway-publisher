@@ -28,7 +28,7 @@ public class SchedulerBackgroundService(
 
             _jobs =
             [
-                .. cronJobs.Select(job =>
+                .. cronJobs.Where(job => !_settings.Jobs[job.Name].Disabled).Select(job =>
                     (
                         JobName: job.Name,
                         Expression: CronExpression.Parse(_settings.Jobs[job.Name].Cron, CronFormat.IncludeSeconds)
