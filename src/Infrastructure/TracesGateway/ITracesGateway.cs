@@ -5,7 +5,7 @@ namespace Infrastructure.TracesGateway
 {
     public interface ITracesGateway
     {
-        [Get("/intra/find")]
+        [Get("/intras/find")]
         Task<FindIntraUpdatesResponse> FindIntraUpdates(
             DateTime start,
             DateTime end,
@@ -14,7 +14,7 @@ namespace Infrastructure.TracesGateway
             CancellationToken cancellationToken
         );
 
-        [Get("/intra/{id}")]
+        [Get("/intras/{id}")]
         Task<HttpResponseMessage> GetIntraCertification(string id, CancellationToken cancellationToken);
 
         [Get("/ched/find")]
