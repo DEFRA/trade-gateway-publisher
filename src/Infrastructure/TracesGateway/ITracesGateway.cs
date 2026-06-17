@@ -7,8 +7,8 @@ namespace Infrastructure.TracesGateway
     {
         [Get("/intras")]
         Task<FindIntraUpdatesResponse> FindIntraUpdates(
-            DateTime start,
-            DateTime end,
+            DateTime updatedFrom,
+            DateTime updatedBefore,
             int pageSize,
             int offset,
             CancellationToken cancellationToken
@@ -19,8 +19,8 @@ namespace Infrastructure.TracesGateway
 
         [Get("/cheds")]
         Task<FindChedUpdatesResponse> FindChedUpdates(
-            DateTime start,
-            DateTime end,
+            DateTime updatedFrom,
+            DateTime updatedBefore,
             int pageSize,
             int offset,
             CancellationToken cancellationToken
