@@ -15,7 +15,10 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services
-            .AddRefitClient<ITracesGateway>()
+            .AddRefitClient<ITracesGateway>(provider => new RefitSettings
+            {
+                UrlParameterFormatter = provider.GetRequiredService<UtcDateTimeUrlParameterFormatter>(),
+            })
             .ConfigureHttpClient(
                 (sp, c) =>
                 {

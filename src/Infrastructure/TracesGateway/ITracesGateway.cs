@@ -1,3 +1,4 @@
+using System.Reflection;
 using Infrastructure.Messaging;
 using Refit;
 
@@ -42,5 +43,18 @@ namespace Infrastructure.TracesGateway
     public record FindChedUpdatesResponseRecord(string Id, DateTime Timestamp) : IMessage
     {
         public string DuplicationId { get; } = Id;
+    }
+
+    public class UtcDateTimeUrlParameterFormatter : IUrlParameterFormatter
+    {
+        public string? Format(object? value, ICustomAttributeProvider attributeProvider, Type type)
+        {
+            if (value is DateTime dt)
+            {
+                return dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+            }
+
+            return value?.ToString();
+        }
     }
 }
