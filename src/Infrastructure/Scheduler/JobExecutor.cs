@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Defra.TradeImports.Tracing;
 using Microsoft.Extensions.Logging;
+using Refit;
 
 namespace Infrastructure.Scheduler;
 
@@ -42,8 +44,17 @@ public sealed class JobExecutor(
 
                 if (isLastAttempt)
                 {
-                    logger.LogError(ex, "{Job} failed after {Attempts} attempts", job.Name, attempt);
+                    if (ex is ValidationApiException validationEx)
+                    {
+                        logger.LogWarning(
+                            validationEx,
+                            "{Job} failed validation - {Data}",
+                            job.Name,
+                            JsonSerializer.Serialize(validationEx.Content)
+                        );
+                    }
 
+                    logger.LogError(ex, "{Job} failed after {Attempts} attempts", job.Name, attempt);
                     throw;
                 }
 

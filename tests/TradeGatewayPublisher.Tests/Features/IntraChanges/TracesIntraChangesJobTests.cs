@@ -3,6 +3,7 @@ using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Infrastructure.TracesGateway;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using TradeGatewayPublisher.Config;
@@ -29,7 +30,7 @@ public class TracesIntraChangesJobTests
             }
         );
 
-        _sut = new TracesIntraChangesJob(_gateway, _sns, _options);
+        _sut = new TracesIntraChangesJob(_gateway, _sns, _options, NullLogger<TracesIntraChangesJob>.Instance);
     }
 
     [Fact]
