@@ -35,9 +35,11 @@ public sealed class TracesIntraChangesJob(
                     offset,
                     cancellationToken
                 );
-                hasMoreUpdates = updatesResponse.Data.Any();
 
-                foreach (var update in updatesResponse.Data)
+                var responseData = updatesResponse?.Data ?? Enumerable.Empty<FindIntraUpdatesResponseRecord>();
+                hasMoreUpdates = responseData.Any();
+
+                foreach (var update in responseData)
                 {
                     // Publish each update to SNS - this could prob become a batch
                     await snsPublisher.PublishAsync(
