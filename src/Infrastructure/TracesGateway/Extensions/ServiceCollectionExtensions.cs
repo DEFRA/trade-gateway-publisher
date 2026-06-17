@@ -28,9 +28,12 @@ public static class ServiceCollectionExtensions
                     c.BaseAddress = new Uri(options.BaseUrl);
                 }
             )
-            .AddHttpMessageHandler<TracingDelegatingHandler>();
+            .AddHttpMessageHandler<TracingDelegatingHandler>()
+            .AddHttpMessageHandler<AcceptLanguageDelegatingHandle>();
 
         services.AddSingleton<TracingDelegatingHandler>();
+        services.AddSingleton<AcceptLanguageDelegatingHandle>();
+
         return services;
     }
 }
