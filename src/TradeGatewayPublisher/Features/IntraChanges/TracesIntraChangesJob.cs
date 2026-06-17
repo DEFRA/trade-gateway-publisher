@@ -29,8 +29,8 @@ public sealed class TracesIntraChangesJob(
             try
             {
                 var updatesResponse = await tracesGateway.FindIntraUpdates(
-                    watermark.Watermark.UtcDateTime,
-                    watermark.Now.UtcDateTime,
+                    watermark.Watermark.UtcDateTime.ToUniversalTime(),
+                    watermark.Now.UtcDateTime.ToUniversalTime(),
                     pageSize,
                     offset,
                     cancellationToken
