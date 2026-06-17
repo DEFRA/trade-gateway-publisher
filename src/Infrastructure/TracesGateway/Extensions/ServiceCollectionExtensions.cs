@@ -9,6 +9,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTracesGateway(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<UtcDateTimeUrlParameterFormatter>();
         services
             .AddOptions<TracesGatewayOptions>()
             .Bind(configuration.GetSection(TracesGatewayOptions.SectionName))
