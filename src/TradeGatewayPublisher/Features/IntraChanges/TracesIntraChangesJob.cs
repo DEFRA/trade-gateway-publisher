@@ -23,6 +23,7 @@ public sealed class TracesIntraChangesJob(
         var hasMoreUpdates = true;
         var offset = 0;
         var pageSize = 100;
+        int changesFoundCount = 0;
 
         do
         {
@@ -47,6 +48,7 @@ public sealed class TracesIntraChangesJob(
                         update,
                         cancellationToken: cancellationToken
                     );
+                    changesFoundCount++;
                 }
             }
 #pragma warning disable S2139
@@ -60,5 +62,7 @@ public sealed class TracesIntraChangesJob(
             if (hasMoreUpdates)
                 offset += pageSize;
         } while (hasMoreUpdates);
+
+        logger.LogInformation("{Job} completed. {Count} Changes found", Name, changesFoundCount);
     }
 }
