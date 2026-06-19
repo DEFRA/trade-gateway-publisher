@@ -35,7 +35,7 @@ namespace Infrastructure.TracesGateway
 
     public record FindIntraUpdatesResponseRecord(string Id, DateTime Updated) : IMessage
     {
-        public string DuplicationId { get; } = Id;
+        public string DuplicationId { get; } = Guid.NewGuid().ToString("N");
     }
 
     public record FindChedUpdatesResponse(List<FindChedUpdatesResponseRecord> Data);

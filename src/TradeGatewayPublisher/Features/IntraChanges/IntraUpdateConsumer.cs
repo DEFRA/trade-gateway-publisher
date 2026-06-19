@@ -23,6 +23,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
             await snsPublisher.PublishAsync(
                 options.Value.IntraTopicArn,
                 await response.Content.ReadAsStringAsync(cancellationToken),
+                duplicationId: Guid.NewGuid().ToString("N"),
                 cancellationToken: cancellationToken
             );
         }
