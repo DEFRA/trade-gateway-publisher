@@ -115,8 +115,6 @@ public class JobExecutorTests
 
         public int ExecutionCount { get; private set; }
 
-        public int FailuresBeforeSuccess { get; set; }
-
         public bool AlwaysFail { get; set; }
 
         public Task ExecuteAsync(JobContext context, CancellationToken cancellationToken)
@@ -124,11 +122,6 @@ public class JobExecutorTests
             ExecutionCount++;
 
             if (AlwaysFail)
-            {
-                throw new InvalidOperationException("Job failure");
-            }
-
-            if (ExecutionCount <= FailuresBeforeSuccess)
             {
                 throw new InvalidOperationException("Job failure");
             }
