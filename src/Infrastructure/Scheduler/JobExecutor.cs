@@ -15,7 +15,7 @@ public sealed class JobExecutor(
     {
         traceContextAccessor.Context = new TraceContext { TraceId = Guid.CreateVersion7().ToString("N") };
 
-        var context = new JobContext(Guid.CreateVersion7().ToString(), job.Name);
+        var context = new JobContext(Guid.CreateVersion7().ToString(), job.Name, settings);
         cancellationToken.ThrowIfCancellationRequested();
         await ExecutePipelineAsync(job, context, cancellationToken);
 

@@ -4,11 +4,11 @@ using Refit;
 
 namespace TradeGatewayPublisher.Jobs.Middleware;
 
-public sealed class JobRetryMiddleware(ILogger<JobRetryMiddleware> logger, JobSettings settings) : IJobMiddleware
+public sealed class JobRetryMiddleware(ILogger<JobRetryMiddleware> logger) : IJobMiddleware
 {
     public async Task InvokeAsync(JobContext context, CancellationToken cancellationToken, JobExecutionDelegate next)
     {
-        var maxRetries = Math.Max(0, settings.MaxRetries);
+        var maxRetries = Math.Max(0, context.Settings.MaxRetries);
 
         for (var attempt = 1; attempt <= maxRetries + 1; attempt++)
         {
@@ -48,7 +48,7 @@ public sealed class JobRetryMiddleware(ILogger<JobRetryMiddleware> logger, JobSe
                     throw;
                 }
 
-                var delay = GetBackoffDelay(attempt, settings);
+                var delay = GetBackoffDelay(attempt, context.Settings);
 
                 logger.LogWarning(
                     ex,
