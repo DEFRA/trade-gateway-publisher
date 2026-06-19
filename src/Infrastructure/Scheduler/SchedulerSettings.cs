@@ -6,5 +6,7 @@ public sealed class SchedulerSettings
 
     public int MaxConcurrentJobs { get; set; } = 1;
 
+    public int PollingIntervalSeconds { get; set; } = 30;
+
     public Dictionary<string, JobSettings> Jobs { get; set; } = [];
 }

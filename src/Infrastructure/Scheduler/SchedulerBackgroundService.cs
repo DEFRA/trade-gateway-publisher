@@ -72,7 +72,7 @@ public class SchedulerBackgroundService(
 
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(settings.Value.PollingIntervalSeconds), stoppingToken);
             }
             catch (OperationCanceledException)
             {
