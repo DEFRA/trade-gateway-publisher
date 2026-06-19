@@ -37,7 +37,7 @@ public sealed class TracesIntraChangesJob(
                     cancellationToken
                 );
 
-                var responseData = updatesResponse?.Data ?? Enumerable.Empty<FindIntraUpdatesResponseRecord>();
+                var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindIntraUpdatesResponseRecord>();
                 hasMoreUpdates = responseData.Any();
 
                 foreach (var update in responseData)

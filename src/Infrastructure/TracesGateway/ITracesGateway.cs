@@ -31,9 +31,9 @@ namespace Infrastructure.TracesGateway
         Task<HttpResponseMessage> GetChedCertification(string id, CancellationToken cancellationToken);
     }
 
-    public record FindIntraUpdatesResponse(List<FindIntraUpdatesResponseRecord> Data);
+    public record FindIntraUpdatesResponse(List<FindIntraUpdatesResponseRecord> Items);
 
-    public record FindIntraUpdatesResponseRecord(string Id, DateTime Timestamp) : IMessage
+    public record FindIntraUpdatesResponseRecord(string Id, DateTime Updated) : IMessage
     {
         public string DuplicationId { get; } = Id;
     }

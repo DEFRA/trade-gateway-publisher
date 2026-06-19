@@ -105,6 +105,7 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
         .ValidateOnStart();
 
     services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();
+    services.AddScoped<IJobMiddleware, JobRetryMiddleware>();
     services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobWatermarkMiddleware>();
     services.AddScheduler(configuration);
