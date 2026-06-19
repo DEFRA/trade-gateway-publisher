@@ -114,7 +114,7 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
 
     services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
-    services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
+    ////services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
 }
 
 [ExcludeFromCodeCoverage]
