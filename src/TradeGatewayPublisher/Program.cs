@@ -104,8 +104,8 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
         .Bind(configuration.GetSection(TracesUpdateConsumerOptions.SectionName))
         .ValidateOnStart();
 
-    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();
+    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobWatermarkMiddleware>();
     services.AddScheduler(configuration);
     services.AddDbContext(configuration, integrationTest);

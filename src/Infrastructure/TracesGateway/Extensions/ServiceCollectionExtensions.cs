@@ -15,6 +15,11 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(TracesGatewayOptions.SectionName))
             .ValidateOnStart();
 
+        services.ConfigureHttpClientDefaults(http =>
+        {
+            http.RedactLoggedHeaders(_ => false);
+        });
+
         services
             .AddRefitClient<ITracesGateway>(provider => new RefitSettings
             {
@@ -27,11 +32,13 @@ public static class ServiceCollectionExtensions
                     c.BaseAddress = new Uri(options.BaseUrl);
                 }
             )
+            .AddHttpMessageHandler<HttpLoggingDelegatingHandler>()
             .AddHttpMessageHandler<TracingDelegatingHandler>()
             .AddHttpMessageHandler<AcceptLanguageDelegatingHandle>();
 
         services.AddSingleton<TracingDelegatingHandler>();
         services.AddSingleton<AcceptLanguageDelegatingHandle>();
+        services.AddSingleton<HttpLoggingDelegatingHandler>();
 
         return services;
     }
