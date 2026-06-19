@@ -17,6 +17,8 @@ public class SchedulerBackgroundService(
     private readonly TimeZoneInfo _timeZoneInfo = TimeZoneInfo.Local;
 
     private readonly SemaphoreSlim _semaphore = new(settings.Value.MaxConcurrentJobs);
+    private readonly Lock _lock = new();
+    private readonly HashSet<string> _runningJobs = new();
 
     private List<(string JobName, CronExpression Expression)> _jobs = [];
 
@@ -96,6 +98,11 @@ public class SchedulerBackgroundService(
                 return;
             }
 
+            if (!StartJob(jobName))
+            {
+                return; // already running
+            }
+
             using var scope = scopeFactory.CreateScope();
 
             var cronJobs = scope.ServiceProvider.GetRequiredService<IEnumerable<ICronJob>>();
@@ -124,6 +131,24 @@ public class SchedulerBackgroundService(
             {
                 _semaphore.Release();
             }
+
+            FinishJob(jobName);
+        }
+    }
+
+    private bool StartJob(string jobName)
+    {
+        lock (_lock)
+        {
+            return _runningJobs.Add(jobName);
+        }
+    }
+
+    private void FinishJob(string jobName)
+    {
+        lock (_lock)
+        {
+            _runningJobs.Remove(jobName);
         }
     }
 }
