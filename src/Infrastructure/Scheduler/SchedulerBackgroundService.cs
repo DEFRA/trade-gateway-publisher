@@ -89,9 +89,12 @@ public class SchedulerBackgroundService(
 
         try
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            acquired = await _semaphore.WaitAsync(0, cancellationToken);
 
-            acquired = true;
+            if (!acquired)
+            {
+                return;
+            }
 
             using var scope = scopeFactory.CreateScope();
 
