@@ -72,9 +72,23 @@ public class SchedulerBackgroundService(
                 logger.LogInformation("Next run of {Job} scheduled at {NextRun}", jobName, nextRuns[jobName]);
             }
 
+            var nextRun = nextRuns.Values.Where(x => x.HasValue).Min();
+
+            if (!nextRun.HasValue)
+            {
+                break; // or sleep indefinitely if this should never happen
+            }
+
+            var delay = nextRun.Value - DateTimeOffset.Now + TimeSpan.FromMilliseconds(100);
+
+            if (delay < TimeSpan.Zero)
+            {
+                delay = TimeSpan.Zero;
+            }
+
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(settings.Value.PollingIntervalSeconds), stoppingToken);
+                await Task.Delay(delay, stoppingToken);
             }
             catch (OperationCanceledException)
             {
