@@ -67,7 +67,7 @@ public class SchedulerBackgroundService(
 
                 _ = RunJobAsync(jobName, stoppingToken);
 
-                nextRuns[jobName] = expression.GetNextOccurrence(now.AddSeconds(1), _timeZoneInfo);
+                nextRuns[jobName] = expression.GetNextOccurrence(now.AddSeconds(60), _timeZoneInfo);
 
                 logger.LogInformation("Next run of {Job} scheduled at {NextRun}", jobName, nextRuns[jobName]);
             }
@@ -91,16 +91,16 @@ public class SchedulerBackgroundService(
 
         try
         {
+            if (!StartJob(jobName))
+            {
+                return; // already running
+            }
+
             acquired = await _semaphore.WaitAsync(0, cancellationToken);
 
             if (!acquired)
             {
                 return;
-            }
-
-            if (!StartJob(jobName))
-            {
-                return; // already running
             }
 
             using var scope = scopeFactory.CreateScope();
