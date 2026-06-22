@@ -8,7 +8,7 @@ REGION="eu-west-2"
 INTRA_INTERNAL_TOPIC_NAME="trade_gateway_publisher_intra_stream_internal.fifo"
 INTRA_TOPIC_NAME="trade_gateway_publisher_intra_updates.fifo"
 INTRA_INTERNAL_QUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher.fifo"
-INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher-deadletter.fifo" 
+INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher-deadletter.fifo"
 
 CHED_INTERNAL_TOPIC_NAME="trade_gateway_publisher_ched_stream_internal.fifo"
 CHED_TOPIC_NAME="trade_gateway_publisher_ched_updates.fifo"

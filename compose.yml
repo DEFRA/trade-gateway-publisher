@@ -65,13 +65,16 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8085
       Mongo__DatabaseUri: mongodb://mongodb:27017/
-      TracesUpdateConsumer__IntraQueueUrl: http://floci:4566/000000000000/trade_gateway_intra_stream_publisher_internal.fifo
-      TracesUpdateConsumer__ChedQueueUrl: http://floci:4566/000000000000/trade_gateway_ched_stream_publisher_internal.fifo
-      TracesUpdatePublisher__IntraInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_intra_stream_internal.fifo
-      TracesUpdatePublisher__IntraTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_intra_updates.fifo
-      TracesUpdatePublisher__ChedInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_ched_stream_internal.fifo
-      TracesUpdatePublisher__ChedTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_ched_updates.fifo
-      TracesGateway__BaseUrl: http://wiremock:8088
+      USE_LOCALSTACK: "true"
+      SQS_ENDPOINT: http://floci:4566
+      SNS_ENDPOINT: http://floci:4566
+      TracesUpdateConsumer__IntraQueueUrl: http://floci:4566/000000000000/trade_gateway_publisher_intra_stream_internal_publisher.fifo
+      TracesUpdateConsumer__ChedQueueUrl: http://floci:4566/000000000000/trade_gateway_publisher_ched_stream_internal_publisher.fifo
+      TracesUpdatePublisher__IntraInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_intra_stream_internal.fifo
+      TracesUpdatePublisher__IntraTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_intra_updates.fifo
+      TracesUpdatePublisher__ChedInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_stream_internal.fifo
+      TracesUpdatePublisher__ChedTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_updates.fifo
+      TracesGateway__BaseUrl: http://wiremock:8089
 
   wiremock:
     image: "holomekc/wiremock-gui:latest"
