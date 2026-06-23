@@ -2,7 +2,7 @@ services:
   # floci is a replacement for localstack. It emulates AWS resources (sqs, sns, s3 etc) for local development
   # See: https://floci.io for more details
   floci:
-    image: hectorvent/floci:latest-aws
+    image: floci/floci:latest-aws
     ports:
       - '4566:4566'
     env_file:
@@ -65,17 +65,22 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8085
       Mongo__DatabaseUri: mongodb://mongodb:27017/
-      TracesUpdateConsumer__IntraQueueUrl: http://floci:4566/000000000000/trade_gateway_intra_stream_publisher_internal.fifo
-      TracesUpdateConsumer__ChedQueueUrl: http://floci:4566/000000000000/trade_gateway_ched_stream_publisher_internal.fifo
-      TracesUpdatePublisher__IntraInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_intra_stream_internal.fifo
-      TracesUpdatePublisher__IntraTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_intra_updates.fifo
-      TracesUpdatePublisher__ChedInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_ched_stream_internal.fifo
-      TracesUpdatePublisher__ChedTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_ched_updates.fifo
-      TracesGateway__BaseUrl: http://wiremock:8088
+      TracesUpdateConsumer__IntraQueueUrl: http://floci:4566/000000000000/trade_gateway_publisher_intra_stream_internal_publisher.fifo
+      TracesUpdateConsumer__ChedQueueUrl: http://floci:4566/000000000000/trade_gateway_publisher_ched_stream_internal_publisher.fifo
+      TracesUpdatePublisher__IntraInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_intra_stream_internal.fifo
+      TracesUpdatePublisher__IntraTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_intra_updates.fifo
+      TracesUpdatePublisher__ChedInternalTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_stream_internal.fifo
+      TracesUpdatePublisher__ChedTopicArn: arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_updates.fifo
+      TracesGateway__BaseUrl: http://wiremock:8089
+      AWS_EMF_ENVIRONMENT: Local
+      AWS_REGION: eu-west-2
+      AWS_DEFAULT_REGION: eu-west-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      USE_LOCALSTACK: true
 
   wiremock:
     image: "holomekc/wiremock-gui:latest"
-    container_name: my_wiremock
     ports:
       # This is just an example of a port mapping
       - "8088:8089"
