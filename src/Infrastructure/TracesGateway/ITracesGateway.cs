@@ -29,6 +29,9 @@ namespace Infrastructure.TracesGateway
 
         [Get("/cheds/{id}")]
         Task<HttpResponseMessage> GetChedCertification(string id, CancellationToken cancellationToken);
+
+        [Get("/health")]
+        Task<HttpResponseMessage> HealthCheck(CancellationToken cancellationToken);
     }
 
     public record FindIntraUpdatesResponse(List<FindIntraUpdatesResponseRecord> Items);

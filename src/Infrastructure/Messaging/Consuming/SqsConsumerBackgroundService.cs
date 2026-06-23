@@ -51,13 +51,18 @@ public class SqsConsumerBackgroundService(
                     await ProcessMessageAsync(message, stoppingToken);
                 }
             }
+            catch (QueueDoesNotExistException ex)
+            {
+                logger.LogError(ex, "Queue does not exist {QueueUrl}", QueueUrl);
+                return;
+            }
             catch (OperationCanceledException)
             {
                 break;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unhandled error while polling SQS");
+                logger.LogError(ex, "Unhandled error while polling SQS {QueueUrl}", QueueUrl);
             }
         }
 

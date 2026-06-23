@@ -38,7 +38,7 @@ public sealed class TracesIntraChangesJob(
                 );
 
                 var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindIntraUpdatesResponseRecord>();
-                hasMoreUpdates = responseData.Any();
+                hasMoreUpdates = responseData.Count() == pageSize;
 
                 foreach (var update in responseData)
                 {

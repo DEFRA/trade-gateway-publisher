@@ -160,9 +160,13 @@ public class TracesIntraChangesJobTests
                 var offset = call.ArgAt<int>(3);
                 callOffsets.Add(offset);
 
-                return Task.FromResult(
-                    new FindIntraUpdatesResponse([new FindIntraUpdatesResponseRecord("1", DateTime.UtcNow)])
-                );
+                var response = new FindIntraUpdatesResponse([]);
+                for (var i = 0; i < 100; i++)
+                {
+                    response.Items.Add(new FindIntraUpdatesResponseRecord((offset + 1).ToString(), DateTime.UtcNow));
+                }
+
+                return Task.FromResult(response);
             });
 
         _gateway
