@@ -23,7 +23,9 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(TracesGatewayOptions.SectionName))
             .ValidateOnStart();
 
+        services.AddSingleton<IAmazonSecurityTokenService>(sp =>
         {
+            var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
             if (localStackOptions.UseLocalStack == false)
                 return new AmazonSecurityTokenServiceClient();
 
