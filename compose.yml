@@ -79,7 +79,7 @@ services:
       AWS_DEFAULT_REGION: eu-west-2
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
-      USE_LOCALSTACK: true
+      USE_FLOCI: true
 
   wiremock:
     image: "holomekc/wiremock-gui:latest"
@@ -90,7 +90,7 @@ services:
     command:
       "--port 8089 --https-port 8088 --max-request-journal 1000 --local-response-templating"
     volumes:
-      - ./root-dir:/home/wiremock
+      - ./root-dir:/home/wiremock:ro
     environment:
       WIREMOCK_MY_VAR: "systemValue response templating feature"
 
