@@ -25,9 +25,8 @@ await app.RunAsync();
 static WebApplication BuildApp(string[] args)
 {
     var builder = WebApplication.CreateBuilder(args);
-    var integrationTest = args.Contains("--integrationTest=true");
     ConfigureHost(builder);
-    ConfigureServices(builder, integrationTest);
+    ConfigureServices(builder);
 
     var app = builder.Build();
 
@@ -45,7 +44,7 @@ static void ConfigureHost(WebApplicationBuilder builder)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureServices(WebApplicationBuilder builder, bool integrationTest)
+static void ConfigureServices(WebApplicationBuilder builder)
 {
     var services = builder.Services;
     var configuration = builder.Configuration;
@@ -67,7 +66,7 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
 
     ConfigureHeaderPropagation(services, configuration);
     ConfigureHttpClients(services);
-    ConfigureAppServices(services, configuration, integrationTest);
+    ConfigureAppServices(services, configuration);
 
     services.AddHealth();
 }
@@ -93,7 +92,7 @@ static void ConfigureHttpClients(IServiceCollection services)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureAppServices(IServiceCollection services, IConfiguration configuration, bool integrationTest)
+static void ConfigureAppServices(IServiceCollection services, IConfiguration configuration)
 {
     services
         .AddOptions<TracesUpdatePublisherOptions>()
@@ -109,7 +108,7 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobWatermarkMiddleware>();
     services.AddScheduler(configuration);
-    services.AddDbContext(configuration, integrationTest);
+    services.AddDbContext(configuration);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
 

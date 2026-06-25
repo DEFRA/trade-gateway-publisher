@@ -53,7 +53,7 @@ COPY tests/Testing tests/Testing
 RUN dotnet csharpier check .
 
 # unit test and code coverage (exclude integration tests)
-RUN dotnet test --no-restore --filter "Category!=IntegrationTests"
+RUN dotnet test --no-restore --filter "Category!=IntegrationTest"
 
 FROM build AS publish
 RUN dotnet publish src/TradeGatewayPublisher -c Release -o /app/publish /p:UseAppHost=false

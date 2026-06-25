@@ -52,6 +52,9 @@ CHED_INTERNAL_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
 
 echo "Topic ARN: $CHED_INTERNAL_TOPIC_ARN"
 
+# Queue used by integration tests to observe messages published to outbound SNS topic
+INTRA_TEST_QUEUE_NAME="trade_gateway_publisher_intra_updates_test.fifo"
+
 echo "Creating SQS FIFO queue..."
 QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
   --queue-name "$INTRA_INTERNAL_QUEUE_NAME" \
@@ -103,6 +106,31 @@ CHED_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
 
 echo "Queue ARN: $CHED_QUEUE_ARN"
 
+echo "Creating Intra test queue..."
+INTRA_TEST_QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+  --queue-name "$INTRA_TEST_QUEUE_NAME" \
+  --attributes FifoQueue=true,ContentBasedDeduplication=true \
+  --region $REGION \
+  --query 'QueueUrl' \
+  --output text)
+
+echo "Queue URL: $INTRA_TEST_QUEUE_URL"
+
+INTRA_TEST_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
+  --queue-url "$INTRA_TEST_QUEUE_URL" \
+  --attribute-names QueueArn \
+  --region $REGION \
+  --query 'Attributes.QueueArn' \
+  --output text)
+
+echo "Subscribing test queue: $INTRA_TEST_QUEUE_ARN to topic: $INTRA_INTERNAL_TOPIC_ARN"
+aws --endpoint-url=$AWS_ENDPOINT sns subscribe \
+  --topic-arn "$INTRA_INTERNAL_TOPIC_ARN" \
+  --protocol sqs \
+  --notification-endpoint "$INTRA_TEST_QUEUE_ARN" \
+  --attributes '{"RawMessageDelivery": "true"}' \
+  --region $REGION
+
 echo "Applying SQS policy to allow SNS publishing..."
 
 
@@ -141,6 +169,7 @@ function is_ready() {
     aws --endpoint-url=$AWS_ENDPOINT sns list-topics --query "Topics[?ends_with(TopicArn, ':${CHED_INTERNAL_TOPIC_NAME}')].TopicArn" || return 1
     aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${CHED_INTERNAL_QUEUE_NAME} || return 1
     aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${CHED_INTERNAL_DLQUEUE_NAME} || return 1
+    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_TEST_QUEUE_NAME} || return 1
     return 0
 }
 
