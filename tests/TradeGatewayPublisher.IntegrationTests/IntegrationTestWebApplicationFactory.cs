@@ -39,6 +39,7 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                         ["AWS_REGION"] = "eu-west-2",
                         ["SNS_ENDPOINT"] = FlociEndpoint,
                         ["SQS_ENDPOINT"] = FlociEndpoint,
+                        ["STS_ENDPOINT"] = FlociEndpoint,
 
                         // These are the topics and queues configured in init-aws.sh
                         ["TracesUpdatePublisher:IntraInternalTopicArn"] =

@@ -29,16 +29,22 @@ public static class ServiceCollectionExtensions
             if (localStackOptions.UseFloci == false)
                 return new AmazonSecurityTokenServiceClient();
 
+            var config = new AmazonSecurityTokenServiceConfig
+            {
+                AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
+                RegionEndpoint = RegionEndpoint.GetBySystemName(
+                    localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
+                ),
+            };
+
+            // Setting ServiceURL clears RegionEndpoint (they are mutually exclusive in the AWS SDK),
+            // so only override it when an STS endpoint is actually configured.
+            if (!string.IsNullOrWhiteSpace(localStackOptions.StsEndpoint))
+                config.ServiceURL = localStackOptions.StsEndpoint;
+
             return new AmazonSecurityTokenServiceClient(
                 new BasicAWSCredentials(localStackOptions.AccessKeyId, localStackOptions.SecretAccessKey),
-                new AmazonSecurityTokenServiceConfig
-                {
-                    AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
-                    RegionEndpoint = RegionEndpoint.GetBySystemName(
-                        localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
-                    ),
-                    ServiceURL = localStackOptions.StsEndpoint,
-                }
+                config
             );
         });
 		
