@@ -11,19 +11,12 @@ namespace Infrastructure.Data.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddDbContext(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        bool integrationTest
-    )
+    public static IServiceCollection AddDbContext(this IServiceCollection services, IConfiguration configuration)
     {
         services
             .AddOptions<MongoDbOptions>()
             .Bind(configuration.GetSection(MongoDbOptions.SectionName))
             .ValidateOnStart();
-
-        if (integrationTest)
-            return services;
 
         services.AddSingleton(sp =>
         {

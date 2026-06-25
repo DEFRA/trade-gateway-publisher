@@ -19,10 +19,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMessaging(
         this IServiceCollection services,
         IConfiguration configuration,
-        bool useLocalStack = false
+        bool useFloci = false
     )
     {
-        services.AddOptions<LocalStackOptions>().Bind(configuration);
+        services.AddOptions<FlociOptions>().Bind(configuration);
         services.AddSingleton<ISnsPublisher, SnsPublisher>();
         services.AddSingleton<IPublishMiddleware, TracingPublishMiddleware>();
 
@@ -39,41 +39,41 @@ public static class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<ILogger<ResilientSnsClient>>();
 
-            var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
-            if (localStackOptions.UseLocalStack == false)
+            var flociOptions = sp.GetRequiredService<IOptions<FlociOptions>>().Value;
+            if (flociOptions.UseFloci == false)
                 return new ResilientSnsClient(logger);
 
             return new ResilientSnsClient(
                 logger,
-                new BasicAWSCredentials(localStackOptions.AccessKeyId, localStackOptions.SecretAccessKey),
+                new BasicAWSCredentials(flociOptions.AccessKeyId, flociOptions.SecretAccessKey),
                 new AmazonSimpleNotificationServiceConfig
                 {
                     // https://github.com/aws/aws-sdk-net/issues/1781
-                    AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
+                    AuthenticationRegion = flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
                     RegionEndpoint = RegionEndpoint.GetBySystemName(
-                        localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
+                        flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
                     ),
-                    ServiceURL = localStackOptions.SnsEndpoint,
+                    ServiceURL = flociOptions.SnsEndpoint,
                 }
             );
         });
 
         services.AddSingleton<IAmazonSQS>(sp =>
         {
-            var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
-            if (localStackOptions.UseLocalStack == false)
+            var flociOptions = sp.GetRequiredService<IOptions<FlociOptions>>().Value;
+            if (flociOptions.UseFloci == false)
                 return new AmazonSQSClient();
 
             return new AmazonSQSClient(
-                new BasicAWSCredentials(localStackOptions.AccessKeyId, localStackOptions.SecretAccessKey),
+                new BasicAWSCredentials(flociOptions.AccessKeyId, flociOptions.SecretAccessKey),
                 new AmazonSQSConfig
                 {
                     // https://github.com/aws/aws-sdk-net/issues/1781
-                    AuthenticationRegion = localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
+                    AuthenticationRegion = flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
                     RegionEndpoint = RegionEndpoint.GetBySystemName(
-                        localStackOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
+                        flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
                     ),
-                    ServiceURL = localStackOptions.SqsEndpoint,
+                    ServiceURL = flociOptions.SqsEndpoint,
                 }
             );
         });
