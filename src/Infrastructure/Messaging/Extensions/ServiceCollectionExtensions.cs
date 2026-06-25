@@ -19,7 +19,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMessaging(
         this IServiceCollection services,
         IConfiguration configuration,
-        Func<IServiceProvider, string> queueUrlFactory,
         bool useLocalStack = false
     )
     {
@@ -34,14 +33,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ConsumerMetrics>(sp => new ConsumerMetrics(
             sp.GetRequiredService<IMeterFactory>(),
             MetricNames.MeterName
-        ));
-
-        services.AddHostedService(sp => new SqsConsumerBackgroundService(
-            queueUrl: queueUrlFactory(sp),
-            sqsClient: sp.GetRequiredService<IAmazonSQS>(),
-            consumer: sp.GetRequiredService<IMessageConsumer>(),
-            logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService>>(),
-            middlewares: sp.GetServices<IConsumeMiddleware>()
         ));
 
         services.AddSingleton<IAmazonSimpleNotificationService>(sp =>
@@ -88,5 +79,22 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    public static void AddConsumer<TConsumer>(
+        this IServiceCollection services,
+        Func<IServiceProvider, string> queueUrlFactory
+    )
+        where TConsumer : class, IMessageConsumer
+    {
+        services.AddSingleton<IMessageConsumer, TConsumer>();
+        services.AddSingleton<TConsumer>();
+        services.AddHostedService(sp => new SqsConsumerBackgroundService(
+            queueUrl: queueUrlFactory(sp),
+            sqsClient: sp.GetRequiredService<IAmazonSQS>(),
+            consumer: sp.GetRequiredService<TConsumer>(),
+            logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService>>(),
+            middlewares: sp.GetServices<IConsumeMiddleware>()
+        ));
     }
 }

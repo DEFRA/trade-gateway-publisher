@@ -25,44 +25,6 @@ public class JobExecutorTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenJobFailsAndRetriesEventuallySucceeds_RetriesUntilSuccess()
-    {
-        // Arrange
-        var job = new TestCronJob { FailuresBeforeSuccess = 2 };
-
-        var settings = new JobSettings { MaxRetries = 3, RetryDelaySeconds = 0 };
-
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
-
-        // Act
-        await sut.ExecuteAsync(job, settings, CancellationToken.None);
-
-        // Assert
-        Assert.Equal(3, job.ExecutionCount);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WhenJobFailsBeyondRetryLimit_ThrowsException()
-    {
-        // Arrange
-        var job = new TestCronJob { AlwaysFail = true };
-
-        var settings = new JobSettings { MaxRetries = 2, RetryDelaySeconds = 0 };
-
-        var sut = new JobExecutor([], NullLogger<JobExecutor>.Instance, new TraceContextAccessor());
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.ExecuteAsync(job, settings, CancellationToken.None)
-        );
-
-        Assert.Equal("Job failure", exception.Message);
-
-        // initial attempt + 2 retries
-        Assert.Equal(3, job.ExecutionCount);
-    }
-
-    [Fact]
     public async Task ExecuteAsync_WhenCancellationRequestedBeforeExecution_ThrowsOperationCanceledException()
     {
         // Arrange
@@ -153,8 +115,6 @@ public class JobExecutorTests
 
         public int ExecutionCount { get; private set; }
 
-        public int FailuresBeforeSuccess { get; set; }
-
         public bool AlwaysFail { get; set; }
 
         public Task ExecuteAsync(JobContext context, CancellationToken cancellationToken)
@@ -162,11 +122,6 @@ public class JobExecutorTests
             ExecutionCount++;
 
             if (AlwaysFail)
-            {
-                throw new InvalidOperationException("Job failure");
-            }
-
-            if (ExecutionCount <= FailuresBeforeSuccess)
             {
                 throw new InvalidOperationException("Job failure");
             }

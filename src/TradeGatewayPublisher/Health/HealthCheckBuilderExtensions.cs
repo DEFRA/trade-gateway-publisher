@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
+using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace TradeGatewayPublisher.Health;
@@ -41,6 +42,25 @@ public static class HealthCheckBuilderExtensions
             new HealthCheckRegistration(
                 queueUrl,
                 sp => new SqsHealthCheck(sp.GetRequiredService<IAmazonSQS>(), queueNameFunc(sp)),
+                HealthStatus.Unhealthy,
+                tags,
+                timeout
+            )
+        );
+
+        return builder;
+    }
+
+    public static IHealthChecksBuilder AddTracesGateway(
+        this IHealthChecksBuilder builder,
+        IEnumerable<string>? tags = null,
+        TimeSpan? timeout = null
+    )
+    {
+        builder.Add(
+            new HealthCheckRegistration(
+                "Traces Gateway",
+                sp => new TracesGatewayHealthCheck(sp.GetRequiredService<ITracesGateway>()),
                 HealthStatus.Unhealthy,
                 tags,
                 timeout

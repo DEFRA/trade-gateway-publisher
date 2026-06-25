@@ -1,0 +1,16 @@
+{
+  "uuid": "c0f1f0b7-4263-449a-81e0-15a3788c5ea2",
+  "request": {
+    "urlPath": "/health",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "status": "Healthy"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

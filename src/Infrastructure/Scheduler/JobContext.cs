@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace Infrastructure.Scheduler;
 
-public record JobContext(string JobId, string Name)
+public record JobContext(string JobId, string Name, JobSettings Settings)
 {
     private readonly ConcurrentDictionary<Type, object> _items = new();
 

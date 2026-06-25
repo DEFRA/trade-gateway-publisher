@@ -3,7 +3,6 @@ using Defra.TradeImports.EmfExporter;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
-using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
@@ -57,10 +56,12 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
     services.AddProblemDetails();
     services.AddValidation();
     services.AddTracesGateway(configuration);
-    services.AddMessaging(
-        configuration,
-        sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
-    );
+    services
+        .AddMessaging(configuration)
+        .AddConsumer<IntraUpdateConsumer>(sp =>
+            sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
+        );
+
     services.AddHttpContextAccessor();
     services.AddTraceContextAccessor(configuration);
 
@@ -103,16 +104,17 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
         .Bind(configuration.GetSection(TracesUpdateConsumerOptions.SectionName))
         .ValidateOnStart();
 
-    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();
+    services.AddScoped<IJobMiddleware, JobRetryMiddleware>();
+    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobWatermarkMiddleware>();
     services.AddScheduler(configuration);
     services.AddDbContext(configuration, integrationTest);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
 
-    services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
-    services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
+    ////services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
+    ////services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
 }
 
 [ExcludeFromCodeCoverage]

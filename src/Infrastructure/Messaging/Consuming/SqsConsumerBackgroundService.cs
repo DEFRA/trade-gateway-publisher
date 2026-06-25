@@ -43,7 +43,7 @@ public class SqsConsumerBackgroundService(
                     stoppingToken
                 );
 
-                if (response.Messages.Count == 0)
+                if (response.Messages == null || response.Messages.Count == 0)
                     continue;
 
                 foreach (var message in response.Messages)
@@ -51,13 +51,18 @@ public class SqsConsumerBackgroundService(
                     await ProcessMessageAsync(message, stoppingToken);
                 }
             }
+            catch (QueueDoesNotExistException ex)
+            {
+                logger.LogError(ex, "Queue does not exist {QueueUrl}", QueueUrl);
+                return;
+            }
             catch (OperationCanceledException)
             {
                 break;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unhandled error while polling SQS");
+                logger.LogError(ex, "Unhandled error while polling SQS {QueueUrl}", QueueUrl);
             }
         }
 

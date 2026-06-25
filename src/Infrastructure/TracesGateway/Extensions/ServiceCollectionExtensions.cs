@@ -1,4 +1,3 @@
-using System.Diagnostics.Metrics;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SecurityToken;
@@ -18,14 +17,13 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTracesGateway(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<UtcDateTimeUrlParameterFormatter>();
         services
             .AddOptions<TracesGatewayOptions>()
             .Bind(configuration.GetSection(TracesGatewayOptions.SectionName))
             .ValidateOnStart();
 
-        services.AddSingleton<IAmazonSecurityTokenService>(sp =>
         {
-            var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
             if (localStackOptions.UseLocalStack == false)
                 return new AmazonSecurityTokenServiceClient();
 
@@ -41,9 +39,17 @@ public static class ServiceCollectionExtensions
                 }
             );
         });
+		
+		services.ConfigureHttpClientDefaults(http =>
+        {
+            http.RedactLoggedHeaders(_ => false);
+        });
 
         services
-            .AddRefitClient<ITracesGateway>()
+            .AddRefitClient<ITracesGateway>(provider => new RefitSettings
+            {
+                UrlParameterFormatter = provider.GetRequiredService<UtcDateTimeUrlParameterFormatter>(),
+            })
             .ConfigureHttpClient(
                 (sp, c) =>
                 {
@@ -52,10 +58,15 @@ public static class ServiceCollectionExtensions
                 }
             )
             .AddHttpMessageHandler<StsAuthDelegatingHandler>()
-            .AddHttpMessageHandler<TracingDelegatingHandler>();
+            .AddHttpMessageHandler<HttpLoggingDelegatingHandler>()
+            .AddHttpMessageHandler<TracingDelegatingHandler>()
+            .AddHttpMessageHandler<AcceptLanguageDelegatingHandle>();
 
         services.AddSingleton<StsAuthDelegatingHandler>();
         services.AddSingleton<TracingDelegatingHandler>();
+        services.AddSingleton<AcceptLanguageDelegatingHandle>();
+        services.AddSingleton<HttpLoggingDelegatingHandler>();
+
         return services;
     }
 }

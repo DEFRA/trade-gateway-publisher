@@ -17,6 +17,8 @@ public class SchedulerBackgroundService(
     private readonly TimeZoneInfo _timeZoneInfo = TimeZoneInfo.Local;
 
     private readonly SemaphoreSlim _semaphore = new(settings.Value.MaxConcurrentJobs);
+    private readonly Lock _lock = new();
+    private readonly HashSet<string> _runningJobs = new();
 
     private List<(string JobName, CronExpression Expression)> _jobs = [];
 
@@ -28,12 +30,14 @@ public class SchedulerBackgroundService(
 
             _jobs =
             [
-                .. cronJobs.Select(job =>
-                    (
-                        JobName: job.Name,
-                        Expression: CronExpression.Parse(_settings.Jobs[job.Name].Cron, CronFormat.IncludeSeconds)
-                    )
-                ),
+                .. cronJobs
+                    .Where(job => !_settings.Jobs[job.Name].Disabled)
+                    .Select(job =>
+                        (
+                            JobName: job.Name,
+                            Expression: CronExpression.Parse(_settings.Jobs[job.Name].Cron, CronFormat.IncludeSeconds)
+                        )
+                    ),
             ];
         }
 
@@ -63,14 +67,28 @@ public class SchedulerBackgroundService(
 
                 _ = RunJobAsync(jobName, stoppingToken);
 
-                nextRuns[jobName] = expression.GetNextOccurrence(now.AddSeconds(1), _timeZoneInfo);
+                nextRuns[jobName] = expression.GetNextOccurrence(now.AddSeconds(60), _timeZoneInfo);
 
                 logger.LogInformation("Next run of {Job} scheduled at {NextRun}", jobName, nextRuns[jobName]);
             }
 
+            var nextRun = nextRuns.Values.Where(x => x.HasValue).Min();
+
+            if (!nextRun.HasValue)
+            {
+                break; // or sleep indefinitely if this should never happen
+            }
+
+            var delay = nextRun.Value - DateTimeOffset.Now + TimeSpan.FromMilliseconds(100);
+
+            if (delay < TimeSpan.Zero)
+            {
+                delay = TimeSpan.Zero;
+            }
+
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+                await Task.Delay(delay, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -87,9 +105,17 @@ public class SchedulerBackgroundService(
 
         try
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            if (!StartJob(jobName))
+            {
+                return; // already running
+            }
 
-            acquired = true;
+            acquired = await _semaphore.WaitAsync(0, cancellationToken);
+
+            if (!acquired)
+            {
+                return;
+            }
 
             using var scope = scopeFactory.CreateScope();
 
@@ -119,6 +145,24 @@ public class SchedulerBackgroundService(
             {
                 _semaphore.Release();
             }
+
+            FinishJob(jobName);
+        }
+    }
+
+    private bool StartJob(string jobName)
+    {
+        lock (_lock)
+        {
+            return _runningJobs.Add(jobName);
+        }
+    }
+
+    private void FinishJob(string jobName)
+    {
+        lock (_lock)
+        {
+            _runningJobs.Remove(jobName);
         }
     }
 }

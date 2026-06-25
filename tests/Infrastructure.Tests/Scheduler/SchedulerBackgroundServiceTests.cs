@@ -223,6 +223,7 @@ public class SchedulerBackgroundServiceTests(ITestOutputHelper outputHelper)
     {
         var settings = new SchedulerSettings
         {
+            PollingIntervalSeconds = 1,
             MaxConcurrentJobs = maxConcurrency,
             Jobs = jobs.ToDictionary(
                 x => x.JobName,
