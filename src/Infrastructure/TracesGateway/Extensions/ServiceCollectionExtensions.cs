@@ -25,8 +25,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAmazonSecurityTokenService>(sp =>
         {
-            var localStackOptions = sp.GetRequiredService<IOptions<LocalStackOptions>>().Value;
-            if (localStackOptions.UseLocalStack == false)
+            var localStackOptions = sp.GetRequiredService<IOptions<FlociOptions>>().Value;
+            if (localStackOptions.UseFloci == false)
                 return new AmazonSecurityTokenServiceClient();
 
             return new AmazonSecurityTokenServiceClient(
