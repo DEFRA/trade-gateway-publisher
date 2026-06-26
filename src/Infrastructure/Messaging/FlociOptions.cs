@@ -21,9 +21,6 @@ public class FlociOptions
     [ConfigurationKeyName("SQS_ENDPOINT")]
     public string? SqsEndpoint { get; init; }
 
-    [ConfigurationKeyName("STS_ENDPOINT")]
-    public string? StsEndpoint { get; init; }
-
     [ConfigurationKeyName("USE_FLOCI")]
     public bool? UseFloci { get; init; } = false;
 }

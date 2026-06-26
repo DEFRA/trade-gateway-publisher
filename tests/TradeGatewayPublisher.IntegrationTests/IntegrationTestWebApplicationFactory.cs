@@ -1,9 +1,13 @@
 using System.Collections.Concurrent;
+using Amazon.SecurityToken;
+using Amazon.SecurityToken.Model;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Driver;
+using NSubstitute;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
@@ -39,7 +43,6 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                         ["AWS_REGION"] = "eu-west-2",
                         ["SNS_ENDPOINT"] = FlociEndpoint,
                         ["SQS_ENDPOINT"] = FlociEndpoint,
-                        ["STS_ENDPOINT"] = FlociEndpoint,
 
                         // These are the topics and queues configured in init-aws.sh
                         ["TracesUpdatePublisher:IntraInternalTopicArn"] =
@@ -62,10 +65,26 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
             }
         );
 
-        builder.ConfigureServices(_ =>
+        builder.ConfigureServices(services =>
         {
             // Clean Mongo in-case the tests are re-run
             DropDatabase();
+
+            // Floci does not implement the STS GetWebIdentityToken operation that the real
+            // StsAuthDelegatingHandler relies on, so stub the STS client to return a fake token.
+            // Without this, every Traces Gateway request throws before it is sent.
+            var sts = Substitute.For<IAmazonSecurityTokenService>();
+            sts.GetWebIdentityTokenAsync(Arg.Any<GetWebIdentityTokenRequest>(), Arg.Any<CancellationToken>())
+                .Returns(
+                    new GetWebIdentityTokenResponse
+                    {
+                        WebIdentityToken = "integration-test-token",
+                        Expiration = DateTime.UtcNow.AddHours(1),
+                    }
+                );
+
+            services.RemoveAll<IAmazonSecurityTokenService>();
+            services.AddSingleton(sts);
         });
     }
 
