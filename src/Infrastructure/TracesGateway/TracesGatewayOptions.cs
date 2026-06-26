@@ -12,5 +12,6 @@ public class TracesGatewayOptions
     [Required]
     public string Audience { get; init; } = "trade-gateway";
 
-    public int DurationSeconds { get; init; } = 3600;
+    // Platform policy caps sts:GetWebIdentityToken token lifetime at 900s
+    public int DurationSeconds { get; init; } = 900;
 }
