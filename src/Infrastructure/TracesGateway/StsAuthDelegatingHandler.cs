@@ -1,22 +1,25 @@
+using System.Net.Http.Headers;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using Microsoft.Extensions.Options;
-using System.Net.Http.Headers;
 
 namespace Infrastructure.TracesGateway;
 
-public class StsAuthDelegatingHandler(
-    IAmazonSecurityTokenService sts,
-    IOptions<TracesGatewayOptions> options) : DelegatingHandler
+public class StsAuthDelegatingHandler(IAmazonSecurityTokenService sts, IOptions<TracesGatewayOptions> options)
+    : DelegatingHandler
 {
     private string? _token;
     private DateTime _tokenExpiry = DateTime.MinValue;
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await GetOrRefreshTokenAsync(cancellationToken));
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            await GetOrRefreshTokenAsync(cancellationToken)
+        );
         return await base.SendAsync(request, cancellationToken);
     }
 

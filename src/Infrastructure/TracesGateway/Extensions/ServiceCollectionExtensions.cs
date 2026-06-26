@@ -22,8 +22,8 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddSingleton<IAmazonSecurityTokenService>(_ => new AmazonSecurityTokenServiceClient());
-		
-		services.ConfigureHttpClientDefaults(http =>
+
+        services.ConfigureHttpClientDefaults(http =>
         {
             http.RedactLoggedHeaders(_ => false);
         });
