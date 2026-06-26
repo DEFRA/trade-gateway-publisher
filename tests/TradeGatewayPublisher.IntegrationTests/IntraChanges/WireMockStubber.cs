@@ -32,7 +32,7 @@ internal static class WireMockStubber
             new
             {
                 priority = 1,
-                request = new { method = "GET", urlPath = "/intras" },
+                request = new { method = "GET", urlPath = "/certificates/intras" },
                 response = new
                 {
                     status = 200,
@@ -48,7 +48,7 @@ internal static class WireMockStubber
             new
             {
                 priority = 1,
-                request = new { method = "GET", urlPath = $"/intras/{intraId}" },
+                request = new { method = "GET", urlPath = $"/certificates/intras/{intraId}" },
                 response = new { status = 200, body = certificationBody },
             },
             cancellationToken

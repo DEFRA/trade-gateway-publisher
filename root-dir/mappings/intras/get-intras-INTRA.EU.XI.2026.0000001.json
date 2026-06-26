@@ -2,7 +2,7 @@
   "uuid": "e9aaa601-9eeb-44b3-b48d-86a83ee61043",
   "persistent": true,
   "request": {
-    "urlPath": "/intras/INTRA.EU.XI.2026.0000001",
+    "urlPath": "/certificates/intras/INTRA.EU.XI.2026.0000001",
     "method": "GET"    
   },
   "response": {

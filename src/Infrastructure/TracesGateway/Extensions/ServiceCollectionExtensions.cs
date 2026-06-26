@@ -1,3 +1,9 @@
+using Amazon.SecurityToken;
+using Infrastructure.Leasing;
+using Infrastructure.Messaging;
+using Infrastructure.Scheduler;
+using Infrastructure.Scheduler.Metrics;
+using Infrastructure.Watermark;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -14,6 +20,8 @@ public static class ServiceCollectionExtensions
             .AddOptions<TracesGatewayOptions>()
             .Bind(configuration.GetSection(TracesGatewayOptions.SectionName))
             .ValidateOnStart();
+
+        services.AddSingleton<IAmazonSecurityTokenService>(_ => new AmazonSecurityTokenServiceClient());
 
         services.ConfigureHttpClientDefaults(http =>
         {
@@ -32,10 +40,12 @@ public static class ServiceCollectionExtensions
                     c.BaseAddress = new Uri(options.BaseUrl);
                 }
             )
+            .AddHttpMessageHandler<StsAuthDelegatingHandler>()
             .AddHttpMessageHandler<HttpLoggingDelegatingHandler>()
             .AddHttpMessageHandler<TracingDelegatingHandler>()
             .AddHttpMessageHandler<AcceptLanguageDelegatingHandle>();
 
+        services.AddSingleton<StsAuthDelegatingHandler>();
         services.AddSingleton<TracingDelegatingHandler>();
         services.AddSingleton<AcceptLanguageDelegatingHandle>();
         services.AddSingleton<HttpLoggingDelegatingHandler>();

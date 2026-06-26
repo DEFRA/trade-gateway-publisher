@@ -1,7 +1,7 @@
 {
   "id" : "e9aaa601-9eeb-44b3-b48d-86a83ee61041",
   "request" : {
-    "urlPath" : "/intras",
+    "urlPath" : "/certificates/intras",
     "method" : "GET",
     "queryParameters" : {
       "updatedFrom" : {
