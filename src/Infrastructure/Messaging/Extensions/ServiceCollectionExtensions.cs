@@ -42,14 +42,6 @@ public static class ServiceCollectionExtensions
             MetricNames.MeterName
         ));
 
-        services.AddHostedService(sp => new SqsConsumerBackgroundService(
-            queueUrl: queueUrlFactory(sp),
-            sqsClient: sp.GetRequiredService<IAmazonSQS>(),
-            consumer: sp.GetRequiredService<IMessageConsumer>(),
-            logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService>>(),
-            middlewares: sp.GetServices<IConsumeMiddleware>()
-        ));
-
         services.AddSingleton<IAmazonSimpleNotificationService>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<ResilientSnsClient>>();
