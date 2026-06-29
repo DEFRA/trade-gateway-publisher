@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 namespace Infrastructure.Messaging;
 
 [ExcludeFromCodeCoverage]
-public class LocalStackOptions
+public class FlociOptions
 {
     [ConfigurationKeyName("AWS_ACCESS_KEY_ID")]
     public string? AccessKeyId { get; init; }
@@ -21,6 +21,6 @@ public class LocalStackOptions
     [ConfigurationKeyName("SQS_ENDPOINT")]
     public string? SqsEndpoint { get; init; }
 
-    [ConfigurationKeyName("USE_LOCALSTACK")]
-    public bool? UseLocalStack { get; init; } = false;
+    [ConfigurationKeyName("USE_FLOCI")]
+    public bool? UseFloci { get; init; } = false;
 }

@@ -3,7 +3,6 @@ using Defra.TradeImports.EmfExporter;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
-using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
@@ -26,9 +25,8 @@ await app.RunAsync();
 static WebApplication BuildApp(string[] args)
 {
     var builder = WebApplication.CreateBuilder(args);
-    var integrationTest = args.Contains("--integrationTest=true");
     ConfigureHost(builder);
-    ConfigureServices(builder, integrationTest);
+    ConfigureServices(builder);
 
     var app = builder.Build();
 
@@ -46,7 +44,7 @@ static void ConfigureHost(WebApplicationBuilder builder)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureServices(WebApplicationBuilder builder, bool integrationTest)
+static void ConfigureServices(WebApplicationBuilder builder)
 {
     var services = builder.Services;
     var configuration = builder.Configuration;
@@ -57,16 +55,18 @@ static void ConfigureServices(WebApplicationBuilder builder, bool integrationTes
     services.AddProblemDetails();
     services.AddValidation();
     services.AddTracesGateway(configuration);
-    services.AddMessaging(
-        configuration,
-        sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
-    );
+    services
+        .AddMessaging(configuration)
+        .AddConsumer<IntraUpdateConsumer>(sp =>
+            sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
+        );
+
     services.AddHttpContextAccessor();
     services.AddTraceContextAccessor(configuration);
 
     ConfigureHeaderPropagation(services, configuration);
     ConfigureHttpClients(services);
-    ConfigureAppServices(services, configuration, integrationTest);
+    ConfigureAppServices(services, configuration);
 
     services.AddHealth();
 }
@@ -92,7 +92,7 @@ static void ConfigureHttpClients(IServiceCollection services)
 }
 
 [ExcludeFromCodeCoverage]
-static void ConfigureAppServices(IServiceCollection services, IConfiguration configuration, bool integrationTest)
+static void ConfigureAppServices(IServiceCollection services, IConfiguration configuration)
 {
     services
         .AddOptions<TracesUpdatePublisherOptions>()
@@ -103,16 +103,17 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
         .Bind(configuration.GetSection(TracesUpdateConsumerOptions.SectionName))
         .ValidateOnStart();
 
-    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();
+    services.AddScoped<IJobMiddleware, JobRetryMiddleware>();
+    services.AddScoped<IJobMiddleware, JobMetricsMiddleware>();
     services.AddScoped<IJobMiddleware, JobWatermarkMiddleware>();
     services.AddScheduler(configuration);
-    services.AddDbContext(configuration, integrationTest);
+    services.AddDbContext(configuration);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
 
-    services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
-    services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
+    ////services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
+    ////services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
 }
 
 [ExcludeFromCodeCoverage]

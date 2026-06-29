@@ -1,3 +1,4 @@
+using System.Reflection;
 using Infrastructure.Messaging;
 using Refit;
 
@@ -5,36 +6,39 @@ namespace Infrastructure.TracesGateway
 {
     public interface ITracesGateway
     {
-        [Get("/intra/find")]
+        [Get("/certificates/intras")]
         Task<FindIntraUpdatesResponse> FindIntraUpdates(
-            DateTime start,
-            DateTime end,
+            DateTime updatedFrom,
+            DateTime updatedBefore,
             int pageSize,
             int offset,
             CancellationToken cancellationToken
         );
 
-        [Get("/intra/{id}")]
+        [Get("/certificates/intras/{id}")]
         Task<HttpResponseMessage> GetIntraCertification(string id, CancellationToken cancellationToken);
 
-        [Get("/ched/find")]
+        [Get("/certificates/cheds")]
         Task<FindChedUpdatesResponse> FindChedUpdates(
-            DateTime start,
-            DateTime end,
+            DateTime updatedFrom,
+            DateTime updatedBefore,
             int pageSize,
             int offset,
             CancellationToken cancellationToken
         );
 
-        [Get("/ched/{id}")]
+        [Get("/certificates/cheds/{id}")]
         Task<HttpResponseMessage> GetChedCertification(string id, CancellationToken cancellationToken);
+
+        [Get("/health")]
+        Task<HttpResponseMessage> HealthCheck(CancellationToken cancellationToken);
     }
 
-    public record FindIntraUpdatesResponse(List<FindIntraUpdatesResponseRecord> Data);
+    public record FindIntraUpdatesResponse(List<FindIntraUpdatesResponseRecord> Items);
 
-    public record FindIntraUpdatesResponseRecord(string Id, DateTime Timestamp) : IMessage
+    public record FindIntraUpdatesResponseRecord(string Id, DateTime Updated) : IMessage
     {
-        public string DuplicationId { get; } = Id;
+        public string DuplicationId { get; } = Guid.NewGuid().ToString("N");
     }
 
     public record FindChedUpdatesResponse(List<FindChedUpdatesResponseRecord> Data);
@@ -42,5 +46,18 @@ namespace Infrastructure.TracesGateway
     public record FindChedUpdatesResponseRecord(string Id, DateTime Timestamp) : IMessage
     {
         public string DuplicationId { get; } = Id;
+    }
+
+    public class UtcDateTimeUrlParameterFormatter : IUrlParameterFormatter
+    {
+        public string? Format(object? value, ICustomAttributeProvider attributeProvider, Type type)
+        {
+            if (value is DateTime dt)
+            {
+                return dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+            }
+
+            return value?.ToString();
+        }
     }
 }

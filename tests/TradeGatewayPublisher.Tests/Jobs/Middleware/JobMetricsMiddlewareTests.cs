@@ -29,7 +29,7 @@ public class JobMetricsMiddlewareTests
 
         var sut = new JobMetricsMiddleware(metrics);
 
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         JobExecutionDelegate next = (_, _) => Task.CompletedTask;
 
@@ -63,7 +63,7 @@ public class JobMetricsMiddlewareTests
 
         var sut = new JobMetricsMiddleware(metrics);
 
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         var exception = new InvalidOperationException("boom");
 

@@ -20,7 +20,7 @@ public class JobWatermarkMiddlewareTests
     public async Task InvokeAsync_should_use_stored_watermark_when_available()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         var stored = new DateTimeOffset(2024, 01, 01, 12, 0, 0, TimeSpan.Zero);
 
@@ -50,7 +50,7 @@ public class JobWatermarkMiddlewareTests
     public async Task InvokeAsync_should_use_default_watermark_when_none_exists()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         _store.GetAsync("TestJob", Arg.Any<CancellationToken>()).Returns((DateTimeOffset?)null);
 
@@ -79,7 +79,7 @@ public class JobWatermarkMiddlewareTests
     public async Task InvokeAsync_should_set_watermark_in_context_before_next()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         _store.GetAsync("TestJob", Arg.Any<CancellationToken>()).Returns(DateTimeOffset.UtcNow);
 
@@ -103,7 +103,7 @@ public class JobWatermarkMiddlewareTests
     public async Task InvokeAsync_should_persist_new_watermark_after_execution()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         _store.GetAsync("TestJob", Arg.Any<CancellationToken>()).Returns(DateTimeOffset.UtcNow);
 

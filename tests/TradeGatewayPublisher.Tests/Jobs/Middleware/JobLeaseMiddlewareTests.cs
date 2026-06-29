@@ -21,7 +21,7 @@ public class JobLeaseMiddlewareTests
     public async Task InvokeAsync_should_run_next_when_lease_is_acquired()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         var lease = Substitute.For<IAsyncDisposable>();
 
@@ -48,7 +48,7 @@ public class JobLeaseMiddlewareTests
     public async Task InvokeAsync_should_skip_next_when_lease_is_null()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "TestJob", new JobSettings());
 
         _leaseProvider
             .TryAcquireAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
@@ -73,7 +73,7 @@ public class JobLeaseMiddlewareTests
     public async Task InvokeAsync_should_use_correct_lease_name()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "MyJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "MyJob", new JobSettings());
 
         _leaseProvider
             .TryAcquireAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
@@ -94,7 +94,7 @@ public class JobLeaseMiddlewareTests
     public async Task InvokeAsync_should_use_default_lease_duration()
     {
         // Arrange
-        var context = new JobContext(Guid.NewGuid().ToString(), "MyJob");
+        var context = new JobContext(Guid.NewGuid().ToString(), "MyJob", new JobSettings());
 
         _leaseProvider
             .TryAcquireAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())

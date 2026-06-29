@@ -3,6 +3,7 @@ using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Infrastructure.TracesGateway;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using TradeGatewayPublisher.Config;
@@ -29,7 +30,7 @@ public class TracesIntraChangesJobTests
             }
         );
 
-        _sut = new TracesIntraChangesJob(_gateway, _sns, _options);
+        _sut = new TracesIntraChangesJob(_gateway, _sns, _options, NullLogger<TracesIntraChangesJob>.Instance);
     }
 
     [Fact]
@@ -159,9 +160,13 @@ public class TracesIntraChangesJobTests
                 var offset = call.ArgAt<int>(3);
                 callOffsets.Add(offset);
 
-                return Task.FromResult(
-                    new FindIntraUpdatesResponse([new FindIntraUpdatesResponseRecord("1", DateTime.UtcNow)])
-                );
+                var response = new FindIntraUpdatesResponse([]);
+                for (var i = 0; i < 100; i++)
+                {
+                    response.Items.Add(new FindIntraUpdatesResponseRecord((offset + 1).ToString(), DateTime.UtcNow));
+                }
+
+                return Task.FromResult(response);
             });
 
         _gateway
@@ -185,7 +190,7 @@ public class TracesIntraChangesJobTests
 
     private static JobContext CreateContext(WatermarkContext? watermark = null)
     {
-        var context = new JobContext("JobId", "TestJob");
+        var context = new JobContext("JobId", "TestJob", new JobSettings());
 
         watermark ??= new WatermarkContext(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow);
 

@@ -5,15 +5,15 @@ set -e
 AWS_ENDPOINT="http://floci:4566"
 REGION="eu-west-2"
 
-INTRA_INTERNAL_TOPIC_NAME="trade_gateway_intra_stream_internal.fifo"
-INTRA_TOPIC_NAME="trade_gateway_intra_updates.fifo"
-INTRA_INTERNAL_QUEUE_NAME="trade_gateway_intra_stream_publisher_internal.fifo"
-INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_intra_stream_publisher_internal-deadletter.fifo"
+INTRA_INTERNAL_TOPIC_NAME="trade_gateway_publisher_intra_stream_internal.fifo"
+INTRA_TOPIC_NAME="trade_gateway_publisher_intra_updates.fifo"
+INTRA_INTERNAL_QUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher.fifo"
+INTRA_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_intra_stream_internal_publisher-deadletter.fifo" 
 
-CHED_INTERNAL_TOPIC_NAME="trade_gateway_ched_stream_internal.fifo"
-CHED_TOPIC_NAME="trade_gateway_ched_updates.fifo"
-CHED_INTERNAL_QUEUE_NAME="trade_gateway_ched_stream_publisher_internal.fifo"
-CHED_INTERNAL_DLQUEUE_NAME="trade_gateway_ched_stream_publisher_internal-deadletter.fifo"
+CHED_INTERNAL_TOPIC_NAME="trade_gateway_publisher_ched_stream_internal.fifo"
+CHED_TOPIC_NAME="trade_gateway_publisher_ched_updates.fifo"
+CHED_INTERNAL_QUEUE_NAME="trade_gateway_publisher_ched_stream_internal_publisher.fifo"
+CHED_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_ched_stream_internal_publisher-deadletter.fifo"
 
 echo "Creating SNS FIFO topic..."
 INTRA_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
@@ -51,6 +51,9 @@ CHED_INTERNAL_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
   --output text)
 
 echo "Topic ARN: $CHED_INTERNAL_TOPIC_ARN"
+
+# Queue used by integration tests to observe messages published to outbound SNS topic
+INTRA_TEST_QUEUE_NAME="trade_gateway_publisher_intra_updates_test.fifo"
 
 echo "Creating SQS FIFO queue..."
 QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
@@ -103,6 +106,31 @@ CHED_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
 
 echo "Queue ARN: $CHED_QUEUE_ARN"
 
+echo "Creating Intra test queue..."
+INTRA_TEST_QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+  --queue-name "$INTRA_TEST_QUEUE_NAME" \
+  --attributes FifoQueue=true,ContentBasedDeduplication=true \
+  --region $REGION \
+  --query 'QueueUrl' \
+  --output text)
+
+echo "Queue URL: $INTRA_TEST_QUEUE_URL"
+
+INTRA_TEST_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
+  --queue-url "$INTRA_TEST_QUEUE_URL" \
+  --attribute-names QueueArn \
+  --region $REGION \
+  --query 'Attributes.QueueArn' \
+  --output text)
+
+echo "Subscribing test queue: $INTRA_TEST_QUEUE_ARN to topic: $INTRA_INTERNAL_TOPIC_ARN"
+aws --endpoint-url=$AWS_ENDPOINT sns subscribe \
+  --topic-arn "$INTRA_INTERNAL_TOPIC_ARN" \
+  --protocol sqs \
+  --notification-endpoint "$INTRA_TEST_QUEUE_ARN" \
+  --attributes '{"RawMessageDelivery": "true"}' \
+  --region $REGION
+
 echo "Applying SQS policy to allow SNS publishing..."
 
 
@@ -141,6 +169,7 @@ function is_ready() {
     aws --endpoint-url=$AWS_ENDPOINT sns list-topics --query "Topics[?ends_with(TopicArn, ':${CHED_INTERNAL_TOPIC_NAME}')].TopicArn" || return 1
     aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${CHED_INTERNAL_QUEUE_NAME} || return 1
     aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${CHED_INTERNAL_DLQUEUE_NAME} || return 1
+    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_TEST_QUEUE_NAME} || return 1
     return 0
 }
 

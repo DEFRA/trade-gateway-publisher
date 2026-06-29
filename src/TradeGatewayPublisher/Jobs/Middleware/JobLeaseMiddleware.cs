@@ -12,21 +12,25 @@ public sealed class JobLeaseMiddleware(ILeaseProvider leaseProvider, ILogger<Job
     {
         var leaseName = $"job:{context.Name}";
 
-        await using var lease = await leaseProvider.TryAcquireAsync(
-            leaseName,
-            s_defaultLeaseDuration,
-            cancellationToken
-        );
+        var lease = await leaseProvider.TryAcquireAsync(leaseName, s_defaultLeaseDuration, cancellationToken);
 
-        if (lease is null)
+        try
         {
-            logger.LogInformation("Skipping {JobName} because lease could not be acquired", context.Name);
+            if (lease is null)
+            {
+                logger.LogInformation("Skipping {JobName} because lease could not be acquired", context.Name);
 
-            return;
+                return;
+            }
+
+            logger.LogInformation("Lease acquired for {JobName}", context.Name);
+
+            await next(context, cancellationToken);
         }
-
-        logger.LogInformation("Lease acquired for {JobName}", context.Name);
-
-        await next(context, cancellationToken);
+        finally
+        {
+            if (lease != null)
+                await lease.DisposeAsync();
+        }
     }
 }

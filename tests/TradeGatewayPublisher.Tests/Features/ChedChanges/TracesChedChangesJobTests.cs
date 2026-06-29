@@ -186,7 +186,7 @@ public class TracesChedChangesJobTests
 
     private static JobContext CreateContext(WatermarkContext? watermark = null)
     {
-        var context = new JobContext("JobId", "TestJob");
+        var context = new JobContext("JobId", "TestJob", new JobSettings());
 
         watermark ??= new WatermarkContext(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow);
 

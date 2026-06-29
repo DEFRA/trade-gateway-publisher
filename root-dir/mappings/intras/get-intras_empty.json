@@ -1,17 +1,17 @@
 {
-  "id" : "e9aaa601-9eeb-44b3-b48d-86a83ee61042",
+  "id" : "e9aaa601-9eeb-44b3-b48d-86a83ee61041",
   "request" : {
-    "urlPath" : "/intra/find",
+    "urlPath" : "/certificates/intras",
     "method" : "GET",
     "queryParameters" : {
-      "start" : {
+      "updatedFrom" : {
         "matches" : ".*"
       },
-      "end" : {
+      "updatedBefore" : {
         "matches" : ".*"
       },
       "offset" : {
-        "matches" : "\\d+"
+        "matches" : "100"
       },
       "pageSize" : {
         "matches" : "\\d+"
@@ -23,27 +23,21 @@
     "jsonBody" : {
       "pageSize" : 100,
       "offset" : 0,
-      "data" : [ {
-        "id" : "111",
+      "items" : [ {
+        "id" : "INTRA.EU.XI.2026.0000001",
         "timestamp" : "2026-05-05"
-      }, {
-        "id" : "222",
-        "timestamp" : "2026-05-06"
-      }, {
-        "id" : "333",
-        "timestamp" : "2026-05-07"
       } ]
     },
     "headers" : {
       "Content-Type" : "application/json"
     }
   },
-  "uuid" : "e9aaa601-9eeb-44b3-b48d-86a83ee61042",
+  "uuid" : "e9aaa601-9eeb-44b3-b48d-86a83ee61041",
   "persistent" : true,
   "metadata" : {
     "wiremock-gui" : {
-      "folder" : "/intra"
+      "folder" : "/intras"
     }
   },
-  "insertionIndex" : 0
+  "insertionIndex" : 1
 }

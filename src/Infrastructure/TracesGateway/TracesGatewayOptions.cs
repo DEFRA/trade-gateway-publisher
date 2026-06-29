@@ -8,4 +8,10 @@ public class TracesGatewayOptions
 
     [Required]
     public required string BaseUrl { get; init; }
+
+    [Required]
+    public string Audience { get; init; } = "trade-gateway";
+
+    // Platform policy caps sts:GetWebIdentityToken token lifetime at 900s
+    public int DurationSeconds { get; init; } = 900;
 }
