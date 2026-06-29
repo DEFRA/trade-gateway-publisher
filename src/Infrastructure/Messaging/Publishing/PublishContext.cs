@@ -12,6 +12,12 @@ namespace Infrastructure.Messaging.Publishing
 
         public Dictionary<string, MessageAttributeValue> Headers { get; } = new();
 
+        public string GetTopicName()
+        {
+            var parts = TopicArn.Split(':');
+            return parts.Length < 6 ? throw new FormatException("Invalid SNS Topic ARN format.") : parts[^1];
+        }
+
         public PublishRequest ToPublishRequest()
         {
             var request = new PublishRequest
