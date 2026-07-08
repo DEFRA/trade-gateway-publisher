@@ -41,7 +41,7 @@ namespace Infrastructure.TracesGateway
         public string DuplicationId { get; } = Guid.NewGuid().ToString("N");
     }
 
-    public record FindChedUpdatesResponse(List<FindChedUpdatesResponseRecord> Data);
+    public record FindChedUpdatesResponse(List<FindChedUpdatesResponseRecord> Items);
 
     public record FindChedUpdatesResponseRecord(string Id, DateTime Timestamp) : IMessage
     {

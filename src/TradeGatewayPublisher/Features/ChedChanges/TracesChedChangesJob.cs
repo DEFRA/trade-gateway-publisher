@@ -30,9 +30,11 @@ public sealed class TracesChedChangesJob(
                 offset,
                 cancellationToken
             );
-            hasMoreUpdates = updatesResponse.Data.Any();
 
-            foreach (var update in updatesResponse.Data)
+            var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindChedUpdatesResponseRecord>();
+            hasMoreUpdates = responseData.Count() == pageSize;
+
+            foreach (var update in responseData)
             {
                 // Publish each update to SNS - this could prob become a batch
                 await snsPublisher.PublishAsync(
