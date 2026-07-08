@@ -3,6 +3,7 @@ using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Infrastructure.TracesGateway;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using TradeGatewayPublisher.Config;
@@ -30,7 +31,7 @@ public class TracesChedChangesJobTests
             }
         );
 
-        _sut = new TracesChedChangesJob(_gateway, _sns, _options);
+        _sut = new TracesChedChangesJob(_gateway, _sns, _options, NullLogger<TracesChedChangesJob>.Instance);
     }
 
     [Fact]
