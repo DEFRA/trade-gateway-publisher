@@ -160,9 +160,13 @@ public class TracesChedChangesJobTests
                 var offset = call.ArgAt<int>(3);
                 callOffsets.Add(offset);
 
-                return Task.FromResult(
-                    new FindChedUpdatesResponse([new FindChedUpdatesResponseRecord("1", DateTime.UtcNow)])
-                );
+                var response = new FindChedUpdatesResponse([]);
+                for (var i = 0; i < 100; i++)
+                {
+                    response.Items.Add(new FindChedUpdatesResponseRecord((offset + 1).ToString(), DateTime.UtcNow));
+                }
+
+                return Task.FromResult(response);
             });
 
         _gateway
