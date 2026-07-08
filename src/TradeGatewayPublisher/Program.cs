@@ -55,11 +55,15 @@ static void ConfigureServices(WebApplicationBuilder builder)
     services.AddProblemDetails();
     services.AddValidation();
     services.AddTracesGateway(configuration);
-    services
-        .AddMessaging(configuration)
-        .AddConsumer<IntraUpdateConsumer>(sp =>
-            sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
-        );
+    services.AddMessaging(configuration);
+
+    services.AddConsumer<IntraUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl
+    );
+
+    services.AddConsumer<ChedUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrl
+    );
 
     services.AddHttpContextAccessor();
     services.AddTraceContextAccessor(configuration);
@@ -111,9 +115,6 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddDbContext(configuration);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
-
-    ////services.AddSingleton<IMessageConsumer, IntraUpdateConsumer>();
-    ////services.AddSingleton<IMessageConsumer, ChedUpdateConsumer>();
 }
 
 [ExcludeFromCodeCoverage]
