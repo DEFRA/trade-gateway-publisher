@@ -40,7 +40,7 @@ public sealed class TracesChedChangesJob(
                 var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindChedUpdatesResponseRecord>();
                 hasMoreUpdates = responseData.Count() == pageSize;
                 
-                var topicArn = options.Value.ChedTopicArn;
+                var topicArn = options.Value.ChedInternalTopicArn;
 
                 foreach (var update in responseData)
                 {
