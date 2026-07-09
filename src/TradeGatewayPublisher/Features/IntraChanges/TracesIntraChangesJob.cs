@@ -48,6 +48,7 @@ public sealed class TracesIntraChangesJob(
                         update,
                         cancellationToken: cancellationToken
                     );
+                    logger.LogInformation("Published INTRA {Id} to {Topic}", update.Id, Name);
                     changesFoundCount++;
                 }
             }

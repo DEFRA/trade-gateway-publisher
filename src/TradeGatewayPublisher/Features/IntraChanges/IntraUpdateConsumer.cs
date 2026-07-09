@@ -10,7 +10,8 @@ namespace TradeGatewayPublisher.Features.IntraChanges
     public class IntraUpdateConsumer(
         ITracesGateway tracesGateway,
         ISnsPublisher snsPublisher,
-        IOptions<TracesUpdatePublisherOptions> options
+        IOptions<TracesUpdatePublisherOptions> options,
+        ILogger<IntraUpdateConsumer> logger
     ) : IMessageConsumer
     {
         public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
@@ -26,6 +27,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
                 duplicationId: Guid.NewGuid().ToString("N"),
                 cancellationToken: cancellationToken
             );
+            logger.LogInformation("Published INTRA {Id} to {Topic}", message.Id, options.Value.IntraTopicArn);
         }
     }
 }
