@@ -5,13 +5,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Messaging.Consuming;
 
-public class SqsConsumerBackgroundService(
+public class SqsConsumerBackgroundService<TConsumer>(
     string queueUrl,
     IAmazonSQS sqsClient,
-    IMessageConsumer consumer,
-    ILogger<SqsConsumerBackgroundService> logger,
+    TConsumer consumer,
+    ILogger<SqsConsumerBackgroundService<TConsumer>> logger,
     IEnumerable<IConsumeMiddleware>? middlewares = null
 ) : BackgroundService
+    where TConsumer : IMessageConsumer
 {
     private readonly IReadOnlyList<IConsumeMiddleware> _middlewares = middlewares?.ToList() ?? [];
 

@@ -96,11 +96,11 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IMessageConsumer, TConsumer>();
         services.AddSingleton<TConsumer>();
-        services.AddHostedService(sp => new SqsConsumerBackgroundService(
+        services.AddHostedService(sp => new SqsConsumerBackgroundService<TConsumer>(
             queueUrl: queueUrlFactory(sp),
             sqsClient: sp.GetRequiredService<IAmazonSQS>(),
             consumer: sp.GetRequiredService<TConsumer>(),
-            logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService>>(),
+            logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService<TConsumer>>>(),
             middlewares: sp.GetServices<IConsumeMiddleware>()
         ));
     }
