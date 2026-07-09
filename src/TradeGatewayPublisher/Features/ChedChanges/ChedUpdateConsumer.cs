@@ -10,7 +10,8 @@ namespace TradeGatewayPublisher.Features.ChedChanges
     public class ChedUpdateConsumer(
         ITracesGateway tracesGateway,
         ISnsPublisher snsPublisher,
-        IOptions<TracesUpdatePublisherOptions> options
+        IOptions<TracesUpdatePublisherOptions> options,
+        ILogger<ChedUpdateConsumer> logger
     ) : IMessageConsumer
     {
         public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
@@ -25,6 +26,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
                 await response.Content.ReadAsStringAsync(cancellationToken),
                 cancellationToken: cancellationToken
             );
+            logger.LogInformation("Published CHED {Id} to {Topic}", message.Id, options.Value.ChedTopicArn);
         }
     }
 }

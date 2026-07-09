@@ -48,6 +48,7 @@ public sealed class TracesChedChangesJob(
                         update,
                         cancellationToken: cancellationToken
                     );
+                    logger.LogInformation("Published CHED {Id} to {Topic}", update.Id, Name);
                     changesFoundCount++;
                 }
             }
