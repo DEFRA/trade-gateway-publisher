@@ -39,17 +39,13 @@ public sealed class TracesChedChangesJob(
 
                 var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindChedUpdatesResponseRecord>();
                 hasMoreUpdates = responseData.Count() == pageSize;
-                
+
                 var topicArn = options.Value.ChedInternalTopicArn;
 
                 foreach (var update in responseData)
                 {
                     // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(
-                        topicArn,
-                        update,
-                        cancellationToken: cancellationToken
-                    );
+                    await snsPublisher.PublishAsync(topicArn, update, cancellationToken: cancellationToken);
                     logger.LogInformation("Published CHED {Id} to {Topic}", update.Id, topicArn);
                     changesFoundCount++;
                 }

@@ -45,11 +45,7 @@ public sealed class TracesIntraChangesJob(
                 foreach (var update in responseData)
                 {
                     // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(
-                        topicArn,
-                        update,
-                        cancellationToken: cancellationToken
-                    );
+                    await snsPublisher.PublishAsync(topicArn, update, cancellationToken: cancellationToken);
                     logger.LogInformation("Published INTRA {Id} to {Topic}", update.Id, topicArn);
                     changesFoundCount++;
                 }
