@@ -38,6 +38,7 @@ namespace Infrastructure.TracesGateway
 
     public record FindIntraUpdatesResponseRecord(string Id, DateTime Updated) : IMessage
     {
+        // Placeholder deduplication id — see "Message Deduplication" in README.md
         public string DuplicationId { get; } = Guid.NewGuid().ToString("N");
     }
 
