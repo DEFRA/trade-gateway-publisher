@@ -98,6 +98,26 @@ licence.
 
 It is designed to encourage use and re-use of information freely and flexibly, with only a few conditions.
 
+# Message Deduplication
+
+We publish to SNS FIFO topics, which require every message to carry a `MessageDeduplicationId`. SNS
+drops a message whose id it has already seen within a 5-minute window. `ISnsPublisher` takes it as the
+`duplicationId` parameter, or reads `IMessage.DuplicationId` on the generic overload.
+
+**Most call sites currently pass a fresh `Guid`, so deduplication does nothing.** This is a
+placeholder: it satisfies the topic's requirement for an id, but the id is never repeated. The one
+exception is `FindChedUpdatesResponseRecord`, which keys on certificate `Id` alone — so it drops
+genuinely newer updates to the same CHED inside the window.
+
+The real key should identify *a version of a certificate* — likely `id + updated timestamp`, or a hash
+of the body. It will be settled with the common message wrapper. Note `DuplicationId` is currently
+serialised into the message body, so a body-hash key would be circular; the wrapper should carry it as
+metadata.
+
+`duplicationId` is optional, so it is easy to omit and fails at runtime rather than compile time. Every
+publish call site must supply one, and each is pinned by a test asserting a non-empty id — see
+`ChedUpdateConsumerTests`, `IntraUpdateConsumerTests` and `SnsPublisherTests`.
+
 # Infrastructure.Leasing
 
 A distributed lease provider backed by MongoDB, designed to ensure mutually exclusive execution of tasks across multiple application instances.

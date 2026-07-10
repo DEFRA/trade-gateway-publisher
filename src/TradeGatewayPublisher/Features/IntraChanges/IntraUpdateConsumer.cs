@@ -21,6 +21,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
             var response = await tracesGateway.GetIntraCertification(message!.Id, cancellationToken);
             response.EnsureSuccessStatusCode();
 
+            // Placeholder deduplication id — see "Message Deduplication" in README.md
             await snsPublisher.PublishAsync(
                 options.Value.IntraTopicArn,
                 await response.Content.ReadAsStringAsync(cancellationToken),

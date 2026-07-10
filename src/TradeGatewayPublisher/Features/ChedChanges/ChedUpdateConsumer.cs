@@ -21,9 +21,11 @@ namespace TradeGatewayPublisher.Features.ChedChanges
             var response = await tracesGateway.GetChedCertification(message!.Id, cancellationToken);
             response.EnsureSuccessStatusCode();
 
+            // Placeholder deduplication id — see "Message Deduplication" in README.md
             await snsPublisher.PublishAsync(
                 options.Value.ChedTopicArn,
                 await response.Content.ReadAsStringAsync(cancellationToken),
+                duplicationId: Guid.NewGuid().ToString("N"),
                 cancellationToken: cancellationToken
             );
             logger.LogInformation("Published CHED {Id} to {Topic}", message.Id, options.Value.ChedTopicArn);
