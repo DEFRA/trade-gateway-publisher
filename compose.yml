@@ -2,40 +2,14 @@ services:
   # floci is a replacement for localstack. It emulates AWS resources (sqs, sns, s3 etc) for local development
   # See: https://floci.io for more details
   floci:
-    image: floci/floci:latest-aws
+    image: floci/floci:1.5.25-compat
     ports:
       - '4566:4566'
     env_file:
-      - 'compose/aws.env'
-    environment:
-      FLOCI_DEFAULT_REGION: eu-west-2
-      FLOCI_HOSTNAME: floci
-      FLOCI_STORAGE_MODE: hybrid
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -qO- http://localhost:4566/_localstack/health || exit 1"
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 15s
+      - ./compose/aws.env
+      - ./compose/floci.env
     volumes:
       - ./compose/floci/ready.d:/etc/floci/init/ready.d:ro
-
-  aws-init:
-    image: amazon/aws-cli
-    depends_on:
-      floci:
-        condition: service_healthy
-    volumes:
-      - ./compose/floci/ready.d/init-aws.sh:/init-aws.sh:ro
-    environment:
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      AWS_DEFAULT_REGION: eu-west-2
-    entrypoint: ["/bin/sh", "/init-aws.sh"]
 
   mongodb:
     image: mongo:7.0.28
@@ -56,8 +30,6 @@ services:
       - 'floci:floci'
       - 'mongodb:mongodb'
     depends_on:
-      aws-init:
-        condition: service_completed_successfully
       floci:
         condition: service_healthy
       mongodb:

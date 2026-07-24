@@ -16,8 +16,8 @@ CHED_INTERNAL_QUEUE_NAME="trade_gateway_publisher_ched_stream_internal_publisher
 CHED_INTERNAL_DLQUEUE_NAME="trade_gateway_publisher_ched_stream_internal_publisher-deadletter.fifo"
 
 echo "Creating SNS FIFO topic..."
-INTRA_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
-  --name "$INTRA_INTERNAL_TOPIC_NAME" \
+INTRA_TOPIC_ARN=$(awslocal sns create-topic \
+  --name "$INTRA_TOPIC_NAME" \
   --attributes FifoTopic=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'TopicArn' \
@@ -25,16 +25,15 @@ INTRA_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
 
 echo "Topic ARN: $INTRA_TOPIC_ARN"
 
-
-INTRA_INTERNAL_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
-  --name "$INTRA_TOPIC_NAME" \
+INTRA_INTERNAL_TOPIC_ARN=$(awslocal sns create-topic \
+  --name "$INTRA_INTERNAL_TOPIC_NAME" \
   --attributes FifoTopic=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'TopicArn' \
   --output text)
 
-CHED_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
-  --name "$CHED_INTERNAL_TOPIC_NAME" \
+CHED_TOPIC_ARN=$(awslocal sns create-topic \
+  --name "$CHED_TOPIC_NAME" \
   --attributes FifoTopic=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'TopicArn' \
@@ -42,9 +41,8 @@ CHED_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
 
 echo "Topic ARN: $CHED_TOPIC_ARN"
 
-
-CHED_INTERNAL_TOPIC_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sns create-topic \
-  --name "$CHED_TOPIC_NAME" \
+CHED_INTERNAL_TOPIC_ARN=$(awslocal sns create-topic \
+  --name "$CHED_INTERNAL_TOPIC_NAME" \
   --attributes FifoTopic=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'TopicArn' \
@@ -56,48 +54,62 @@ echo "Topic ARN: $CHED_INTERNAL_TOPIC_ARN"
 INTRA_TEST_QUEUE_NAME="trade_gateway_publisher_intra_updates_test.fifo"
 
 echo "Creating SQS FIFO queue..."
-QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+INTRA_QUEUE_URL=$(awslocal sqs create-queue \
   --queue-name "$INTRA_INTERNAL_QUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'QueueUrl' \
   --output text)
 
-DLQUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+INTRA_DLQUEUE_URL=$(awslocal sqs create-queue \
   --queue-name "$INTRA_INTERNAL_DLQUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'QueueUrl' \
   --output text)
 
-echo "Queue URL: $QUEUE_URL"
+INTRA_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes \
+  --queue-url "$INTRA_DLQUEUE_URL" \
+  --attribute-names QueueArn \
+  --region $REGION \
+  --query 'Attributes.QueueArn' \
+  --output text)
 
-CHED_QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+echo "INTRA Queue URL: $INTRA_QUEUE_URL"
+
+CHED_QUEUE_URL=$(awslocal sqs create-queue \
   --queue-name "$CHED_INTERNAL_QUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'QueueUrl' \
   --output text)
 
-CHED_DLQUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+CHED_DLQUEUE_URL=$(awslocal sqs create-queue \
   --queue-name "$CHED_INTERNAL_DLQUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
   --query 'QueueUrl' \
   --output text)
 
-echo "Queue URL: $CHED_QUEUE_URL"
-
-QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
-  --queue-url "$QUEUE_URL" \
+CHED_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes \
+  --queue-url "$CHED_DLQUEUE_URL" \
   --attribute-names QueueArn \
   --region $REGION \
   --query 'Attributes.QueueArn' \
   --output text)
 
-echo "Queue ARN: $QUEUE_ARN"
+echo "Queue URL: $CHED_QUEUE_URL"
 
-CHED_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
+INTRA_QUEUE_ARN=$(awslocal sqs get-queue-attributes \
+  --queue-url "$INTRA_QUEUE_URL" \
+  --attribute-names QueueArn \
+  --region $REGION \
+  --query 'Attributes.QueueArn' \
+  --output text)
+
+echo "Intra Queue ARN: $INTRA_QUEUE_ARN"
+
+CHED_QUEUE_ARN=$(awslocal sqs get-queue-attributes \
   --queue-url "$CHED_QUEUE_URL" \
   --attribute-names QueueArn \
   --region $REGION \
@@ -107,7 +119,7 @@ CHED_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
 echo "Queue ARN: $CHED_QUEUE_ARN"
 
 echo "Creating Intra test queue..."
-INTRA_TEST_QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
+INTRA_TEST_QUEUE_URL=$(awslocal sqs create-queue \
   --queue-name "$INTRA_TEST_QUEUE_NAME" \
   --attributes FifoQueue=true,ContentBasedDeduplication=true \
   --region $REGION \
@@ -116,16 +128,16 @@ INTRA_TEST_QUEUE_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs create-queue \
 
 echo "Queue URL: $INTRA_TEST_QUEUE_URL"
 
-INTRA_TEST_QUEUE_ARN=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-attributes \
+INTRA_TEST_QUEUE_ARN=$(awslocal sqs get-queue-attributes \
   --queue-url "$INTRA_TEST_QUEUE_URL" \
   --attribute-names QueueArn \
   --region $REGION \
   --query 'Attributes.QueueArn' \
   --output text)
 
-echo "Subscribing test queue: $INTRA_TEST_QUEUE_ARN to topic: $INTRA_INTERNAL_TOPIC_ARN"
-aws --endpoint-url=$AWS_ENDPOINT sns subscribe \
-  --topic-arn "$INTRA_INTERNAL_TOPIC_ARN" \
+echo "Subscribing test queue: $INTRA_TEST_QUEUE_ARN to topic: $INTRA_TOPIC_ARN"
+awslocal sns subscribe \
+  --topic-arn "$INTRA_TOPIC_ARN" \
   --protocol sqs \
   --notification-endpoint "$INTRA_TEST_QUEUE_ARN" \
   --attributes '{"RawMessageDelivery": "true"}' \
@@ -135,20 +147,20 @@ echo "Applying SQS policy to allow SNS publishing..."
 
 
 
-echo "Subscribing queue: "$QUEUE_ARN" to topic: $INTRA_TOPIC_ARN"
+echo "Subscribing queue: "$INTRA_QUEUE_ARN" to topic: $INTRA_INTERNAL_TOPIC_ARN"
 
-aws --endpoint-url=$AWS_ENDPOINT sns subscribe \
-  --topic-arn "$INTRA_TOPIC_ARN" \
+awslocal sns subscribe \
+  --topic-arn "$INTRA_INTERNAL_TOPIC_ARN" \
   --protocol sqs \
-  --notification-endpoint "$QUEUE_ARN" \
+  --notification-endpoint "$INTRA_QUEUE_ARN" \
   --attributes '{"RawMessageDelivery": "true"}' \
   --region $REGION
 
 
-echo "Subscribing queue: "$CHED_QUEUE_ARN" to topic: $CHED_INTRA_TOPIC_ARN"
+echo "Subscribing queue: "$CHED_QUEUE_ARN" to topic: $CHED_INTERNAL_TOPIC_ARN"
 
-aws --endpoint-url=$AWS_ENDPOINT sns subscribe \
-  --topic-arn "$CHED_TOPIC_ARN" \
+awslocal sns subscribe \
+  --topic-arn "$CHED_INTERNAL_TOPIC_ARN" \
   --protocol sqs \
   --notification-endpoint "$CHED_QUEUE_ARN" \
   --attributes '{"RawMessageDelivery": "true"}' \
@@ -158,24 +170,6 @@ echo "Done."
 
 
 # Create Redrive Policy
-aws --endpoint-url=$AWS_ENDPOINT sqs set-queue-attributes --queue-url $QUEUE_URL --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"${QUEUE_URL}\",\"maxReceiveCount\":\"1\"}"}'
-aws --endpoint-url=$AWS_ENDPOINT sqs set-queue-attributes --queue-url $CHED_QUEUE_URL --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"${CHED_QUEUE_URL}\",\"maxReceiveCount\":\"1\"}"}'
+awslocal sqs set-queue-attributes --queue-url $INTRA_QUEUE_URL --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"${INTRA_DLQUEUE_ARN}\",\"maxReceiveCount\":\"1\"}"}'
+awslocal sqs set-queue-attributes --queue-url $CHED_QUEUE_URL --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"${CHED_DLQUEUE_ARN}\",\"maxReceiveCount\":\"1\"}"}'
 
-function is_ready() {
-    aws --endpoint-url=$AWS_ENDPOINT sns list-topics --query "Topics[?ends_with(TopicArn, ':${INTRA_INTERNAL_TOPIC_NAME}')].TopicArn" || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_INTERNAL_QUEUE_NAME} || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_INTERNAL_DLQUEUE_NAME} || return 1
-
-    aws --endpoint-url=$AWS_ENDPOINT sns list-topics --query "Topics[?ends_with(TopicArn, ':${CHED_INTERNAL_TOPIC_NAME}')].TopicArn" || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${CHED_INTERNAL_QUEUE_NAME} || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${CHED_INTERNAL_DLQUEUE_NAME} || return 1
-    aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url --queue-name ${INTRA_TEST_QUEUE_NAME} || return 1
-    return 0
-}
-
-while ! is_ready; do
-    echo "Waiting until ready"
-    sleep 1
-done
-
-touch /tmp/ready
