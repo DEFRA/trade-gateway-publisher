@@ -33,7 +33,7 @@ for ns in "${namespaces[@]}"; do
   INTERNAL_TOPIC_NAME="${ns}_stream_internal.fifo"
   UPDATES_TOPIC_NAME="${ns}_updates.fifo"
   INTERNAL_QUEUE_NAME="${ns}_stream_internal_publisher.fifo"
-  INTERNAL_DLQUEUE_NAME="${INTERNAL_QUEUE_NAME}-deadletter.fifo"
+  INTERNAL_DLQUEUE_NAME="${ns}_stream_internal_publisher-deadletter.fifo"
 
   echo "Creating SNS topics: $INTERNAL_TOPIC_NAME and $UPDATES_TOPIC_NAME"
   INTERNAL_TOPIC_ARN=$(awslocal sns create-topic --name "$INTERNAL_TOPIC_NAME" --attributes FifoTopic=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'TopicArn' --output text)
