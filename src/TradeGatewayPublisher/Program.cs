@@ -3,6 +3,7 @@ using Defra.TradeImports.EmfExporter;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
+using Infrastructure.Messaging;
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
@@ -65,6 +66,14 @@ static void ConfigureServices(WebApplicationBuilder builder)
         sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrl
     );
 
+    services.AddConsumer<AsbIntraUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueAsbUrl
+    );
+
+    services.AddConsumer<AsbChedUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueAsbUrl
+    );
+
     services.AddHttpContextAccessor();
     services.AddTraceContextAccessor(configuration);
 
@@ -115,6 +124,11 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddDbContext(configuration);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
+
+    services
+        .AddOptions<TracesServiceBusOptions>()
+        .Bind(configuration.GetSection(TracesServiceBusOptions.SectionName))
+        .ValidateOnStart();
 }
 
 [ExcludeFromCodeCoverage]

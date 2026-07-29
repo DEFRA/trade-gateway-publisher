@@ -34,6 +34,8 @@ for ns in "${namespaces[@]}"; do
   UPDATES_TOPIC_NAME="${ns}_updates.fifo"
   INTERNAL_QUEUE_NAME="${ns}_stream_internal_publisher.fifo"
   INTERNAL_DLQUEUE_NAME="${ns}_stream_internal_publisher-deadletter.fifo"
+  ASB_INTERNAL_QUEUE_NAME="${ns}_stream_internal_asb_publisher.fifo"
+  ASB_INTERNAL_DLQUEUE_NAME="${ns}_stream_internal_asb_publisher-deadletter.fifo"
 
   echo "Creating SNS topics: $INTERNAL_TOPIC_NAME and $UPDATES_TOPIC_NAME"
   INTERNAL_TOPIC_ARN=$(awslocal sns create-topic --name "$INTERNAL_TOPIC_NAME" --attributes FifoTopic=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'TopicArn' --output text)
@@ -42,13 +44,26 @@ for ns in "${namespaces[@]}"; do
   echo "Creating SQS queues: $INTERNAL_QUEUE_NAME and $INTERNAL_DLQUEUE_NAME"
   INTERNAL_QUEUE_URL=$(awslocal sqs create-queue --queue-name "$INTERNAL_QUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
   INTERNAL_DLQUEUE_URL=$(awslocal sqs create-queue --queue-name "$INTERNAL_DLQUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
+  
+  echo "Creating SQS queues: $ASB_INTERNAL_QUEUE_URL and $ASB_INTERNAL_DLQUEUE_URL"
+  ASB_INTERNAL_QUEUE_URL=$(awslocal sqs create-queue --queue-name "$ASB_INTERNAL_QUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
+  ASB_INTERNAL_DLQUEUE_URL=$(awslocal sqs create-queue --queue-name "$ASB_INTERNAL_DLQUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
 
+  echo "Retrieving queue ARNs"
   INTERNAL_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
   INTERNAL_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$INTERNAL_DLQUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
+
+  echo "Retrieving ASB queue ARNs"
+  INTERNAL_ASB_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
+  INTERNAL_ASB_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
+
 
   echo "Subscribing internal queue to internal topic"
   awslocal sns subscribe --topic-arn "$INTERNAL_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTERNAL_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
 
+  echo "Subscribing internal asb queue to internal topic"
+  awslocal sns subscribe --topic-arn "$INTERNAL_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTERNAL_ASB_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
+  
   # For the intra namespace, subscribe the test queue to the updates topic
   if [[ "$ns" == *"_intra" ]]; then
     echo "Subscribing test queue to updates topic"
@@ -57,6 +72,9 @@ for ns in "${namespaces[@]}"; do
 
   echo "Applying RedrivePolicy: queue URL=$INTERNAL_QUEUE_URL -> DL ARN=$INTERNAL_DLQUEUE_ARN"
   awslocal sqs set-queue-attributes --queue-url "$INTERNAL_QUEUE_URL" --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$INTERNAL_DLQUEUE_ARN\\\",\\\"maxReceiveCount\\\":\\\"1\\\"}\"}" --region $AWS_REGION
+
+  echo "Applying RedrivePolicy: queue URL=$ASB_INTERNAL_QUEUE_URL -> DL ARN=$INTERNAL_ASB_DLQUEUE_ARN"
+  awslocal sqs set-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$INTERNAL_ASB_DLQUEUE_ARN\\\",\\\"maxReceiveCount\\\":\\\"1\\\"}\"}" --region $AWS_REGION
 
   echo "Namespace $ns done."
 done
