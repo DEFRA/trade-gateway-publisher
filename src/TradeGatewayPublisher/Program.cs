@@ -67,11 +67,11 @@ static void ConfigureServices(WebApplicationBuilder builder)
     );
 
     services.AddConsumer<AsbIntraUpdateConsumer>(sp =>
-        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueAsbUrl
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrlForAsb
     );
 
     services.AddConsumer<AsbChedUpdateConsumer>(sp =>
-        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueAsbUrl
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrlForAsb
     );
 
     services.AddHttpContextAccessor();

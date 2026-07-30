@@ -45,7 +45,7 @@ for ns in "${namespaces[@]}"; do
   INTERNAL_QUEUE_URL=$(awslocal sqs create-queue --queue-name "$INTERNAL_QUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
   INTERNAL_DLQUEUE_URL=$(awslocal sqs create-queue --queue-name "$INTERNAL_DLQUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
   
-  echo "Creating SQS queues: $ASB_INTERNAL_QUEUE_URL and $ASB_INTERNAL_DLQUEUE_URL"
+  echo "Creating SQS queues: $INTERNAL_DLQUEUE_NAME and $ASB_INTERNAL_DLQUEUE_NAME"
   ASB_INTERNAL_QUEUE_URL=$(awslocal sqs create-queue --queue-name "$ASB_INTERNAL_QUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
   ASB_INTERNAL_DLQUEUE_URL=$(awslocal sqs create-queue --queue-name "$ASB_INTERNAL_DLQUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
 
@@ -55,13 +55,13 @@ for ns in "${namespaces[@]}"; do
 
   echo "Retrieving ASB queue ARNs"
   INTERNAL_ASB_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
-  INTERNAL_ASB_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
+  INTERNAL_ASB_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_DLQUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
 
 
-  echo "Subscribing internal queue to internal topic"
+  echo "Subscribing internal queue $INTERNAL_QUEUE_ARN to internal topic $INTERNAL_TOPIC_ARN"
   awslocal sns subscribe --topic-arn "$INTERNAL_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTERNAL_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
 
-  echo "Subscribing internal asb queue to internal topic"
+  echo "Subscribing internal asb queue $INTERNAL_ASB_QUEUE_ARN to internal topic $INTERNAL_TOPIC_ARN"
   awslocal sns subscribe --topic-arn "$INTERNAL_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTERNAL_ASB_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
   
   # For the intra namespace, subscribe the test queue to the updates topic

@@ -10,6 +10,12 @@ services:
       - ./compose/config/floci.env
     volumes:
       - ./compose/floci/ready.d:/etc/floci/init/ready.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4566/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
 
   mongodb:
     image: mongo:7.0.28
@@ -17,6 +23,11 @@ services:
       - '27017:27017'
     volumes:
       - mongodb-data:/data
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.hello().ok"]
+      interval: 5s
+      start_period: 5s
+      retries: 3
     restart: always
 
   trade-gateway-publisher:
@@ -92,6 +103,41 @@ services:
     environment:
       WIREMOCK_MY_VAR: "systemValue response templating feature"
 
+  trade-tracesnt-stub:
+    image: defradigital/trade-tracesnt-stub:${TRADE_TRACESNT_STUB:-latest}
+    env_file:
+      - ./compose/config/trade-tracesnt-stub.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8080/health"]
+      interval: 3s
+      start_period: 2s
+      retries: 3
+    ports:
+      - "3000:8080"
+
+  trade-gateway:
+    image: defradigital/trade-gateway:${TRADE_GATEWAY:-latest}
+    env_file:
+      - ./compose/config/aws.env
+      - ./compose/config/trade-gateway.env
+    depends_on:
+      floci:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      trade-tracesnt-stub:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8080/health"]
+      interval: 3s
+      start_period: 2s
+      retries: 3
+    ports:
+      - "3001:8080"
+      
 ################################################################################
 
 volumes:
