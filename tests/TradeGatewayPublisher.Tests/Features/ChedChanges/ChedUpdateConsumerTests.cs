@@ -1,13 +1,12 @@
-using System.Net;
 using System.Text.Json;
 using Amazon.SQS.Model;
-using AwesomeAssertions;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.ChedChanges;
 
@@ -34,7 +33,11 @@ public class ChedUpdateConsumerTests
         _gateway
             .GetChedCertification("1", Arg.Any<CancellationToken>())
             .Returns(
-                new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"chedRef":"CHED-1"}""") }
+                new DefraUNVTDCHEDProfile()
+                {
+                    SpecifiedConsignment = new Consignment(),
+                    ExchangedDocument = new ExchangedDocument() { Identifier = "CHEDA.GB.2026.1234567" },
+                }
             );
 
         _sut = new ChedUpdateConsumer(_gateway, _sns, options, NullLogger<ChedUpdateConsumer>.Instance);
@@ -48,7 +51,7 @@ public class ChedUpdateConsumerTests
         await _sns.Received(1)
             .PublishAsync(
                 "test-ched-topic",
-                """{"chedRef":"CHED-1"}""",
+                Arg.Any<string>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => !string.IsNullOrWhiteSpace(duplicationId)),

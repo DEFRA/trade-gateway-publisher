@@ -1,6 +1,7 @@
 using System.Reflection;
 using Infrastructure.Messaging;
 using Refit;
+using Trade.Gateway.Api.Contract.Certificate;
 
 namespace Infrastructure.TracesGateway
 {
@@ -16,7 +17,7 @@ namespace Infrastructure.TracesGateway
         );
 
         [Get("/certificates/intras/{id}")]
-        Task<HttpResponseMessage> GetIntraCertification(string id, CancellationToken cancellationToken);
+        Task<DefraUNVTDINTRAProfile> GetIntraCertification(string id, CancellationToken cancellationToken);
 
         [Get("/certificates/cheds")]
         Task<FindChedUpdatesResponse> FindChedUpdates(
@@ -28,7 +29,7 @@ namespace Infrastructure.TracesGateway
         );
 
         [Get("/certificates/cheds/{id}")]
-        Task<HttpResponseMessage> GetChedCertification(string id, CancellationToken cancellationToken);
+        Task<DefraUNVTDCHEDProfile> GetChedCertification(string id, CancellationToken cancellationToken);
 
         [Get("/health")]
         Task<HttpResponseMessage> HealthCheck(CancellationToken cancellationToken);

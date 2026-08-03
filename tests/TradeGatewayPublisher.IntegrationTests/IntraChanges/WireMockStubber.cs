@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Trade.Gateway.Api.Contract.Certificate;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
@@ -17,12 +18,10 @@ internal static class WireMockStubber
 
         const string updatedIso = "2026-06-24T10:00:00Z";
         var certificationBody = JsonSerializer.Serialize(
-            new
+            new DefraUNVTDCHEDProfile()
             {
-                id = intraId,
-                updated = updatedIso,
-                certification = "GB",
-                status = "COMPLETE",
+                SpecifiedConsignment = new Consignment(),
+                ExchangedDocument = new ExchangedDocument() { Identifier = intraId },
             }
         );
 

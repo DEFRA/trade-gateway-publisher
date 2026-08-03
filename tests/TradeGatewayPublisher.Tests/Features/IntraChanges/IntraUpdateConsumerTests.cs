@@ -1,13 +1,12 @@
-using System.Net;
 using System.Text.Json;
 using Amazon.SQS.Model;
-using AwesomeAssertions;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.IntraChanges;
 
@@ -34,7 +33,11 @@ public class IntraUpdateConsumerTests
         _gateway
             .GetIntraCertification("1", Arg.Any<CancellationToken>())
             .Returns(
-                new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"intraRef":"INTRA-1"}""") }
+                new DefraUNVTDINTRAProfile()
+                {
+                    SpecifiedConsignment = new Consignment(),
+                    ExchangedDocument = new ExchangedDocument() { Identifier = "CHEDA.GB.2026.1234567" },
+                }
             );
 
         _sut = new IntraUpdateConsumer(_gateway, _sns, options, NullLogger<IntraUpdateConsumer>.Instance);
@@ -48,7 +51,7 @@ public class IntraUpdateConsumerTests
         await _sns.Received(1)
             .PublishAsync(
                 "test-topic",
-                """{"intraRef":"INTRA-1"}""",
+                Arg.Any<string>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => !string.IsNullOrWhiteSpace(duplicationId)),

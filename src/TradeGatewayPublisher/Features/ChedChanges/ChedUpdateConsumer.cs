@@ -3,6 +3,7 @@ using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
+using Trade.Gateway.Api.Contract.Events;
 using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.ChedChanges
@@ -18,13 +19,14 @@ namespace TradeGatewayPublisher.Features.ChedChanges
         {
             var message = JsonSerializer.Deserialize<FindChedUpdatesResponseRecord>(context.Body);
 
-            var response = await tracesGateway.GetChedCertification(message!.Id, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            var certificate = await tracesGateway.GetChedCertification(message!.Id, cancellationToken);
+
+            var @event = certificate.ToEventEnvelope(context.GetTraceId());
 
             // Placeholder deduplication id — see "Message Deduplication" in README.md
             await snsPublisher.PublishAsync(
                 options.Value.ChedTopicArn,
-                await response.Content.ReadAsStringAsync(cancellationToken),
+                JsonSerializer.Serialize(@event),
                 duplicationId: Guid.NewGuid().ToString("N"),
                 cancellationToken: cancellationToken
             );
