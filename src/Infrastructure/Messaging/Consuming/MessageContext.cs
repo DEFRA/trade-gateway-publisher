@@ -13,11 +13,12 @@ public class MessageContext
 
     public string MessageId => Message.MessageId;
 
-    public IReadOnlyDictionary<string, MessageAttributeValue> Headers => Message.MessageAttributes.AsReadOnly();
+    public IReadOnlyDictionary<string, MessageAttributeValue> Headers =>
+        (Message.MessageAttributes ?? new Dictionary<string, MessageAttributeValue>()).AsReadOnly();
 
     public string? GetHeader(string key)
     {
-        return Headers.TryGetValue(key, out var value) ? value.StringValue : null;
+        return Headers != null && Headers.TryGetValue(key, out var value) ? value.StringValue : null;
     }
 
     public string GetTraceId()
