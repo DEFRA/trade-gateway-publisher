@@ -24,6 +24,8 @@ namespace TradeGatewayPublisher.Features.ChedChanges
             var certificate = apiResponse.Content;
             var @event = certificate!.ToEventEnvelope(context.GetTraceId());
 
+            var @event = certificate.ToEventEnvelope(context.GetTraceId());
+
             // Placeholder deduplication id — see "Message Deduplication" in README.md
             await snsPublisher.PublishAsync(
                 options.Value.ChedTopicArn,

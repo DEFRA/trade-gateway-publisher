@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Defra.Trade.Gateway.Api.Client" Version="0.1.0-pr-34.159" />
     <PackageReference Include="Defra.TradeImports.Tracing" Version="0.2.0" />
+    <PackageReference Include="Defra.Trade.Gateway.Api.Contract" Version="0.1.1" />
     <PackageReference Include="Polly" Version="8.6.6" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.7" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.3" />
