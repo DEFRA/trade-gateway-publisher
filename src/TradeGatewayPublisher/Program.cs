@@ -6,9 +6,9 @@ using Infrastructure.Data.Extensions;
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
-using Infrastructure.TracesGateway.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Trade.Gateway.Api.Client.Extensions;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.ChedChanges;
 using TradeGatewayPublisher.Features.IntraChanges;
@@ -54,7 +54,11 @@ static void ConfigureServices(WebApplicationBuilder builder)
 
     services.AddProblemDetails();
     services.AddValidation();
-    services.AddTracesGateway(configuration);
+    services.AddTracesGatewayApiClients(configuration, sp =>
+    {
+        var traceContextAccessor = sp.GetRequiredService<ITraceContextAccessor>();
+        return traceContextAccessor.Context?.TraceId ?? Guid.CreateVersion7().ToString("N");
+    });
     services.AddMessaging(configuration);
 
     services.AddConsumer<IntraUpdateConsumer>(sp =>

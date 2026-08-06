@@ -1,11 +1,13 @@
+using System.Net;
 using System.Text.Json;
 using Amazon.SQS.Model;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Refit;
+using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.ChedChanges;
@@ -14,7 +16,7 @@ namespace TradeGatewayPublisher.Tests.Features.ChedChanges;
 
 public class ChedUpdateConsumerTests
 {
-    private readonly ITracesGateway _gateway = Substitute.For<ITracesGateway>();
+    private readonly ITracesGatewayChedClient _gateway = Substitute.For<ITracesGatewayChedClient>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
     private readonly ChedUpdateConsumer _sut;
 
@@ -30,15 +32,19 @@ public class ChedUpdateConsumerTests
             }
         );
 
+        var response = new ApiResponse<DefraUNVTDCHEDProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDCHEDProfile()
+            {
+                SpecifiedConsignment = new Consignment(),
+                ExchangedDocument = new ExchangedDocument() { Identifier = "CHEDA.GB.2026.1234567" },
+            },
+            new RefitSettings()
+        );
+
         _gateway
             .GetChedCertification("1", Arg.Any<CancellationToken>())
-            .Returns(
-                new DefraUNVTDCHEDProfile()
-                {
-                    SpecifiedConsignment = new Consignment(),
-                    ExchangedDocument = new ExchangedDocument() { Identifier = "CHEDA.GB.2026.1234567" },
-                }
-            );
+            .Returns(response);
 
         _sut = new ChedUpdateConsumer(_gateway, _sns, options, NullLogger<ChedUpdateConsumer>.Instance);
     }
@@ -62,7 +68,13 @@ public class ChedUpdateConsumerTests
     private static MessageContext CreateContext(string id) =>
         new()
         {
-            Message = new Message { Body = JsonSerializer.Serialize(new { Id = id, Timestamp = DateTime.UtcNow }) },
+            Message = new Message { Body = JsonSerializer.Serialize(new DefraUNVTDCHEDSummaryProfileItem
+            {
+                Id = id,
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            }) },
             QueueUrl = "queue-url",
             ConsumerType = typeof(ChedUpdateConsumer),
         };

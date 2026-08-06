@@ -1,15 +1,17 @@
-using System.Text.Json;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
 using Refit;
+using System.Text.Json;
+using Infrastructure;
+using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.IntraChanges;
 
 public sealed class TracesIntraChangesJob(
-    ITracesGateway tracesGateway,
+    ITracesGatewayIntraClient tracesGateway,
     ISnsPublisher snsPublisher,
     IOptions<TracesUpdatePublisherOptions> options,
     ILogger<TracesIntraChangesJob> logger
@@ -30,22 +32,22 @@ public sealed class TracesIntraChangesJob(
             try
             {
                 var updatesResponse = await tracesGateway.FindIntraUpdates(
-                    watermark.Watermark.UtcDateTime.ToUniversalTime(),
-                    watermark.Now.UtcDateTime.ToUniversalTime(),
+                    watermark.Watermark,
+                    watermark.Now,
                     pageSize,
                     offset,
                     cancellationToken
                 );
 
-                var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindIntraUpdatesResponseRecord>();
-                hasMoreUpdates = responseData.Count() == pageSize;
+                var responseData = updatesResponse.Content?.Items ?? Enumerable.Empty<DefraUNVTDINTRASummaryProfileItem>();
+                hasMoreUpdates = updatesResponse.Content is { HasMore: true };
 
                 var topicArn = options.Value.IntraInternalTopicArn;
 
                 foreach (var update in responseData)
                 {
                     // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(topicArn, update, cancellationToken: cancellationToken);
+                    await snsPublisher.PublishAsync(topicArn, update.ToJson(), cancellationToken: cancellationToken, duplicationId: update.Id);
                     logger.LogInformation("Published INTRA {Id} to {Topic}", update.Id, topicArn);
                     changesFoundCount++;
                 }

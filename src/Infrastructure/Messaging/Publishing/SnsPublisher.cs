@@ -81,7 +81,7 @@ public class SnsPublisher(
 
         return PublishAsync(
             topicArn,
-            JsonSerializer.Serialize(message),
+            message.ToJson(),
             headers,
             subject,
             message.DuplicationId,

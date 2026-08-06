@@ -1,15 +1,17 @@
-using System.Text.Json;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
 using Refit;
+using System.Text.Json;
+using Infrastructure;
+using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.ChedChanges;
 
 public sealed class TracesChedChangesJob(
-    ITracesGateway tracesGateway,
+    ITracesGatewayChedClient tracesGateway,
     ISnsPublisher snsPublisher,
     IOptions<TracesUpdatePublisherOptions> options,
     ILogger<TracesChedChangesJob> logger
@@ -30,22 +32,24 @@ public sealed class TracesChedChangesJob(
             try
             {
                 var updatesResponse = await tracesGateway.FindChedUpdates(
-                    watermark.Watermark.UtcDateTime.ToUniversalTime(),
-                    watermark.Now.UtcDateTime.ToUniversalTime(),
+                    watermark.Watermark,
+                    watermark.Now,
                     pageSize,
                     offset,
                     cancellationToken
                 );
 
-                var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindChedUpdatesResponseRecord>();
-                hasMoreUpdates = responseData.Count() == pageSize;
+                await updatesResponse.EnsureSuccessfulAsync();
+
+                var responseData = updatesResponse.Content?.Items ?? Enumerable.Empty<DefraUNVTDCHEDSummaryProfileItem>();
+                hasMoreUpdates = updatesResponse.Content is { HasMore: true };
 
                 var topicArn = options.Value.ChedInternalTopicArn;
 
                 foreach (var update in responseData)
                 {
                     // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(topicArn, update, cancellationToken: cancellationToken);
+                    await snsPublisher.PublishAsync(topicArn, update.ToJson(), cancellationToken: cancellationToken, duplicationId: update.Id);
                     logger.LogInformation("Published CHED {Id} to {Topic}", update.Id, topicArn);
                     changesFoundCount++;
                 }

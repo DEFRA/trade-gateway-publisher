@@ -1,15 +1,16 @@
-using System.Text.Json;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
+using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.Certificate;
 using Trade.Gateway.Api.Contract.Events;
 using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.IntraChanges;
 
 public class IntraUpdateConsumer(
-    ITracesGateway tracesGateway,
+    ITracesGatewayIntraClient tracesGateway,
     ISnsPublisher snsPublisher,
     IOptions<TracesUpdatePublisherOptions> options,
     ILogger<IntraUpdateConsumer> logger
@@ -17,11 +18,12 @@ public class IntraUpdateConsumer(
 {
     public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
     {
-        var message = JsonSerializer.Deserialize<FindIntraUpdatesResponseRecord>(context.Body);
+        var message = JsonSerializer.Deserialize<DefraUNVTDINTRASummaryProfileItem>(context.Body);
 
-        var certificate = await tracesGateway.GetIntraCertification(message!.Id, cancellationToken);
-
-        var @event = certificate.ToEventEnvelope(context.GetTraceId());
+        var apiResponse = await tracesGateway.GetIntraCertification(message!.Id, cancellationToken);
+        await apiResponse.EnsureSuccessfulAsync();
+        var certificate = apiResponse.Content;
+        var @event = certificate!.ToEventEnvelope(context.GetTraceId());
 
         // Placeholder deduplication id — see "Message Deduplication" in README.md
         await snsPublisher.PublishAsync(
