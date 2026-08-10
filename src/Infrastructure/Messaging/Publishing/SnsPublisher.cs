@@ -26,7 +26,7 @@ public class SnsPublisher(
         if (string.IsNullOrWhiteSpace(messageBody))
             throw new ArgumentException("Message body is required.", nameof(messageBody));
 
-        var context = new PublishContext
+        var context = new SnsPublishContext
         {
             TopicArn = topicArn,
             MessageBody = messageBody,

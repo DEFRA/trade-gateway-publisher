@@ -3,7 +3,7 @@ namespace Infrastructure.Messaging.Publishing.Middleware;
 public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddleware
 {
     public async Task InvokeAsync(
-        PublishContext context,
+        IPublishContext context,
         Func<Task> next,
         CancellationToken cancellationToken = default
     )

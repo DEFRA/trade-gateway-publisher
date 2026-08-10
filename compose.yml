@@ -2,9 +2,9 @@ services:
   # floci is a replacement for localstack. It emulates AWS resources (sqs, sns, s3 etc) for local development
   # See: https://floci.io for more details
   floci:
-    image: floci/floci:1.5.25-compat
+    image: floci/floci:1.6.0-compat
     ports:
-      - '4566:4566'
+      - '4566:4566'  
     env_file:
       - ./compose/config/aws.env
       - ./compose/config/floci.env
@@ -30,66 +30,64 @@ services:
       retries: 3
     restart: always
 
-  trade-gateway-publisher:
-    build:
-      args:
-        DEFRA_NUGET_PAT: ${DEFRA_NUGET_PAT}
-      dockerfile: Dockerfile
-    ports:
-      - '8085:8085'
-    links:
-      - 'floci:floci'
-      - 'mongodb:mongodb'
-    depends_on:
-      floci:
-        condition: service_healthy
-      mongodb:
-        condition: service_started
-    env_file:
-      - ./compose/config/aws.env
-      - ./compose/config/trade-gateway-publisher.env      
+#  trade-gateway-publisher:
+#    build:
+#      args:
+#        DEFRA_NUGET_PAT: ${DEFRA_NUGET_PAT}
+#      dockerfile: Dockerfile
+#    ports:
+#      - '8085:8085'
+#    depends_on:
+#      floci:
+#        condition: service_healthy
+#      servicebus-emulator:
+#        condition: service_healthy
+#      mongodb:
+#        condition: service_started
+#      trade-gateway:
+#        condition: service_healthy
+#    env_file:
+#      - ./compose/config/aws.env
+#      - ./compose/config/trade-gateway-publisher.env
 
-  asb-backend:
+  servicebus-emulator:
+    image: servicebus-emulator-with-curl:latest
+    build:
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/aspnet:8.0.3-cbl-mariner2.0-amd64 AS base
+        FROM mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+        COPY --from=base /usr/bin/curl /usr/bin/curl
+        COPY --from=base /usr/lib /usr/lib
+        COPY --from=base /bin/sh /bin/sh
     env_file:
-      - ./compose/config/asb-backend.env
+      - ./compose/config/servicebus-emulator.env
+      - ./compose/config/mssql.env
+    volumes:
+      - "./compose/config/asb.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
     depends_on:
-      sqledge:
+      mssql:
         condition: service_healthy
-    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:5300/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     ports:
       - "5672:5672"
       - "5300:5300"
-    pull_policy: always
-    volumes:
-      - ./compose/config/asb.json:/ServiceBus_Emulator/ConfigFiles/Config.json
 
-  asb:
-    image: alpine/curl:latest
-    depends_on:
-      asb-backend:
-        condition: service_started
-    command: ["tail", "-f", "/dev/null"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://asb-backend:5300/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
-
-  sqledge:
-    healthcheck:
-      interval: 5s
-      retries: 10
-      start_period: 5s
-      test: timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/1433'
-      timeout: 5s
+  mssql:
     image: mcr.microsoft.com/azure-sql-edge:latest
-    #    On some platforms there are compatibility issues with running Azure SQL Edge e.g. M1 Macs with later Docker versions.
-    #    If SQL Edge does not work for you, try swapping out with SQL Server image instead
-    #    image: mcr.microsoft.com/mssql/server:2022-latest
     env_file:
-      - ./compose/config/sqledge.env    
-      
+      - ./compose/config/mssql.env
+    healthcheck:
+      test: timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/1433'
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
   wiremock:
     image: "holomekc/wiremock-gui:latest"
     ports:
@@ -124,6 +122,8 @@ services:
       - ./compose/config/aws.env
       - ./compose/config/trade-gateway.env
     depends_on:
+      servicebus-emulator:
+        condition: service_healthy
       floci:
         condition: service_healthy
       mongodb:
@@ -136,7 +136,7 @@ services:
       start_period: 2s
       retries: 3
     ports:
-      - "3001:8080"
+      - "8080:8080"
       
 ################################################################################
 

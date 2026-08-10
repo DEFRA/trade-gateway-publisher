@@ -2,7 +2,7 @@ using Amazon.SimpleNotificationService.Model;
 
 namespace Infrastructure.Messaging.Publishing
 {
-    public class PublishContext
+    public class SnsPublishContext : IPublishContext
     {
         public string TopicArn { get; set; } = default!;
 

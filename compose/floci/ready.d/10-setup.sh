@@ -2,80 +2,38 @@
 
 set -e
 
-# Namespaces to process
-namespaces=(
-  "trade_gateway_publisher_intra"
-  "trade_gateway_publisher_ched"
-)
+# test-reports
+awslocal s3 mb s3://reports
 
-# Test queue for intra updates (kept separate)
-INTRA_TEST_QUEUE_NAME="trade_gateway_publisher_intra_updates_test.fifo"
+# trade-gateway
+awslocal sns create-topic --name trade_gateway_ched_updates
+awslocal sns create-topic --name trade_gateway_docom_updates
+awslocal sns create-topic --name trade_gateway_intra_updates
 
-echo "Creating Intra test queue..."
-INTRA_TEST_QUEUE_URL=$(awslocal sqs create-queue \
-  --queue-name "$INTRA_TEST_QUEUE_NAME" \
-  --attributes FifoQueue=true,ContentBasedDeduplication=true \
-  --region $AWS_REGION \
-  --query 'QueueUrl' \
-  --output text)
-INTRA_TEST_QUEUE_ARN=$(awslocal sqs get-queue-attributes \
-  --queue-url "$INTRA_TEST_QUEUE_URL" \
-  --attribute-names QueueArn \
-  --region $AWS_REGION \
-  --query 'Attributes.QueueArn' \
-  --output text)
+# trade-gateway-publisher topics
+awslocal sns create-topic --name trade_gateway_publisher_ched_stream_internal.fifo --attributes '{"FifoTopic":"true","ContentBasedDeduplication":"true"}'
+awslocal sns create-topic --name trade_gateway_publisher_ched_updates.fifo --attributes '{"FifoTopic":"true","ContentBasedDeduplication":"true"}'
+awslocal sns create-topic --name trade_gateway_publisher_intra_stream_internal.fifo --attributes '{"FifoTopic":"true","ContentBasedDeduplication":"true"}'
+awslocal sns create-topic --name trade_gateway_publisher_intra_updates.fifo --attributes '{"FifoTopic":"true","ContentBasedDeduplication":"true"}'
 
-echo "Intra test queue ARN: $INTRA_TEST_QUEUE_ARN"
-
-for ns in "${namespaces[@]}"; do
-  echo "\nProcessing namespace: $ns"
-
-  INTERNAL_TOPIC_NAME="${ns}_stream_internal.fifo"
-  UPDATES_TOPIC_NAME="${ns}_updates.fifo"
-  INTERNAL_QUEUE_NAME="${ns}_stream_internal_publisher.fifo"
-  INTERNAL_DLQUEUE_NAME="${ns}_stream_internal_publisher-deadletter.fifo"
-  ASB_INTERNAL_QUEUE_NAME="${ns}_stream_internal_asb_publisher.fifo"
-  ASB_INTERNAL_DLQUEUE_NAME="${ns}_stream_internal_asb_publisher-deadletter.fifo"
-
-  echo "Creating SNS topics: $INTERNAL_TOPIC_NAME and $UPDATES_TOPIC_NAME"
-  INTERNAL_TOPIC_ARN=$(awslocal sns create-topic --name "$INTERNAL_TOPIC_NAME" --attributes FifoTopic=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'TopicArn' --output text)
-  UPDATES_TOPIC_ARN=$(awslocal sns create-topic --name "$UPDATES_TOPIC_NAME" --attributes FifoTopic=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'TopicArn' --output text)
-
-  echo "Creating SQS queues: $INTERNAL_QUEUE_NAME and $INTERNAL_DLQUEUE_NAME"
-  INTERNAL_QUEUE_URL=$(awslocal sqs create-queue --queue-name "$INTERNAL_QUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
-  INTERNAL_DLQUEUE_URL=$(awslocal sqs create-queue --queue-name "$INTERNAL_DLQUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
-  
-  echo "Creating SQS queues: $INTERNAL_DLQUEUE_NAME and $ASB_INTERNAL_DLQUEUE_NAME"
-  ASB_INTERNAL_QUEUE_URL=$(awslocal sqs create-queue --queue-name "$ASB_INTERNAL_QUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
-  ASB_INTERNAL_DLQUEUE_URL=$(awslocal sqs create-queue --queue-name "$ASB_INTERNAL_DLQUEUE_NAME" --attributes FifoQueue=true,ContentBasedDeduplication=true --region $AWS_REGION --query 'QueueUrl' --output text)
-
-  echo "Retrieving queue ARNs"
-  INTERNAL_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
-  INTERNAL_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$INTERNAL_DLQUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
-
-  echo "Retrieving ASB queue ARNs"
-  INTERNAL_ASB_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
-  INTERNAL_ASB_DLQUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url "$ASB_INTERNAL_DLQUEUE_URL" --attribute-names QueueArn --region $AWS_REGION --query 'Attributes.QueueArn' --output text)
+# trade-gateway-publisher queues
+awslocal sqs create-queue --queue-name trade_gateway_publisher_ched_stream_internal_publisher-deadletter.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true"}'
+awslocal sqs create-queue --queue-name trade_gateway_publisher_ched_stream_internal_publisher.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true","RedrivePolicy":"{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:trade_gateway_publisher_ched_stream_internal_publisher-deadletter.fifo\",\"maxReceiveCount\":\"1\"}"}'
+awslocal sqs create-queue --queue-name trade_gateway_publisher_intra_stream_internal_publisher-deadletter.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true"}'
+awslocal sqs create-queue --queue-name trade_gateway_publisher_intra_stream_internal_publisher.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true","RedrivePolicy":"{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:trade_gateway_publisher_intra_stream_internal_publisher-deadletter.fifo\",\"maxReceiveCount\":\"1\"}"}'
+awslocal sqs create-queue --queue-name trade_gateway_publisher_intra_updates_test.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true"}'
 
 
-  echo "Subscribing internal queue $INTERNAL_QUEUE_ARN to internal topic $INTERNAL_TOPIC_ARN"
-  awslocal sns subscribe --topic-arn "$INTERNAL_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTERNAL_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
+awslocal sns subscribe --topic-arn arn:aws:sns:$AWS_REGION:000000000000:trade_gateway_publisher_ched_stream_internal.fifo --protocol sqs --notification-endpoint arn:aws:sqs:$AWS_REGION:000000000000:trade_gateway_publisher_ched_stream_internal_publisher.fifo --attributes '{"RawMessageDelivery":"true"}'
+awslocal sns subscribe --topic-arn arn:aws:sns:$AWS_REGION:000000000000:trade_gateway_publisher_intra_stream_internal.fifo --protocol sqs --notification-endpoint arn:aws:sqs:$AWS_REGION:000000000000:trade_gateway_publisher_intra_stream_internal_publisher.fifo --attributes '{"RawMessageDelivery":"true"}'
 
-  echo "Subscribing internal asb queue $INTERNAL_ASB_QUEUE_ARN to internal topic $INTERNAL_TOPIC_ARN"
-  awslocal sns subscribe --topic-arn "$INTERNAL_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTERNAL_ASB_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
-  
-  # For the intra namespace, subscribe the test queue to the updates topic
-  if [[ "$ns" == *"_intra" ]]; then
-    echo "Subscribing test queue to updates topic"
-    awslocal sns subscribe --topic-arn "$UPDATES_TOPIC_ARN" --protocol sqs --notification-endpoint "$INTRA_TEST_QUEUE_ARN" --attributes '{"RawMessageDelivery":"true"}' --region $AWS_REGION
-  fi
 
-  echo "Applying RedrivePolicy: queue URL=$INTERNAL_QUEUE_URL -> DL ARN=$INTERNAL_DLQUEUE_ARN"
-  awslocal sqs set-queue-attributes --queue-url "$INTERNAL_QUEUE_URL" --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$INTERNAL_DLQUEUE_ARN\\\",\\\"maxReceiveCount\\\":\\\"1\\\"}\"}" --region $AWS_REGION
+awslocal sqs create-queue --queue-name trade_gateway_publisher_ched_stream_internal_asb_publisher-deadletter.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true"}'
+awslocal sqs create-queue --queue-name trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true","RedrivePolicy":"{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:trade_gateway_publisher_ched_stream_internal_asb_publisher-deadletter.fifo\",\"maxReceiveCount\":\"1\"}"}'
 
-  echo "Applying RedrivePolicy: queue URL=$ASB_INTERNAL_QUEUE_URL -> DL ARN=$INTERNAL_ASB_DLQUEUE_ARN"
-  awslocal sqs set-queue-attributes --queue-url "$ASB_INTERNAL_QUEUE_URL" --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$INTERNAL_ASB_DLQUEUE_ARN\\\",\\\"maxReceiveCount\\\":\\\"1\\\"}\"}" --region $AWS_REGION
+awslocal sns subscribe --topic-arn arn:aws:sns:$AWS_REGION:000000000000:trade_gateway_publisher_ched_stream_internal.fifo --protocol sqs --notification-endpoint arn:aws:sqs:$AWS_REGION:000000000000:trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo --attributes '{"RawMessageDelivery":"true"}'
 
-  echo "Namespace $ns done."
-done
+awslocal sqs create-queue --queue-name trade_gateway_publisher_intra_stream_internal_asb_publisher-deadletter.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true"}'
+awslocal sqs create-queue --queue-name trade_gateway_publisher_intra_stream_internal_asb_publisher.fifo --attributes '{"FifoQueue":"true","ContentBasedDeduplication":"true","RedrivePolicy":"{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:trade_gateway_publisher_intra_stream_internal_asb_publisher-deadletter.fifo\",\"maxReceiveCount\":\"1\"}"}'
 
+awslocal sns subscribe --topic-arn arn:aws:sns:$AWS_REGION:000000000000:trade_gateway_publisher_intra_stream_internal.fifo --protocol sqs --notification-endpoint arn:aws:sqs:$AWS_REGION:000000000000:trade_gateway_publisher_intra_stream_internal_asb_publisher.fifo --attributes '{"RawMessageDelivery":"true"}'

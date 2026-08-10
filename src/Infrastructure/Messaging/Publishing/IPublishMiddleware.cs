@@ -1,6 +1,6 @@
-﻿namespace Infrastructure.Messaging.Publishing;
+namespace Infrastructure.Messaging.Publishing;
 
 public interface IPublishMiddleware
 {
-    Task InvokeAsync(PublishContext context, Func<Task> next, CancellationToken cancellationToken = default);
+    Task InvokeAsync(IPublishContext context, Func<Task> next, CancellationToken cancellationToken = default);
 }
