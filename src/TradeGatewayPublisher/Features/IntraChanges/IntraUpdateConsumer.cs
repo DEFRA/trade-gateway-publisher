@@ -3,32 +3,33 @@ using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
+using Trade.Gateway.Api.Contract.Events;
 using TradeGatewayPublisher.Config;
 
-namespace TradeGatewayPublisher.Features.IntraChanges
+namespace TradeGatewayPublisher.Features.IntraChanges;
+
+public class IntraUpdateConsumer(
+    ITracesGateway tracesGateway,
+    ISnsPublisher snsPublisher,
+    IOptions<TracesUpdatePublisherOptions> options,
+    ILogger<IntraUpdateConsumer> logger
+) : IMessageConsumer
 {
-    public class IntraUpdateConsumer(
-        ITracesGateway tracesGateway,
-        ISnsPublisher snsPublisher,
-        IOptions<TracesUpdatePublisherOptions> options,
-        ILogger<IntraUpdateConsumer> logger
-    ) : IMessageConsumer
+    public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
     {
-        public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
-        {
-            var message = JsonSerializer.Deserialize<FindIntraUpdatesResponseRecord>(context.Body);
+        var message = JsonSerializer.Deserialize<FindIntraUpdatesResponseRecord>(context.Body);
 
-            var response = await tracesGateway.GetIntraCertification(message!.Id, cancellationToken);
-            response.EnsureSuccessStatusCode();
+        var certificate = await tracesGateway.GetIntraCertification(message!.Id, cancellationToken);
 
-            // Placeholder deduplication id — see "Message Deduplication" in README.md
-            await snsPublisher.PublishAsync(
-                options.Value.IntraTopicArn,
-                await response.Content.ReadAsStringAsync(cancellationToken),
-                duplicationId: Guid.NewGuid().ToString("N"),
-                cancellationToken: cancellationToken
-            );
-            logger.LogInformation("Published INTRA {Id} to {Topic}", message.Id, options.Value.IntraTopicArn);
-        }
+        var @event = certificate.ToEventEnvelope(context.GetTraceId());
+
+        // Placeholder deduplication id — see "Message Deduplication" in README.md
+        await snsPublisher.PublishAsync(
+            options.Value.IntraTopicArn,
+            JsonSerializer.Serialize(@event),
+            duplicationId: Guid.NewGuid().ToString("N"),
+            cancellationToken: cancellationToken
+        );
+        logger.LogInformation("Published INTRA {Id} to {Topic}", message.Id, options.Value.IntraTopicArn);
     }
 }

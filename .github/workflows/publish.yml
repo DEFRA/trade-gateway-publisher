@@ -6,10 +6,7 @@ on:
       - main
 
 permissions:
-  id-token: write
-  contents: write
-  pull-requests: write  
-  packages: read
+  contents: read
 
 env:
   AWS_REGION: eu-west-2
@@ -20,6 +17,13 @@ jobs:
     if: github.run_number != 1
     name: CDP-build-workflow
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      packages: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 #v6
@@ -31,18 +35,20 @@ jobs:
       - name: Update NuGet.config
         run: |
           dotnet nuget remove source defra
-          dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile NuGet.config
-      
+          dotnet nuget add source --username USERNAME --password $GITHUB_TOKEN --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile NuGet.config
+
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@5f3ba75f66a3ef96855322c137727ff996cc2995
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-  ## SonarCloud
-  ## Uncomment to unable SonarCloud scan
-  ## Requires project to be set up in SonarCloud
-  ## and the SonarCloud token to be set in the repository secrets
-#   sonarcloud-scan:
-#     name: CDP SonarCloud Scan
-#     uses: ./.github/workflows/sonarcloud.yml
-#     needs: build
-#     secrets: inherit
+          github-token: ${{ env.GITHUB_TOKEN }}
+  sonarcloud-scan:
+    name: CDP SonarCloud Scan
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+      packages: read
+    uses: ./.github/workflows/sonarcloud.yml
+    needs: build
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

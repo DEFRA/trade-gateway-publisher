@@ -11,10 +11,19 @@ on:
       - synchronize
       - ready_for_review
 
+permissions:
+  contents: read
+
 jobs:
   pr-validator:
     name: Run Pull Request Checks
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      id-token: write
+      packages: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
@@ -26,7 +35,7 @@ jobs:
       - name: Update NuGet.config
         run: |
           dotnet nuget remove source defra --configfile ./NuGet.config
-          dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile ./NuGet.config
+          dotnet nuget add source --username USERNAME --password $GITHUB_TOKEN --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile ./NuGet.config
       
       - name: Run unit tests
         run: |
@@ -51,12 +60,14 @@ jobs:
             --ignore-unfixed \
             --exit-code 1 \
             trade-gateway-publisher:latest
-    ## SonarCloud
-    ## Uncomment to unable SonarCloud scan
-    ## Requires project to be set up in SonarCloud
-    ## and the SonarCloud token to be set in the repository secrets
-#   sonarcloud-scan:
-#     name: CDP SonarCloud Scan
-#     uses: ./.github/workflows/sonarcloud.yml
-#     needs: pr-validator
-#     secrets: inherit
+  sonarcloud-scan:
+    name: CDP SonarCloud Scan
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+      packages: read
+    uses: ./.github/workflows/sonarcloud.yml
+    needs: pr-validator
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
