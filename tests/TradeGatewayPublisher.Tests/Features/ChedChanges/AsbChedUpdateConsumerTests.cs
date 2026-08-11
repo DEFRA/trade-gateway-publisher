@@ -1,11 +1,11 @@
 using Amazon.SQS.Model;
+using Infrastructure.Messaging;
 using Infrastructure.Messaging.Consuming;
+using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using TradeGatewayPublisher.Features.ChedChanges;
-using Infrastructure.Messaging.Publishing;
-using Infrastructure.Messaging;
 
 namespace TradeGatewayPublisher.Tests.Features.ChedChanges;
 
@@ -16,11 +16,17 @@ public class AsbChedUpdateConsumerTests
 
     public AsbChedUpdateConsumerTests()
     {
-        var options = Options.Create(new TracesServiceBusOptions
-        {
-            Intra = new ServiceBusQueue { QueueName = "intra-queue", ConnectionString = "Endpoint=sb://127.0.0.1;" },
-            Ched = new ServiceBusQueue { QueueName = "ched-queue", ConnectionString = "Endpoint=sb://127.0.0.1;" },
-        });
+        var options = Options.Create(
+            new TracesServiceBusOptions
+            {
+                Intra = new ServiceBusQueue
+                {
+                    QueueName = "intra-queue",
+                    ConnectionString = "Endpoint=sb://127.0.0.1;",
+                },
+                Ched = new ServiceBusQueue { QueueName = "ched-queue", ConnectionString = "Endpoint=sb://127.0.0.1;" },
+            }
+        );
 
         _sut = new AsbChedUpdateConsumer(_asbPublisher, options, NullLogger<AsbChedUpdateConsumer>.Instance);
     }
@@ -35,12 +41,15 @@ public class AsbChedUpdateConsumerTests
         await _sut.ConsumeAsync(ctx, CancellationToken.None);
 
         // Assert
-        await _asbPublisher.Received(1).PublishAsync(
-            Arg.Is<string>(q => q == "ched-queue"),
-            Arg.Is<string>(id => id == ctx.MessageId),
-            Arg.Any<Dictionary<string, string>>(),
-            Arg.Is<string>(body => body == ctx.Body),
-            Arg.Any<CancellationToken>());
+        await _asbPublisher
+            .Received(1)
+            .PublishAsync(
+                Arg.Is<string>(q => q == "ched-queue"),
+                Arg.Is<string>(id => id == ctx.MessageId),
+                Arg.Any<Dictionary<string, string>>(),
+                Arg.Is<string>(body => body == ctx.Body),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     private static MessageContext CreateContext(string id) =>

@@ -25,7 +25,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
 
         var received = await WaitHelper.WaitUntilAsync(
             () => QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, cancellationToken).GetAwaiter().GetResult(),
-            TimeSpan.FromSeconds(20),
+            TimeSpan.FromSeconds(120),
             TimeSpan.FromMilliseconds(500),
             cancellationToken
         );

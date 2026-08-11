@@ -44,7 +44,7 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_started
-      trade-gateway:
+      mssql:
         condition: service_healthy
     env_file:
       - ./compose/config/aws.env
@@ -100,44 +100,7 @@ services:
       - ./root-dir:/home/wiremock:ro
     environment:
       WIREMOCK_MY_VAR: "systemValue response templating feature"
-
-  trade-tracesnt-stub:
-    image: defradigital/trade-tracesnt-stub:${TRADE_TRACESNT_STUB:-latest}
-    env_file:
-      - ./compose/config/trade-tracesnt-stub.env
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "http://localhost:8080/health"]
-      interval: 3s
-      start_period: 2s
-      retries: 3
-    ports:
-      - "3000:8080"
-
-  trade-gateway:
-    image: defradigital/trade-gateway:${TRADE_GATEWAY:-latest}
-    env_file:
-      - ./compose/config/aws.env
-      - ./compose/config/trade-gateway.env
-    depends_on:
-      servicebus-emulator:
-        condition: service_healthy
-      floci:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      trade-tracesnt-stub:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "http://localhost:8080/health"]
-      interval: 3s
-      start_period: 2s
-      retries: 3
-    ports:
-      - "8080:8080"
-      
+     
 ################################################################################
 
 volumes:
