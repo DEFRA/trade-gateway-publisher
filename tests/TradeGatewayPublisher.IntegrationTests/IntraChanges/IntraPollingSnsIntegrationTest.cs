@@ -25,7 +25,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
 
         var received = await WaitHelper.WaitUntilAsync(
             () => QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, cancellationToken).GetAwaiter().GetResult(),
-            TimeSpan.FromSeconds(120),
+            TimeSpan.FromSeconds(20),
             TimeSpan.FromMilliseconds(500),
             cancellationToken
         );
@@ -51,7 +51,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
             cancellationToken
         );
 
-        if (response.Messages.Count == 0)
+        if (response?.Messages == null || response.Messages.Count == 0)
             return false;
 
         foreach (var message in response.Messages)
@@ -68,6 +68,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         _factory = new IntegrationTestWebApplicationFactory();
+
         _ = _factory.CreateClient();
 
         _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();

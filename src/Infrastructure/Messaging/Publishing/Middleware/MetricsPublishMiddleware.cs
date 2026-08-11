@@ -3,17 +3,16 @@ namespace Infrastructure.Messaging.Publishing.Middleware;
 public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddleware
 {
     public async Task InvokeAsync(
-        IPublishContext context,
+        PublishContext context,
         Func<Task> next,
         CancellationToken cancellationToken = default
     )
     {
         var startingTimestamp = TimeProvider.System.GetTimestamp();
-        var topicName = context.GetTopicName();
 
         try
         {
-            metrics.Start(topicName);
+            metrics.Start(context.QueueName);
 
             await next();
         }
@@ -21,12 +20,15 @@ public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddlewa
         catch (Exception exception)
 #pragma warning restore S2139
         {
-            metrics.Faulted(topicName, exception);
+            metrics.Faulted(context.QueueName, exception);
             throw;
         }
         finally
         {
-            metrics.Complete(topicName, TimeProvider.System.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+            metrics.Complete(
+                context.QueueName,
+                TimeProvider.System.GetElapsedTime(startingTimestamp).TotalMilliseconds
+            );
         }
     }
 }

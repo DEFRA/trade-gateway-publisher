@@ -30,25 +30,25 @@ services:
       retries: 3
     restart: always
 
-#  trade-gateway-publisher:
-#    build:
-#      args:
-#        DEFRA_NUGET_PAT: ${DEFRA_NUGET_PAT}
-#      dockerfile: Dockerfile
-#    ports:
-#      - '8085:8085'
-#    depends_on:
-#      floci:
-#        condition: service_healthy
-#      servicebus-emulator:
-#        condition: service_healthy
-#      mongodb:
-#        condition: service_started
-#      trade-gateway:
-#        condition: service_healthy
-#    env_file:
-#      - ./compose/config/aws.env
-#      - ./compose/config/trade-gateway-publisher.env
+  trade-gateway-publisher:
+    build:
+      args:
+        DEFRA_NUGET_PAT: ${DEFRA_NUGET_PAT}
+      dockerfile: Dockerfile
+    ports:
+      - '8085:8085'
+    depends_on:
+      floci:
+        condition: service_healthy
+      servicebus-emulator:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      trade-gateway:
+        condition: service_healthy
+    env_file:
+      - ./compose/config/aws.env
+      - ./compose/config/trade-gateway-publisher.env
 
   servicebus-emulator:
     image: servicebus-emulator-with-curl:latest

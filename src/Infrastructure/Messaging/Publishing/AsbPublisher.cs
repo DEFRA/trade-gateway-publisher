@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using Infrastructure.Messaging.Extensions;
 using Microsoft.Extensions.Azure;
 
 namespace Infrastructure.Messaging.Publishing;
@@ -24,7 +25,7 @@ public class AsbPublisher(
         if (string.IsNullOrWhiteSpace(messageBody))
             throw new ArgumentException("Message body is required.", nameof(messageBody));
 
-        var asbPublishContext = new AsbPublishContext
+        var publishContext = new PublishContext
         {
             Headers = messageHeaders,
             MessageBody = messageBody,
@@ -35,7 +36,7 @@ public class AsbPublisher(
 
         Task PublishCore()
         {
-            var request = asbPublishContext.ToServiceBusMessage();
+            var request = publishContext.ToServiceBusMessage();
             request.MessageId = messageId;
             return sender.SendMessageAsync(request, cancellationToken);
         }
@@ -46,7 +47,7 @@ public class AsbPublisher(
         {
             var next = pipeline;
 
-            pipeline = () => middleware.InvokeAsync(asbPublishContext, next, cancellationToken);
+            pipeline = () => middleware.InvokeAsync(publishContext, next, cancellationToken);
         }
 
         await pipeline();

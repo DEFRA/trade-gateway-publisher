@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
+using Infrastructure.Messaging.Extensions;
 
 namespace Infrastructure.Messaging.Publishing;
 
@@ -26,28 +27,17 @@ public class SnsPublisher(
         if (string.IsNullOrWhiteSpace(messageBody))
             throw new ArgumentException("Message body is required.", nameof(messageBody));
 
-        var context = new SnsPublishContext
+        var context = new PublishContext
         {
-            TopicArn = topicArn,
+            QueueName = topicArn.ToQueueNameFromTopicArn(),
             MessageBody = messageBody,
             Subject = subject,
+            Headers = headers ?? new Dictionary<string, string>(),
         };
-
-        if (headers != null)
-        {
-            foreach (var header in headers)
-            {
-                context.Headers[header.Key] = new MessageAttributeValue
-                {
-                    DataType = "String",
-                    StringValue = header.Value,
-                };
-            }
-        }
 
         Task PublishCore()
         {
-            var request = context.ToPublishRequest();
+            var request = context.ToSnsPublishRequest(topicArn);
             request.MessageDeduplicationId = duplicationId;
             return snsClient.PublishAsync(request, cancellationToken);
         }
