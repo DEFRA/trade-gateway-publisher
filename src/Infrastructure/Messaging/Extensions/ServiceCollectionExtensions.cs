@@ -1,22 +1,28 @@
-using System.Diagnostics.Metrics;
-using System.Net;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
+
 using Azure.Messaging.ServiceBus;
+
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Messaging.Publishing.Middleware;
 using Infrastructure.Resilience;
+
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
+using System.Net;
+
 namespace Infrastructure.Messaging.Extensions;
 
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMessaging(
