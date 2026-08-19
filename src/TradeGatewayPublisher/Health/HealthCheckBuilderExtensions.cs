@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Trade.Gateway.Api.Client.Clients;
 
 namespace TradeGatewayPublisher.Health;
 
@@ -60,7 +60,7 @@ public static class HealthCheckBuilderExtensions
         builder.Add(
             new HealthCheckRegistration(
                 "Traces Gateway",
-                sp => new TracesGatewayHealthCheck(sp.GetRequiredService<ITracesGateway>()),
+                sp => new TracesGatewayHealthCheck(sp.GetRequiredService<ITracesGatewayClient>()),
                 HealthStatus.Unhealthy,
                 tags,
                 timeout

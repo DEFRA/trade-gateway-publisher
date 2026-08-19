@@ -1,67 +1,41 @@
-using System.Text.Json;
 using Infrastructure.Messaging.Publishing;
-using Infrastructure.Scheduler;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Options;
-using Refit;
+using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.ChedChanges;
 
 public sealed class TracesChedChangesJob(
-    ITracesGateway tracesGateway,
+    ITracesGatewayChedClient tracesGateway,
     ISnsPublisher snsPublisher,
     IOptions<TracesUpdatePublisherOptions> options,
     ILogger<TracesChedChangesJob> logger
-) : ICronJob
+) : TracesChangesJobBase<DefraUNVTDCHEDSummaryProfileItem>(snsPublisher, logger)
 {
-    public string Name => "TracesChedChangesJob";
+    public override string Name => "TracesChedChangesJob";
 
-    public async Task ExecuteAsync(JobContext context, CancellationToken cancellationToken)
+    protected override string SourceTag => "CHED";
+
+    protected override string GetTopicArn() => options.Value.ChedInternalTopicArn;
+
+    protected override string GetId(DefraUNVTDCHEDSummaryProfileItem item) => item.Id;
+
+    protected override async Task<TracesChangesPage<DefraUNVTDCHEDSummaryProfileItem>> FetchPageAsync(
+        DateTimeOffset watermark,
+        DateTimeOffset now,
+        int pageSize,
+        int offset,
+        CancellationToken cancellationToken
+    )
     {
-        var watermark = context.GetRequired<WatermarkContext>();
-        var hasMoreUpdates = true;
-        var offset = 0;
-        var pageSize = 100;
-        int changesFoundCount = 0;
+        var updatesResponse = await tracesGateway.FindChedUpdates(watermark, now, pageSize, offset, cancellationToken);
 
-        do
-        {
-            try
-            {
-                var updatesResponse = await tracesGateway.FindChedUpdates(
-                    watermark.Watermark.UtcDateTime.ToUniversalTime(),
-                    watermark.Now.UtcDateTime.ToUniversalTime(),
-                    pageSize,
-                    offset,
-                    cancellationToken
-                );
+        await updatesResponse.EnsureSuccessfulAsync();
 
-                var responseData = updatesResponse?.Items ?? Enumerable.Empty<FindChedUpdatesResponseRecord>();
-                hasMoreUpdates = responseData.Count() == pageSize;
+        var items = updatesResponse.Content?.Items ?? Enumerable.Empty<DefraUNVTDCHEDSummaryProfileItem>();
+        var hasMore = updatesResponse.Content is { HasMore: true };
 
-                var topicArn = options.Value.ChedInternalTopicArn;
-
-                foreach (var update in responseData)
-                {
-                    // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(topicArn, update, cancellationToken: cancellationToken);
-                    logger.LogInformation("Published CHED {Id} to {Topic}", update.Id, topicArn);
-                    changesFoundCount++;
-                }
-            }
-#pragma warning disable S2139
-            catch (ValidationApiException e)
-#pragma warning restore S2139
-            {
-                logger.LogWarning(e, "{Job} failed validation - {Data}", Name, JsonSerializer.Serialize(e.Content));
-                throw;
-            }
-
-            if (hasMoreUpdates)
-                offset += pageSize;
-        } while (hasMoreUpdates);
-
-        logger.LogInformation("{Job} completed. {Count} Changes found", Name, changesFoundCount);
+        return new TracesChangesPage<DefraUNVTDCHEDSummaryProfileItem>(items, hasMore);
     }
 }
