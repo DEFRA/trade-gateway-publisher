@@ -4,6 +4,6 @@
 set -euo pipefail
 
 docker compose up -d --quiet-pull floci mongodb wiremock
-docker compose up --force-recreate --no-deps aws-init
+docker compose up --force-recreate --no-deps
 
 dotnet test --filter "Category=IntegrationTest"
