@@ -118,7 +118,7 @@ public class TracesIntraChangesJobTests
             new DefraUNVTDINTRASummaryProfile
             {
                 Items = [],
-                HasMore = true,
+                HasMore = false,
                 Offset = 0,
                 PageSize = 100
             },
@@ -165,7 +165,7 @@ public class TracesIntraChangesJobTests
             new DefraUNVTDINTRASummaryProfile
             {
                 Items = [],
-                HasMore = true,
+                HasMore = false,
                 Offset = 0,
                 PageSize = 100
             },
@@ -259,7 +259,7 @@ public class TracesIntraChangesJobTests
                 new DefraUNVTDINTRASummaryProfile
                 {
                     Items = [],
-                    HasMore = true,
+                    HasMore = false,
                     Offset = 0,
                     PageSize = 100
                 },

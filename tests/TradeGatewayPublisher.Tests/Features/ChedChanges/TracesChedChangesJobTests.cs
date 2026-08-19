@@ -117,7 +117,7 @@ public class TracesChedChangesJobTests
             new DefraUNVTDCHEDSummaryProfile
             {
                 Items = [],
-                HasMore = true,
+                HasMore = false,
                 Offset = 0,
                 PageSize = 100
             },
@@ -164,7 +164,7 @@ public class TracesChedChangesJobTests
             new DefraUNVTDCHEDSummaryProfile
             {
                 Items = [],
-                HasMore = true,
+                HasMore = false,
                 Offset = 0,
                 PageSize = 100
             },
@@ -259,7 +259,7 @@ public class TracesChedChangesJobTests
                 new DefraUNVTDCHEDSummaryProfile
                 {
                     Items = [],
-                    HasMore = true,
+                    HasMore = false,
                     Offset = 0,
                     PageSize = 100
                 },
