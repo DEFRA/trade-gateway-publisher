@@ -54,11 +54,15 @@ static void ConfigureServices(WebApplicationBuilder builder)
 
     services.AddProblemDetails();
     services.AddValidation();
-    services.AddTracesGatewayApiClients(configuration, sp =>
-    {
-        var traceContextAccessor = sp.GetRequiredService<ITraceContextAccessor>();
-        return traceContextAccessor.Context?.TraceId ?? Guid.CreateVersion7().ToString("N");
-    });
+    services.AddTracesGatewayApiClients(configuration)
+        .WithSts()
+        .WithLogging()
+        .WithAcceptLanguage()
+        .WithTracing(sp =>
+        {
+            var traceContextAccessor = sp.GetRequiredService<ITraceContextAccessor>();
+            return traceContextAccessor.Context?.TraceId ?? Guid.CreateVersion7().ToString("N");
+        });
     services.AddMessaging(configuration);
 
     services.AddConsumer<IntraUpdateConsumer>(sp =>
