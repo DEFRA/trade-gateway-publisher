@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Messaging.Publishing;
 
@@ -16,10 +15,7 @@ public class PublishContextExtensionsTests
         {
             MessageBody = "the-body",
             Subject = "my-subject",
-            Headers = new Dictionary<string, string>
-            {
-                ["k1"] = "v1",
-            }
+            Headers = new Dictionary<string, string> { ["k1"] = "v1" },
         };
 
         var request = publishContext.ToSnsPublishRequest(TopicArn);
@@ -42,7 +38,7 @@ public class PublishContextExtensionsTests
         {
             MessageBody = "body-without-subject",
             Subject = null,
-            Headers = new Dictionary<string, string>()
+            Headers = new Dictionary<string, string>(),
         };
 
         var request = publishContext.ToSnsPublishRequest(TopicArn);
@@ -58,11 +54,7 @@ public class PublishContextExtensionsTests
         var publishContext = new PublishContext
         {
             MessageBody = "sb-body",
-            Headers = new Dictionary<string, string>
-            {
-                ["h1"] = "hv1",
-                ["h2"] = "hv2",
-            }
+            Headers = new Dictionary<string, string> { ["h1"] = "hv1", ["h2"] = "hv2" },
         };
 
         var message = publishContext.ToServiceBusMessage();
@@ -76,11 +68,7 @@ public class PublishContextExtensionsTests
     [Fact]
     public void SetTraceId_sets_trace_header_when_value_present()
     {
-        var publishContext = new PublishContext
-        {
-            MessageBody = "b",
-            Headers = new Dictionary<string, string>()
-        };
+        var publishContext = new PublishContext { MessageBody = "b", Headers = new Dictionary<string, string>() };
 
         publishContext.SetTraceId("trace-123");
 
@@ -91,11 +79,7 @@ public class PublishContextExtensionsTests
     [Fact]
     public void SetTraceId_does_not_set_when_value_null_or_empty()
     {
-        var publishContext = new PublishContext
-        {
-            MessageBody = "b",
-            Headers = new Dictionary<string, string>()
-        };
+        var publishContext = new PublishContext { MessageBody = "b", Headers = new Dictionary<string, string>() };
 
         publishContext.SetTraceId(null);
         publishContext.SetTraceId(string.Empty);

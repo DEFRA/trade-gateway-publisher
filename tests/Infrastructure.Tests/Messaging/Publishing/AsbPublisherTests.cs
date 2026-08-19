@@ -1,7 +1,7 @@
 using Azure.Messaging.ServiceBus;
+using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Azure;
 using NSubstitute;
-using Infrastructure.Messaging.Publishing;
 
 namespace Infrastructure.Tests.Messaging.Publishing;
 
@@ -13,7 +13,9 @@ public class AsbPublisherTests
         var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
         var sut = new AsbPublisher(factory);
 
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() => sut.PublishAsync(string.Empty, "id", new Dictionary<string, string>(), "body"));
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.PublishAsync(string.Empty, "id", new Dictionary<string, string>(), "body")
+        );
         Assert.Equal("topicName", ex.ParamName);
     }
 
@@ -23,7 +25,9 @@ public class AsbPublisherTests
         var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
         var sut = new AsbPublisher(factory);
 
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() => sut.PublishAsync("topic", "id", new Dictionary<string, string>(), string.Empty));
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.PublishAsync("topic", "id", new Dictionary<string, string>(), string.Empty)
+        );
         Assert.Equal("messageBody", ex.ParamName);
     }
 
@@ -35,14 +39,13 @@ public class AsbPublisherTests
         factory.CreateClient("topic1").Returns(sender);
 
         ServiceBusMessage? sent = null;
-        sender.SendMessageAsync(Arg.Do<ServiceBusMessage>(m => sent = m), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        sender
+            .SendMessageAsync(Arg.Do<ServiceBusMessage>(m => sent = m), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
 
         var sut = new AsbPublisher(factory);
 
-        var headers = new Dictionary<string, string>
-        {
-            ["h1"] = "v1"
-        };
+        var headers = new Dictionary<string, string> { ["h1"] = "v1" };
 
         await sut.PublishAsync("topic1", "msg-1", headers, "hello-body");
 
@@ -61,7 +64,9 @@ public class AsbPublisherTests
         factory.CreateClient("topic-x").Returns(sender);
 
         ServiceBusMessage? sent = null;
-        sender.SendMessageAsync(Arg.Do<ServiceBusMessage>(m => sent = m), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        sender
+            .SendMessageAsync(Arg.Do<ServiceBusMessage>(m => sent = m), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
 
         var mw1 = Substitute.For<IPublishMiddleware>();
         mw1.InvokeAsync(Arg.Any<PublishContext>(), Arg.Any<Func<Task>>(), Arg.Any<CancellationToken>())
