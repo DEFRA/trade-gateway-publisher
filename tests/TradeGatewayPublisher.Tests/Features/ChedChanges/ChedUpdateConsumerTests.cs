@@ -42,9 +42,7 @@ public class ChedUpdateConsumerTests
             new RefitSettings()
         );
 
-        _gateway
-            .GetChedCertification("1", Arg.Any<CancellationToken>())
-            .Returns(response);
+        _gateway.GetChedCertification("1", Arg.Any<CancellationToken>()).Returns(response);
 
         _sut = new ChedUpdateConsumer(_gateway, _sns, options, NullLogger<ChedUpdateConsumer>.Instance);
     }
@@ -68,13 +66,18 @@ public class ChedUpdateConsumerTests
     private static MessageContext CreateContext(string id) =>
         new()
         {
-            Message = new Message { Body = JsonSerializer.Serialize(new DefraUNVTDCHEDSummaryProfileItem
+            Message = new Message
             {
-                Id = id,
-                Origin = "Origin",
-                Created = DateTime.UtcNow,
-                Updated = DateTime.UtcNow,
-            }) },
+                Body = JsonSerializer.Serialize(
+                    new DefraUNVTDCHEDSummaryProfileItem
+                    {
+                        Id = id,
+                        Origin = "Origin",
+                        Created = DateTime.UtcNow,
+                        Updated = DateTime.UtcNow,
+                    }
+                ),
+            },
             QueueUrl = "queue-url",
             ConsumerType = typeof(ChedUpdateConsumer),
         };

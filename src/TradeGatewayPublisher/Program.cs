@@ -54,7 +54,8 @@ static void ConfigureServices(WebApplicationBuilder builder)
 
     services.AddProblemDetails();
     services.AddValidation();
-    services.AddTracesGatewayApiClients(configuration)
+    services
+        .AddTracesGatewayApiClients(configuration)
         .WithSts()
         .WithLogging()
         .WithAcceptLanguage()

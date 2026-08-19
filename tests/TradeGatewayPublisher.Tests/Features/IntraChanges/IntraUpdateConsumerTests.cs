@@ -42,9 +42,7 @@ public class IntraUpdateConsumerTests
             new RefitSettings()
         );
 
-        _gateway
-            .GetIntraCertification("1", Arg.Any<CancellationToken>())
-            .Returns(response);
+        _gateway.GetIntraCertification("1", Arg.Any<CancellationToken>()).Returns(response);
 
         _sut = new IntraUpdateConsumer(_gateway, _sns, options, NullLogger<IntraUpdateConsumer>.Instance);
     }
@@ -68,13 +66,18 @@ public class IntraUpdateConsumerTests
     private static MessageContext CreateContext(string id) =>
         new()
         {
-            Message = new Message { Body = JsonSerializer.Serialize(new DefraUNVTDINTRASummaryProfileItem
+            Message = new Message
             {
-                Id = id,
-                Origin = "Origin",
-                Created = DateTime.UtcNow,
-                Updated = DateTime.UtcNow,
-            }) },
+                Body = JsonSerializer.Serialize(
+                    new DefraUNVTDINTRASummaryProfileItem
+                    {
+                        Id = id,
+                        Origin = "Origin",
+                        Created = DateTime.UtcNow,
+                        Updated = DateTime.UtcNow,
+                    }
+                ),
+            },
             QueueUrl = "queue-url",
             ConsumerType = typeof(IntraUpdateConsumer),
         };

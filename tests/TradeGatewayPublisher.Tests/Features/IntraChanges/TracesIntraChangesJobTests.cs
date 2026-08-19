@@ -1,3 +1,4 @@
+using System.Net;
 using AwesomeAssertions;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
@@ -6,7 +7,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Refit;
-using System.Net;
 using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
@@ -67,13 +67,19 @@ public class TracesIntraChangesJobTests
                 Items = updates,
                 HasMore = true,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
 
         _gateway
-            .FindIntraUpdates(Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), 100, 0, Arg.Any<CancellationToken>())
+            .FindIntraUpdates(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                100,
+                0,
+                Arg.Any<CancellationToken>()
+            )
             .Returns(Task.FromResult(response));
 
         var response1 = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
@@ -83,13 +89,19 @@ public class TracesIntraChangesJobTests
                 Items = [],
                 HasMore = false,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
 
         _gateway
-            .FindIntraUpdates(Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), 100, 100, Arg.Any<CancellationToken>())
+            .FindIntraUpdates(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                100,
+                100,
+                Arg.Any<CancellationToken>()
+            )
             .Returns(Task.FromResult(response1));
 
         // Act
@@ -120,7 +132,7 @@ public class TracesIntraChangesJobTests
                 Items = [],
                 HasMore = false,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
@@ -167,7 +179,7 @@ public class TracesIntraChangesJobTests
                 Items = [],
                 HasMore = false,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
@@ -221,15 +233,16 @@ public class TracesIntraChangesJobTests
                 var list = new List<DefraUNVTDINTRASummaryProfileItem>();
                 for (var i = 0; i < 100; i++)
                 {
-                    list.Add(new DefraUNVTDINTRASummaryProfileItem
-                    {
-                        Id = (offset + 1).ToString(),
-                        Origin = "Origin",
-                        Created = DateTime.UtcNow,
-                        Updated = DateTime.UtcNow,
-                    });
+                    list.Add(
+                        new DefraUNVTDINTRASummaryProfileItem
+                        {
+                            Id = (offset + 1).ToString(),
+                            Origin = "Origin",
+                            Created = DateTime.UtcNow,
+                            Updated = DateTime.UtcNow,
+                        }
+                    );
                 }
-
 
                 var response = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
                     new HttpResponseMessage(HttpStatusCode.OK),
@@ -238,7 +251,7 @@ public class TracesIntraChangesJobTests
                         Items = list.ToArray(),
                         HasMore = true,
                         Offset = 0,
-                        PageSize = 100
+                        PageSize = 100,
                     },
                     new RefitSettings()
                 );
@@ -254,17 +267,21 @@ public class TracesIntraChangesJobTests
                 200,
                 Arg.Any<CancellationToken>()
             )
-            .Returns(Task.FromResult(new ApiResponse<DefraUNVTDINTRASummaryProfile>(
-                new HttpResponseMessage(HttpStatusCode.OK),
-                new DefraUNVTDINTRASummaryProfile
-                {
-                    Items = [],
-                    HasMore = false,
-                    Offset = 0,
-                    PageSize = 100
-                },
-                new RefitSettings()
-            )));
+            .Returns(
+                Task.FromResult(
+                    new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+                        new HttpResponseMessage(HttpStatusCode.OK),
+                        new DefraUNVTDINTRASummaryProfile
+                        {
+                            Items = [],
+                            HasMore = false,
+                            Offset = 0,
+                            PageSize = 100,
+                        },
+                        new RefitSettings()
+                    )
+                )
+            );
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);

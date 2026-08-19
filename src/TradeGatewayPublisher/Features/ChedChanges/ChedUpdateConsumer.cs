@@ -1,7 +1,7 @@
+using System.Text.Json;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Certificate;
 using Trade.Gateway.Api.Contract.Events;

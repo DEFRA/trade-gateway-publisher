@@ -1,9 +1,9 @@
+using System.Text.Json;
+using Infrastructure;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Microsoft.Extensions.Options;
 using Refit;
-using System.Text.Json;
-using Infrastructure;
 using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
@@ -41,7 +41,8 @@ public sealed class TracesChedChangesJob(
 
                 await updatesResponse.EnsureSuccessfulAsync();
 
-                var responseData = updatesResponse.Content?.Items ?? Enumerable.Empty<DefraUNVTDCHEDSummaryProfileItem>();
+                var responseData =
+                    updatesResponse.Content?.Items ?? Enumerable.Empty<DefraUNVTDCHEDSummaryProfileItem>();
                 hasMoreUpdates = updatesResponse.Content is { HasMore: true };
 
                 var topicArn = options.Value.ChedInternalTopicArn;
@@ -49,7 +50,12 @@ public sealed class TracesChedChangesJob(
                 foreach (var update in responseData)
                 {
                     // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(topicArn, update.ToJson(), cancellationToken: cancellationToken, duplicationId: update.Id);
+                    await snsPublisher.PublishAsync(
+                        topicArn,
+                        update.ToJson(),
+                        cancellationToken: cancellationToken,
+                        duplicationId: update.Id
+                    );
                     logger.LogInformation("Published CHED {Id} to {Topic}", update.Id, topicArn);
                     changesFoundCount++;
                 }

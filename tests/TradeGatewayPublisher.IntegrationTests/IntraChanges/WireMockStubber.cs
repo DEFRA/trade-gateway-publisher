@@ -15,8 +15,7 @@ internal static class WireMockStubber
     )
     {
         using var http = new HttpClient { BaseAddress = new Uri(wireMockBaseUrl) };
-
-        const string updatedIso = "2026-06-24T10:00:00Z";
+        var updated = new DateTimeOffset(2026, 06, 24, 10, 00, 00, TimeSpan.Zero);
         var certificationBody = JsonSerializer.Serialize(
             new DefraUNVTDCHEDProfile()
             {
@@ -35,7 +34,19 @@ internal static class WireMockStubber
                 response = new
                 {
                     status = 200,
-                    jsonBody = new { items = new[] { new { id = intraId, updated = updatedIso } } },
+                    jsonBody = new
+                    {
+                        items = new[]
+                        {
+                            new
+                            {
+                                Id = intraId,
+                                Updated = updated,
+                                Created = DateTimeOffset.UtcNow,
+                                Origin = "Int-Test",
+                            },
+                        },
+                    },
                 },
             },
             cancellationToken

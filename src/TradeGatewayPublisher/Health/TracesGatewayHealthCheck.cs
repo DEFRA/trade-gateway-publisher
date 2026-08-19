@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Trade.Gateway.Api.Client.Clients;
 
 namespace TradeGatewayPublisher.Health;

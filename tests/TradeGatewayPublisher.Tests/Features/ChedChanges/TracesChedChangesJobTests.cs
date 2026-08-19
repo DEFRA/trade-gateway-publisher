@@ -67,7 +67,7 @@ public class TracesChedChangesJobTests
                 Items = updates,
                 HasMore = true,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
@@ -83,12 +83,18 @@ public class TracesChedChangesJobTests
                 Items = [],
                 HasMore = false,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
         _gateway
-            .FindChedUpdates(Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), 100, 100, Arg.Any<CancellationToken>())
+            .FindChedUpdates(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                100,
+                100,
+                Arg.Any<CancellationToken>()
+            )
             .Returns(Task.FromResult(response1));
 
         // Act
@@ -119,7 +125,7 @@ public class TracesChedChangesJobTests
                 Items = [],
                 HasMore = false,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
@@ -166,7 +172,7 @@ public class TracesChedChangesJobTests
                 Items = [],
                 HasMore = false,
                 Offset = 0,
-                PageSize = 100
+                PageSize = 100,
             },
             new RefitSettings()
         );
@@ -217,19 +223,19 @@ public class TracesChedChangesJobTests
                 var offset = call.ArgAt<int>(3);
                 callOffsets.Add(offset);
 
-                
                 var list = new List<DefraUNVTDCHEDSummaryProfileItem>();
                 for (var i = 0; i < 100; i++)
                 {
-                    list.Add(new DefraUNVTDCHEDSummaryProfileItem
-                    {
-                        Id = (offset + 1).ToString(),
-                        Origin = "Origin",
-                        Created = DateTime.UtcNow,
-                        Updated = DateTime.UtcNow,
-                    });
+                    list.Add(
+                        new DefraUNVTDCHEDSummaryProfileItem
+                        {
+                            Id = (offset + 1).ToString(),
+                            Origin = "Origin",
+                            Created = DateTime.UtcNow,
+                            Updated = DateTime.UtcNow,
+                        }
+                    );
                 }
-
 
                 var response = new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
                     new HttpResponseMessage(HttpStatusCode.OK),
@@ -238,7 +244,7 @@ public class TracesChedChangesJobTests
                         Items = list.ToArray(),
                         HasMore = true,
                         Offset = 0,
-                        PageSize = 100
+                        PageSize = 100,
                     },
                     new RefitSettings()
                 );
@@ -254,17 +260,21 @@ public class TracesChedChangesJobTests
                 200,
                 Arg.Any<CancellationToken>()
             )
-            .Returns(Task.FromResult(new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
-                new HttpResponseMessage(HttpStatusCode.OK),
-                new DefraUNVTDCHEDSummaryProfile
-                {
-                    Items = [],
-                    HasMore = false,
-                    Offset = 0,
-                    PageSize = 100
-                },
-                new RefitSettings()
-            )));
+            .Returns(
+                Task.FromResult(
+                    new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+                        new HttpResponseMessage(HttpStatusCode.OK),
+                        new DefraUNVTDCHEDSummaryProfile
+                        {
+                            Items = [],
+                            HasMore = false,
+                            Offset = 0,
+                            PageSize = 100,
+                        },
+                        new RefitSettings()
+                    )
+                )
+            );
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
