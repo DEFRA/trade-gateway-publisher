@@ -69,13 +69,6 @@ public class SnsPublisher(
         if (message is null)
             throw new ArgumentException("Message is required.", nameof(message));
 
-        return PublishAsync(
-            topicArn,
-            JsonSerializer.Serialize(message),
-            headers,
-            subject,
-            message.DuplicationId,
-            cancellationToken
-        );
+        return PublishAsync(topicArn, message.ToJson(), headers, subject, message.DuplicationId, cancellationToken);
     }
 }

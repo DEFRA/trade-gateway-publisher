@@ -1,12 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Trade.Gateway.Api.Client.Clients;
 
 namespace TradeGatewayPublisher.Health;
 
 [ExcludeFromCodeCoverage]
-public class TracesGatewayHealthCheck(ITracesGateway tracesGateway) : IHealthCheck
+public class TracesGatewayHealthCheck(ITracesGatewayClient tracesGateway) : IHealthCheck
 {
     /// <inheritdoc />
     public async Task<HealthCheckResult> CheckHealthAsync(

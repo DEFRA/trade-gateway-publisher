@@ -1,20 +1,22 @@
+using System.Net;
 using AwesomeAssertions;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Refit;
+using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.ChedChanges;
-using TradeGatewayPublisher.Features.IntraChanges;
 
 namespace TradeGatewayPublisher.Tests.Features.ChedChanges;
 
 public class TracesChedChangesJobTests
 {
-    private readonly ITracesGateway _gateway = Substitute.For<ITracesGateway>();
+    private readonly ITracesGatewayChedClient _gateway = Substitute.For<ITracesGatewayChedClient>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
     private readonly IOptions<TracesUpdatePublisherOptions> _options;
     private readonly TracesChedChangesJob _sut;
@@ -42,19 +44,58 @@ public class TracesChedChangesJobTests
 
         var updates = new[]
         {
-            new FindChedUpdatesResponseRecord("1", DateTime.UtcNow),
-            new FindChedUpdatesResponseRecord("2", DateTime.UtcNow),
+            new DefraUNVTDCHEDSummaryProfileItem
+            {
+                Id = "1",
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            },
+            new DefraUNVTDCHEDSummaryProfileItem
+            {
+                Id = "2",
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            },
         };
 
-        _gateway
-            .FindChedUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 0, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new FindChedUpdatesResponse(updates.ToList())));
+        var response = new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDCHEDSummaryProfile
+            {
+                Items = updates,
+                HasMore = true,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
 
         _gateway
-            .FindChedUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 100, Arg.Any<CancellationToken>())
-            .Returns(
-                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
-            );
+            .FindChedUpdates(Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), 100, 0, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(response));
+
+        var response1 = new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDCHEDSummaryProfile
+            {
+                Items = [],
+                HasMore = false,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
+        _gateway
+            .FindChedUpdates(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                100,
+                100,
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(Task.FromResult(response1));
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
@@ -63,8 +104,9 @@ public class TracesChedChangesJobTests
         await _sns.Received(2)
             .PublishAsync(
                 "test-ched-internal-topic",
-                Arg.Any<IMessage>(),
+                Arg.Any<string>(),
                 Arg.Any<Dictionary<string, string>>(),
+                Arg.Any<string>(),
                 Arg.Any<string>(),
                 cancellationToken: Arg.Any<CancellationToken>()
             );
@@ -76,17 +118,27 @@ public class TracesChedChangesJobTests
         // Arrange
         var context = CreateContext();
 
+        var response = new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDCHEDSummaryProfile
+            {
+                Items = [],
+                HasMore = false,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
+
         _gateway
             .FindChedUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns(
-                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
-            );
+            .Returns(Task.FromResult(response));
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
@@ -113,17 +165,27 @@ public class TracesChedChangesJobTests
 
         var context = CreateContext(watermark);
 
+        var response = new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDCHEDSummaryProfile
+            {
+                Items = [],
+                HasMore = false,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
+
         _gateway
             .FindChedUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns(
-                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
-            );
+            .Returns(Task.FromResult(response));
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
@@ -150,8 +212,8 @@ public class TracesChedChangesJobTests
 
         _gateway
             .FindChedUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>()
@@ -161,25 +223,57 @@ public class TracesChedChangesJobTests
                 var offset = call.ArgAt<int>(3);
                 callOffsets.Add(offset);
 
-                var response = new FindChedUpdatesResponse([]);
+                var list = new List<DefraUNVTDCHEDSummaryProfileItem>();
                 for (var i = 0; i < 100; i++)
                 {
-                    response.Items.Add(new FindChedUpdatesResponseRecord((offset + 1).ToString(), DateTime.UtcNow));
+                    list.Add(
+                        new DefraUNVTDCHEDSummaryProfileItem
+                        {
+                            Id = (offset + 1).ToString(),
+                            Origin = "Origin",
+                            Created = DateTime.UtcNow,
+                            Updated = DateTime.UtcNow,
+                        }
+                    );
                 }
+
+                var response = new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+                    new HttpResponseMessage(HttpStatusCode.OK),
+                    new DefraUNVTDCHEDSummaryProfile
+                    {
+                        Items = list.ToArray(),
+                        HasMore = true,
+                        Offset = 0,
+                        PageSize = 100,
+                    },
+                    new RefitSettings()
+                );
 
                 return Task.FromResult(response);
             });
 
         _gateway
             .FindChedUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 200,
                 Arg.Any<CancellationToken>()
             )
             .Returns(
-                Task.FromResult(new FindChedUpdatesResponse(Array.Empty<FindChedUpdatesResponseRecord>().ToList()))
+                Task.FromResult(
+                    new ApiResponse<DefraUNVTDCHEDSummaryProfile>(
+                        new HttpResponseMessage(HttpStatusCode.OK),
+                        new DefraUNVTDCHEDSummaryProfile
+                        {
+                            Items = [],
+                            HasMore = false,
+                            Offset = 0,
+                            PageSize = 100,
+                        },
+                        new RefitSettings()
+                    )
+                )
             );
 
         // Act

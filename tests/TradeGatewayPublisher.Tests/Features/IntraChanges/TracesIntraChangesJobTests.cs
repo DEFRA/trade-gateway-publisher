@@ -1,11 +1,14 @@
+using System.Net;
 using AwesomeAssertions;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
-using Infrastructure.TracesGateway;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Refit;
+using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.Certificate;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.IntraChanges;
 
@@ -13,7 +16,7 @@ namespace TradeGatewayPublisher.Tests.Features.IntraChanges;
 
 public class TracesIntraChangesJobTests
 {
-    private readonly ITracesGateway _gateway = Substitute.For<ITracesGateway>();
+    private readonly ITracesGatewayIntraClient _gateway = Substitute.For<ITracesGatewayIntraClient>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
     private readonly IOptions<TracesUpdatePublisherOptions> _options;
     private readonly TracesIntraChangesJob _sut;
@@ -41,19 +44,65 @@ public class TracesIntraChangesJobTests
 
         var updates = new[]
         {
-            new FindIntraUpdatesResponseRecord("1", DateTime.UtcNow),
-            new FindIntraUpdatesResponseRecord("2", DateTime.UtcNow),
+            new DefraUNVTDINTRASummaryProfileItem
+            {
+                Id = "1",
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            },
+            new DefraUNVTDINTRASummaryProfileItem
+            {
+                Id = "2",
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            },
         };
 
-        _gateway
-            .FindIntraUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 0, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new FindIntraUpdatesResponse(updates.ToList())));
+        var response = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDINTRASummaryProfile
+            {
+                Items = updates,
+                HasMore = true,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
 
         _gateway
-            .FindIntraUpdates(Arg.Any<DateTime>(), Arg.Any<DateTime>(), 100, 100, Arg.Any<CancellationToken>())
-            .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
-            );
+            .FindIntraUpdates(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                100,
+                0,
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(Task.FromResult(response));
+
+        var response1 = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDINTRASummaryProfile
+            {
+                Items = [],
+                HasMore = false,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
+
+        _gateway
+            .FindIntraUpdates(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                100,
+                100,
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(Task.FromResult(response1));
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
@@ -62,8 +111,9 @@ public class TracesIntraChangesJobTests
         await _sns.Received(2)
             .PublishAsync(
                 "test-internal-topic",
-                Arg.Any<IMessage>(),
+                Arg.Any<string>(),
                 Arg.Any<Dictionary<string, string>>(),
+                Arg.Any<string>(),
                 Arg.Any<string>(),
                 cancellationToken: Arg.Any<CancellationToken>()
             );
@@ -75,17 +125,27 @@ public class TracesIntraChangesJobTests
         // Arrange
         var context = CreateContext();
 
+        var response = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDINTRASummaryProfile
+            {
+                Items = [],
+                HasMore = false,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
+
         _gateway
             .FindIntraUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
-            );
+            .Returns(Task.FromResult(response));
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
@@ -112,17 +172,27 @@ public class TracesIntraChangesJobTests
 
         var context = CreateContext(watermark);
 
+        var response = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDINTRASummaryProfile
+            {
+                Items = [],
+                HasMore = false,
+                Offset = 0,
+                PageSize = 100,
+            },
+            new RefitSettings()
+        );
+
         _gateway
             .FindIntraUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
-            );
+            .Returns(Task.FromResult(response));
 
         // Act
         await _sut.ExecuteAsync(context, CancellationToken.None);
@@ -149,8 +219,8 @@ public class TracesIntraChangesJobTests
 
         _gateway
             .FindIntraUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>()
@@ -160,25 +230,57 @@ public class TracesIntraChangesJobTests
                 var offset = call.ArgAt<int>(3);
                 callOffsets.Add(offset);
 
-                var response = new FindIntraUpdatesResponse([]);
+                var list = new List<DefraUNVTDINTRASummaryProfileItem>();
                 for (var i = 0; i < 100; i++)
                 {
-                    response.Items.Add(new FindIntraUpdatesResponseRecord((offset + 1).ToString(), DateTime.UtcNow));
+                    list.Add(
+                        new DefraUNVTDINTRASummaryProfileItem
+                        {
+                            Id = (offset + 1).ToString(),
+                            Origin = "Origin",
+                            Created = DateTime.UtcNow,
+                            Updated = DateTime.UtcNow,
+                        }
+                    );
                 }
+
+                var response = new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+                    new HttpResponseMessage(HttpStatusCode.OK),
+                    new DefraUNVTDINTRASummaryProfile
+                    {
+                        Items = list.ToArray(),
+                        HasMore = true,
+                        Offset = 0,
+                        PageSize = 100,
+                    },
+                    new RefitSettings()
+                );
 
                 return Task.FromResult(response);
             });
 
         _gateway
             .FindIntraUpdates(
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<int>(),
                 200,
                 Arg.Any<CancellationToken>()
             )
             .Returns(
-                Task.FromResult(new FindIntraUpdatesResponse(Array.Empty<FindIntraUpdatesResponseRecord>().ToList()))
+                Task.FromResult(
+                    new ApiResponse<DefraUNVTDINTRASummaryProfile>(
+                        new HttpResponseMessage(HttpStatusCode.OK),
+                        new DefraUNVTDINTRASummaryProfile
+                        {
+                            Items = [],
+                            HasMore = false,
+                            Offset = 0,
+                            PageSize = 100,
+                        },
+                        new RefitSettings()
+                    )
+                )
             );
 
         // Act
