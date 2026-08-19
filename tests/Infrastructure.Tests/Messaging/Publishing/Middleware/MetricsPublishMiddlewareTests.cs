@@ -41,7 +41,7 @@ public class MetricsPublishMiddlewareTests
 
         var sut = new MetricsPublishMiddleware(metrics);
 
-        var context = new PublishContext() { QueueName = "orders" };
+        var context = new PublishContext() { TopicName = "orders" };
 
         // Act
         await sut.InvokeAsync(context, () => Task.CompletedTask);

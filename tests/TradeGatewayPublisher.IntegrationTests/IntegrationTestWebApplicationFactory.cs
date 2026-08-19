@@ -66,10 +66,10 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo",
 
                         // Traces Service Bus (development emulator) - required for ASB publisher/consumer options
-                        ["TracesServiceBus:Ched:QueueName"] = "trade-gateway-publisher-ched-updates",
+                        ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched-updates",
                         ["TracesServiceBus:Ched:ConnectionString"] =
                             "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
-                        ["TracesServiceBus:Intra:QueueName"] = "trade-gateway-publisher-intra-updates",
+                        ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra-updates",
                         ["TracesServiceBus:Intra:ConnectionString"] =
                             "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
 

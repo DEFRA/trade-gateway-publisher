@@ -29,7 +29,7 @@ public class SnsPublisher(
 
         var context = new PublishContext
         {
-            QueueName = topicArn.ToQueueNameFromTopicArn(),
+            TopicName = topicArn.ToTopicNameFromTopicArn(),
             MessageBody = messageBody,
             Subject = subject,
             Headers = headers ?? new Dictionary<string, string>(),

@@ -2,7 +2,7 @@ namespace Infrastructure.Messaging.Publishing
 {
     public class PublishContext
     {
-        public string QueueName { get; init; } = default!;
+        public string TopicName { get; init; } = default!;
 
         public string MessageBody { get; init; } = default!;
 

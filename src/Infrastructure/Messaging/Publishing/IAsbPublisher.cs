@@ -3,7 +3,7 @@ namespace Infrastructure.Messaging.Publishing;
 public interface IAsbPublisher
 {
     Task PublishAsync(
-        string queueName,
+        string topicName,
         string messageId,
         Dictionary<string, string> messageHeaders,
         string messageBody,

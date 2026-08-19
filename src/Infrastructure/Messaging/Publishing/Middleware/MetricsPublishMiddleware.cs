@@ -12,7 +12,7 @@ public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddlewa
 
         try
         {
-            metrics.Start(context.QueueName);
+            metrics.Start(context.TopicName);
 
             await next();
         }
@@ -20,13 +20,13 @@ public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddlewa
         catch (Exception exception)
 #pragma warning restore S2139
         {
-            metrics.Faulted(context.QueueName, exception);
+            metrics.Faulted(context.TopicName, exception);
             throw;
         }
         finally
         {
             metrics.Complete(
-                context.QueueName,
+                context.TopicName,
                 TimeProvider.System.GetElapsedTime(startingTimestamp).TotalMilliseconds
             );
         }

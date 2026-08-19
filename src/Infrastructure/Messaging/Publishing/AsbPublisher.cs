@@ -12,15 +12,15 @@ public class AsbPublisher(
     private readonly IReadOnlyList<IPublishMiddleware> _middlewares = middlewares?.ToList() ?? [];
 
     public async Task PublishAsync(
-        string queueName,
+        string topicName,
         string messageId,
         Dictionary<string, string> messageHeaders,
         string messageBody,
         CancellationToken cancellationToken = default
     )
     {
-        if (string.IsNullOrWhiteSpace(queueName))
-            throw new ArgumentException("Queue name is required.", nameof(queueName));
+        if (string.IsNullOrWhiteSpace(topicName))
+            throw new ArgumentException("Queue name is required.", nameof(topicName));
 
         if (string.IsNullOrWhiteSpace(messageBody))
             throw new ArgumentException("Message body is required.", nameof(messageBody));
@@ -29,10 +29,10 @@ public class AsbPublisher(
         {
             Headers = messageHeaders,
             MessageBody = messageBody,
-            QueueName = queueName,
+            TopicName = topicName,
         };
 
-        var sender = serviceBusSenderFactory.CreateClient(queueName);
+        var sender = serviceBusSenderFactory.CreateClient(topicName);
 
         Task PublishCore()
         {
