@@ -24,6 +24,8 @@ jobs:
       packages: read
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # NuGet.config expands this at restore time
+      DEFRA_NUGET_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
@@ -31,12 +33,7 @@ jobs:
         uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
           dotnet-version: |
-            10.0
-      - name: Update NuGet.config
-        run: |
-          dotnet nuget remove source defra --configfile ./NuGet.config
-          dotnet nuget add source --username USERNAME --password $GITHUB_TOKEN --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile ./NuGet.config
-      
+            10.0   
       - name: Run unit tests
         run: |
           dotnet test --filter "Category!=IntegrationTest"
@@ -53,6 +50,8 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: trade-gateway-publisher:latest
+          build-args: |
+            DEFRA_NUGET_PAT=${{ secrets.GITHUB_TOKEN }}
       - name: Check with Trivy
         run: |
           docker run -v /var/run/docker.sock:/var/run/docker.sock \
