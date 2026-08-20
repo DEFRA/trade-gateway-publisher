@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 
 namespace Infrastructure.Messaging.Extensions;
 
@@ -36,6 +37,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConsumeMiddleware, TracingConsumeMiddleware>();
         services.AddSingleton<IConsumeMiddleware, MetricsConsumeMiddleware>();
         services.AddSingleton<IConsumeMiddleware, LoggingConsumeMiddleware>();
+
+        services.AddFeatureManagement();
 
         services.AddSingleton<ConsumerMetrics>(sp => new ConsumerMetrics(
             sp.GetRequiredService<IMeterFactory>(),

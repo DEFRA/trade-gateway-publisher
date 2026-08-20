@@ -1,11 +1,13 @@
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging.Extensions;
 using Microsoft.Extensions.Azure;
+using Microsoft.FeatureManagement;
 
 namespace Infrastructure.Messaging.Publishing;
 
 public class AsbPublisher(
     IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory,
+    IFeatureManager featureManager,
     IEnumerable<IPublishMiddleware>? middlewares = null
 ) : IAsbPublisher
 {
@@ -19,6 +21,11 @@ public class AsbPublisher(
         CancellationToken cancellationToken = default
     )
     {
+        if (!await featureManager.IsEnabledAsync("AzureServiceBusPublishing"))
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(topicName))
             throw new ArgumentException("Queue name is required.", nameof(topicName));
 

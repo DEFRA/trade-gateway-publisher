@@ -1,20 +1,33 @@
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Azure;
+using Microsoft.FeatureManagement;
 using NSubstitute;
 
 namespace Infrastructure.Tests.Messaging.Publishing;
 
 public class AsbPublisherTests
 {
+    private readonly AsbPublisher _sut;
+    private readonly IAzureClientFactory<ServiceBusSender> _factory;
+    private readonly IFeatureManager _featureManager;
+
+    private const string AzureServiceBusFeatureName = "AzureServiceBusPublishing";
+
+    public AsbPublisherTests()
+    {
+        _factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
+        _featureManager = Substitute.For<IFeatureManager>();
+        _sut = new AsbPublisher(_factory, _featureManager);
+    }
+
     [Fact]
     public async Task PublishAsync_throws_when_topic_name_missing()
     {
-        var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
-        var sut = new AsbPublisher(factory);
+        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.PublishAsync(string.Empty, "id", new Dictionary<string, string>(), "body")
+            _sut.PublishAsync(string.Empty, "id", new Dictionary<string, string>(), "body")
         );
         Assert.Equal("topicName", ex.ParamName);
     }
@@ -22,32 +35,45 @@ public class AsbPublisherTests
     [Fact]
     public async Task PublishAsync_throws_when_message_body_missing()
     {
-        var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
-        var sut = new AsbPublisher(factory);
+        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.PublishAsync("topic", "id", new Dictionary<string, string>(), string.Empty)
+            _sut.PublishAsync("topic", "id", new Dictionary<string, string>(), string.Empty)
         );
         Assert.Equal("messageBody", ex.ParamName);
     }
 
     [Fact]
+    public async Task PublishAsync_does_nothing_when_feature_disabled()
+    {
+        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(false));
+
+        var sender = Substitute.For<ServiceBusSender>();
+
+        _factory.CreateClient("topic-should-not-be-called").Returns(sender);
+
+        await _sut.PublishAsync("topic-should-not-be-called", "id", new Dictionary<string, string>(), "body");
+
+        // _factory.CreateClient should not have been called
+        _factory.DidNotReceive().CreateClient(Arg.Any<string>());
+    }
+
+    [Fact]
     public async Task PublishAsync_sends_message_with_message_id_and_headers()
     {
-        var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
+        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
+
         var sender = Substitute.For<ServiceBusSender>();
-        factory.CreateClient("topic1").Returns(sender);
+        _factory.CreateClient("topic1").Returns(sender);
 
         ServiceBusMessage? sent = null;
         sender
             .SendMessageAsync(Arg.Do<ServiceBusMessage>(m => sent = m), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        var sut = new AsbPublisher(factory);
-
         var headers = new Dictionary<string, string> { ["h1"] = "v1" };
 
-        await sut.PublishAsync("topic1", "msg-1", headers, "hello-body");
+        await _sut.PublishAsync("topic1", "msg-1", headers, "hello-body");
 
         Assert.NotNull(sent);
         Assert.Equal("msg-1", sent!.MessageId);
@@ -56,9 +82,15 @@ public class AsbPublisherTests
         Assert.Contains("hello-body", sent.Body.ToString());
     }
 
+    /// <summary>
+    /// Test the middleware and pipeline sequences. NOTE: As this impacts the SUT constructor it builds its own SUT
+    /// </summary>
     [Fact]
     public async Task PublishAsync_runs_middlewares_and_pipeline_applies_headers_from_middlewares()
     {
+        var featureManager = Substitute.For<IFeatureManager>();
+        featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
+
         var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
         var sender = Substitute.For<ServiceBusSender>();
         factory.CreateClient("topic-x").Returns(sender);
@@ -90,7 +122,7 @@ public class AsbPublisherTests
                 ctx.Headers["mw2-after"] = "done";
             });
 
-        var sut = new AsbPublisher(factory, [mw1, mw2]);
+        var sut = new AsbPublisher(factory, featureManager, [mw1, mw2]);
 
         var headers = new Dictionary<string, string>();
 
