@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.Messaging;
 
@@ -9,15 +7,15 @@ public class TracesServiceBusOptions
 {
     public const string SectionName = "TracesServiceBus";
 
-    public required ServiceBusQueue Ched { get; init; }
+    public required ServiceBusTopic Ched { get; init; }
 
-    public required ServiceBusQueue Intra { get; init; }
+    public required ServiceBusTopic Intra { get; init; }
 }
 
 [ExcludeFromCodeCoverage]
-public class ServiceBusQueue
+public class ServiceBusTopic
 {
     public required string ConnectionString { get; init; }
 
-    public required string QueueName { get; init; }
+    public required string TopicName { get; init; }
 }

@@ -125,12 +125,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAsbPublisher, AsbPublisher>();
         services.AddAzureClients(azureBuilder =>
         {
-            ServiceBusQueue[] queues = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
+            ServiceBusTopic[] queues = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
             foreach (var queue in queues)
             {
                 azureBuilder
                     .AddServiceBusClient(queue.ConnectionString)
-                    .WithName(queue.QueueName)
+                    .WithName(queue.TopicName)
                     .ConfigureOptions(
                         (options, provider) =>
                         {
@@ -147,11 +147,11 @@ public static class ServiceCollectionExtensions
                         (_, _, provider) =>
                         {
                             var clientFactory = provider.GetRequiredService<IAzureClientFactory<ServiceBusClient>>();
-                            var client = clientFactory.CreateClient(queue.QueueName);
-                            return client.CreateSender(queue.QueueName);
+                            var client = clientFactory.CreateClient(queue.TopicName);
+                            return client.CreateSender(queue.TopicName);
                         }
                     )
-                    .WithName(queue.QueueName);
+                    .WithName(queue.TopicName);
             }
         });
         return services;

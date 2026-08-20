@@ -19,12 +19,12 @@ public class AsbIntraUpdateConsumerTests
         var options = Options.Create(
             new TracesServiceBusOptions
             {
-                Intra = new ServiceBusQueue
+                Intra = new ServiceBusTopic
                 {
-                    QueueName = "intra-queue",
+                    TopicName = "intra-topic",
                     ConnectionString = "Endpoint=sb://127.0.0.1;",
                 },
-                Ched = new ServiceBusQueue { QueueName = "ched-queue", ConnectionString = "Endpoint=sb://127.0.0.1;" },
+                Ched = new ServiceBusTopic { TopicName = "ched-topic", ConnectionString = "Endpoint=sb://127.0.0.1;" },
             }
         );
 
@@ -44,7 +44,7 @@ public class AsbIntraUpdateConsumerTests
         await _asbPublisher
             .Received(1)
             .PublishAsync(
-                Arg.Is<string>(q => q == "intra-queue"),
+                Arg.Is<string>(q => q == "intra-topic"),
                 Arg.Is<string>(id => id == ctx.MessageId),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Is<string>(body => body == ctx.Body),

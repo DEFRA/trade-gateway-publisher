@@ -15,7 +15,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
         {
             // Placeholder deduplication id — see "Message Deduplication" in README.md
             await awsPublisher.PublishAsync(
-                options.Value.Intra.QueueName,
+                options.Value.Intra.TopicName,
                 messageId: context.MessageId,
                 context.Headers.ToDictionary(header => header.Key, header => header.Value.StringValue),
                 context.Body,
@@ -25,7 +25,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
             logger.LogInformation(
                 "Published INTRA message id {Id} to {Queue}",
                 context.MessageId,
-                options.Value.Intra.QueueName
+                options.Value.Intra.TopicName
             );
         }
     }

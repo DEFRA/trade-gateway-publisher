@@ -15,7 +15,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
         {
             // Placeholder deduplication id — see "Message Deduplication" in README.md
             await asbPublisher.PublishAsync(
-                options.Value.Ched.QueueName,
+                options.Value.Ched.TopicName,
                 messageId: context.MessageId,
                 context.Headers.ToDictionary(header => header.Key, header => header.Value.StringValue),
                 context.Body,
@@ -25,7 +25,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
             logger.LogInformation(
                 "Published CHED message id {Id} to {Queue}",
                 context.MessageId,
-                options.Value.Ched.QueueName
+                options.Value.Ched.TopicName
             );
         }
     }
