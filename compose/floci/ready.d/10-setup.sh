@@ -1,9 +1,5 @@
 #!/bin/bash
-
 set -e
-
-# test-reports
-awslocal s3 mb s3://reports
 
 # trade-gateway
 awslocal sns create-topic --name trade_gateway_ched_updates
