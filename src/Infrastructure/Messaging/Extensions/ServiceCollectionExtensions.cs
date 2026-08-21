@@ -94,11 +94,8 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddOptions<CdpOptions>().Bind(configuration);
-        var tracesServiceBusOptions = configuration
-            .GetRequiredSection(TracesServiceBusOptions.SectionName)
-            .Get<TracesServiceBusOptions>()!;
 
-        services.AddTradeGatewayServiceBus(tracesServiceBusOptions);
+        services.AddTradeGatewayServiceBus(configuration);
 
         return services;
     }
@@ -122,41 +119,56 @@ public static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddTradeGatewayServiceBus(
         this IServiceCollection services,
-        TracesServiceBusOptions tracesServiceBusOptions
+        IConfiguration configuration
     )
     {
-        services.AddSingleton<IAsbPublisher, AsbPublisher>();
-        services.AddAzureClients(azureBuilder =>
+        if (configuration.GetValue<bool>($"FeatureManagement:{FeatureFlags.AzureServiceBusPublishing}"))
         {
-            ServiceBusTopic[] queues = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
-            foreach (var queue in queues)
-            {
-                azureBuilder
-                    .AddServiceBusClient(queue.ConnectionString)
-                    .WithName(queue.TopicName)
-                    .ConfigureOptions(
-                        (options, provider) =>
-                        {
-                            if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
-                            {
-                                options.TransportType = ServiceBusTransportType.AmqpWebSockets;
-                                options.WebProxy = provider.GetRequiredService<IWebProxy>();
-                            }
-                        }
-                    );
+            services.AddSingleton<IAsbPublisher, AsbPublisher>();
 
-                azureBuilder
-                    .AddClient<ServiceBusSender, ServiceBusClientOptions>(
-                        (_, _, provider) =>
-                        {
-                            var clientFactory = provider.GetRequiredService<IAzureClientFactory<ServiceBusClient>>();
-                            var client = clientFactory.CreateClient(queue.TopicName);
-                            return client.CreateSender(queue.TopicName);
-                        }
-                    )
-                    .WithName(queue.TopicName);
-            }
-        });
+            var tracesServiceBusOptions = configuration
+                .GetRequiredSection(TracesServiceBusOptions.SectionName)
+                .Get<TracesServiceBusOptions>()!;
+
+            services.AddAzureClients(azureBuilder =>
+            {
+                ServiceBusTopic[] queues = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
+                foreach (var queue in queues)
+                {
+                    azureBuilder
+                        .AddServiceBusClient(queue.ConnectionString)
+                        .WithName(queue.TopicName)
+                        .ConfigureOptions(
+                            (options, provider) =>
+                            {
+                                if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
+                                {
+                                    options.TransportType = ServiceBusTransportType.AmqpWebSockets;
+                                    options.WebProxy = provider.GetRequiredService<IWebProxy>();
+                                }
+                            }
+                        );
+
+                    azureBuilder
+                        .AddClient<ServiceBusSender, ServiceBusClientOptions>(
+                            (_, _, provider) =>
+                            {
+                                var clientFactory = provider.GetRequiredService<
+                                    IAzureClientFactory<ServiceBusClient>
+                                >();
+                                var client = clientFactory.CreateClient(queue.TopicName);
+                                return client.CreateSender(queue.TopicName);
+                            }
+                        )
+                        .WithName(queue.TopicName);
+                }
+            });
+        }
+        else
+        {
+            services.AddSingleton<IAsbPublisher, NullAsbPublisher>();
+        }
+
         return services;
     }
 }

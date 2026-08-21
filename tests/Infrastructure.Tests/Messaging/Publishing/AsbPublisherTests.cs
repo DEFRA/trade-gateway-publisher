@@ -16,7 +16,7 @@ public class AsbPublisherTests
     {
         _factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
         _featureManager = Substitute.For<IFeatureManager>();
-        _sut = new AsbPublisher(_factory, _featureManager);
+        _sut = new AsbPublisher(_factory);
     }
 
     [Fact]
@@ -39,21 +39,6 @@ public class AsbPublisherTests
             _sut.PublishAsync("topic", "id", new Dictionary<string, string>(), string.Empty)
         );
         Assert.Equal("messageBody", ex.ParamName);
-    }
-
-    [Fact]
-    public async Task PublishAsync_does_nothing_when_feature_disabled()
-    {
-        _featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(false));
-
-        var sender = Substitute.For<ServiceBusSender>();
-
-        _factory.CreateClient("topic-should-not-be-called").Returns(sender);
-
-        await _sut.PublishAsync("topic-should-not-be-called", "id", new Dictionary<string, string>(), "body");
-
-        // _factory.CreateClient should not have been called
-        _factory.DidNotReceive().CreateClient(Arg.Any<string>());
     }
 
     [Fact]
@@ -86,9 +71,6 @@ public class AsbPublisherTests
     [Fact]
     public async Task PublishAsync_runs_middlewares_and_pipeline_applies_headers_from_middlewares()
     {
-        var featureManager = Substitute.For<IFeatureManager>();
-        featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(true));
-
         var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
         var sender = Substitute.For<ServiceBusSender>();
         factory.CreateClient("topic-x").Returns(sender);
@@ -120,7 +102,7 @@ public class AsbPublisherTests
                 ctx.Headers["mw2-after"] = "done";
             });
 
-        var sut = new AsbPublisher(factory, featureManager, [mw1, mw2]);
+        var sut = new AsbPublisher(factory, [mw1, mw2]);
 
         var headers = new Dictionary<string, string>();
 
