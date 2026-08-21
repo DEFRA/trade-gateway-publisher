@@ -21,7 +21,7 @@ public class AsbPublisher(
         CancellationToken cancellationToken = default
     )
     {
-        if (!await featureManager.IsEnabledAsync("AzureServiceBusPublishing"))
+        if (!await featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing))
         {
             return;
         }

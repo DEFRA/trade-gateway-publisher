@@ -12,8 +12,6 @@ public class AsbPublisherTests
     private readonly IAzureClientFactory<ServiceBusSender> _factory;
     private readonly IFeatureManager _featureManager;
 
-    private const string AzureServiceBusFeatureName = "AzureServiceBusPublishing";
-
     public AsbPublisherTests()
     {
         _factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
@@ -24,7 +22,7 @@ public class AsbPublisherTests
     [Fact]
     public async Task PublishAsync_throws_when_topic_name_missing()
     {
-        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
+        _featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(true));
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             _sut.PublishAsync(string.Empty, "id", new Dictionary<string, string>(), "body")
@@ -35,7 +33,7 @@ public class AsbPublisherTests
     [Fact]
     public async Task PublishAsync_throws_when_message_body_missing()
     {
-        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
+        _featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(true));
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             _sut.PublishAsync("topic", "id", new Dictionary<string, string>(), string.Empty)
@@ -46,7 +44,7 @@ public class AsbPublisherTests
     [Fact]
     public async Task PublishAsync_does_nothing_when_feature_disabled()
     {
-        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(false));
+        _featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(false));
 
         var sender = Substitute.For<ServiceBusSender>();
 
@@ -61,7 +59,7 @@ public class AsbPublisherTests
     [Fact]
     public async Task PublishAsync_sends_message_with_message_id_and_headers()
     {
-        _featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
+        _featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(true));
 
         var sender = Substitute.For<ServiceBusSender>();
         _factory.CreateClient("topic1").Returns(sender);
@@ -89,7 +87,7 @@ public class AsbPublisherTests
     public async Task PublishAsync_runs_middlewares_and_pipeline_applies_headers_from_middlewares()
     {
         var featureManager = Substitute.For<IFeatureManager>();
-        featureManager.IsEnabledAsync(AzureServiceBusFeatureName).Returns(Task.FromResult(true));
+        featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(true));
 
         var factory = Substitute.For<IAzureClientFactory<ServiceBusSender>>();
         var sender = Substitute.For<ServiceBusSender>();
