@@ -1,8 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using Defra.TradeImports.EmfExporter;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
+using Infrastructure.Messaging;
 using Infrastructure.Messaging.Extensions;
 using Infrastructure.Scheduler;
 using Infrastructure.Scheduler.Extensions;
@@ -74,6 +76,14 @@ static void ConfigureServices(WebApplicationBuilder builder)
         sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrl
     );
 
+    services.AddConsumer<AsbIntraUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrlForAsb
+    );
+
+    services.AddConsumer<AsbChedUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrlForAsb
+    );
+
     services.AddHttpContextAccessor();
     services.AddTraceContextAccessor(configuration);
 
@@ -101,6 +111,38 @@ static void ConfigureHeaderPropagation(IServiceCollection services, IConfigurati
 [ExcludeFromCodeCoverage]
 static void ConfigureHttpClients(IServiceCollection services)
 {
+    // Register IWebProxy for components (e.g., Azure Service Bus clients) that request it.
+    services.AddSingleton<IWebProxy>(sp =>
+    {
+        var options = sp.GetRequiredService<IOptions<CdpOptions>>().Value;
+        var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("proxy");
+
+        var proxy = new WebProxy { BypassProxyOnLocal = true };
+        if (!string.IsNullOrWhiteSpace(options.CdpHttpsProxy))
+        {
+            logger.LogDebug("Creating proxy http client");
+            var uriBuilder = new UriBuilder(options.CdpHttpsProxy);
+
+            var username = uriBuilder.UserName;
+            var password = uriBuilder.Password;
+            if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+            {
+                proxy.Credentials = new NetworkCredential(username, password);
+            }
+
+            // Remove credentials from the URI so they don't get logged
+            uriBuilder.UserName = "";
+            uriBuilder.Password = "";
+            proxy.Address = uriBuilder.Uri;
+        }
+        else
+        {
+            logger.LogWarning("CDP_HTTPS_PROXY is NOT set, proxy client will be disabled");
+        }
+
+        return proxy;
+    });
+
     services.AddTransient<ProxyHttpMessageHandler>();
 }
 
@@ -124,6 +166,11 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddDbContext(configuration);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
+
+    services
+        .AddOptions<TracesServiceBusOptions>()
+        .Bind(configuration.GetSection(TracesServiceBusOptions.SectionName))
+        .ValidateOnStart();
 }
 
 [ExcludeFromCodeCoverage]

@@ -51,7 +51,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
             cancellationToken
         );
 
-        if (response.Messages.Count == 0)
+        if (response?.Messages == null || response.Messages.Count == 0)
             return false;
 
         foreach (var message in response.Messages)
@@ -68,6 +68,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         _factory = new IntegrationTestWebApplicationFactory();
+
         _ = _factory.CreateClient();
 
         _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();

@@ -16,7 +16,8 @@
         "AWS_SECRET_ACCESS_KEY": "test",
         "SNS_ENDPOINT": "http://localhost:4566",
         "SQS_ENDPOINT": "http://localhost:4566",
-        "USE_FLOCI": "true"
+        "USE_FLOCI": "true",
+        "AWS_ENDPOINT_URL_STS": "http://localhost:8080/local/sts"
       }
     }
   }

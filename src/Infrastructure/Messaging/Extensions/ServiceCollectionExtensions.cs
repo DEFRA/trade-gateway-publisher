@@ -1,19 +1,25 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
+using System.Net;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
+using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Messaging.Publishing.Middleware;
 using Infrastructure.Resilience;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.FeatureManagement;
 
 namespace Infrastructure.Messaging.Extensions;
 
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMessaging(
@@ -31,6 +37,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConsumeMiddleware, TracingConsumeMiddleware>();
         services.AddSingleton<IConsumeMiddleware, MetricsConsumeMiddleware>();
         services.AddSingleton<IConsumeMiddleware, LoggingConsumeMiddleware>();
+
+        services.AddFeatureManagement();
 
         services.AddSingleton<ConsumerMetrics>(sp => new ConsumerMetrics(
             sp.GetRequiredService<IMeterFactory>(),
@@ -85,6 +93,10 @@ public static class ServiceCollectionExtensions
             );
         });
 
+        services.AddOptions<CdpOptions>().Bind(configuration);
+
+        services.AddTradeGatewayServiceBus(configuration);
+
         return services;
     }
 
@@ -103,5 +115,60 @@ public static class ServiceCollectionExtensions
             logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService<TConsumer>>>(),
             middlewares: sp.GetServices<IConsumeMiddleware>()
         ));
+    }
+
+    internal static IServiceCollection AddTradeGatewayServiceBus(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        if (configuration.GetValue<bool>($"FeatureManagement:{FeatureFlags.AzureServiceBusPublishing}"))
+        {
+            services.AddSingleton<IAsbPublisher, AsbPublisher>();
+
+            var tracesServiceBusOptions = configuration
+                .GetRequiredSection(TracesServiceBusOptions.SectionName)
+                .Get<TracesServiceBusOptions>()!;
+
+            services.AddAzureClients(azureBuilder =>
+            {
+                ServiceBusTopic[] queues = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
+                foreach (var queue in queues)
+                {
+                    azureBuilder
+                        .AddServiceBusClient(queue.ConnectionString)
+                        .WithName(queue.TopicName)
+                        .ConfigureOptions(
+                            (options, provider) =>
+                            {
+                                if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
+                                {
+                                    options.TransportType = ServiceBusTransportType.AmqpWebSockets;
+                                    options.WebProxy = provider.GetRequiredService<IWebProxy>();
+                                }
+                            }
+                        );
+
+                    azureBuilder
+                        .AddClient<ServiceBusSender, ServiceBusClientOptions>(
+                            (_, _, provider) =>
+                            {
+                                var clientFactory = provider.GetRequiredService<
+                                    IAzureClientFactory<ServiceBusClient>
+                                >();
+                                var client = clientFactory.CreateClient(queue.TopicName);
+                                return client.CreateSender(queue.TopicName);
+                            }
+                        )
+                        .WithName(queue.TopicName);
+                }
+            });
+        }
+        else
+        {
+            services.AddSingleton<IAsbPublisher, NullAsbPublisher>();
+        }
+
+        return services;
     }
 }

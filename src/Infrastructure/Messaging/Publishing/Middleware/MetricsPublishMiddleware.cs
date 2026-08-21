@@ -9,11 +9,10 @@ public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddlewa
     )
     {
         var startingTimestamp = TimeProvider.System.GetTimestamp();
-        var topicName = context.GetTopicName();
 
         try
         {
-            metrics.Start(topicName);
+            metrics.Start(context.TopicName);
 
             await next();
         }
@@ -21,12 +20,15 @@ public class MetricsPublishMiddleware(PublishMetrics metrics) : IPublishMiddlewa
         catch (Exception exception)
 #pragma warning restore S2139
         {
-            metrics.Faulted(topicName, exception);
+            metrics.Faulted(context.TopicName, exception);
             throw;
         }
         finally
         {
-            metrics.Complete(topicName, TimeProvider.System.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+            metrics.Complete(
+                context.TopicName,
+                TimeProvider.System.GetElapsedTime(startingTimestamp).TotalMilliseconds
+            );
         }
     }
 }

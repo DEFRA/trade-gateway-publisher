@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using NSubstitute;
 
@@ -44,7 +45,7 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                         ["SNS_ENDPOINT"] = FlociEndpoint,
                         ["SQS_ENDPOINT"] = FlociEndpoint,
 
-                        // These are the topics and queues configured in init-aws.sh
+                        // These are the topics and queues configured in ./compose/floci/ready.d/10.setup.sh
                         ["TracesUpdatePublisher:IntraInternalTopicArn"] =
                             "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_intra_stream_internal.fifo",
                         ["TracesUpdatePublisher:IntraTopicArn"] =
@@ -53,13 +54,30 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                             "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_stream_internal.fifo",
                         ["TracesUpdatePublisher:ChedTopicArn"] =
                             "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_updates.fifo",
+
                         ["TracesUpdateConsumer:IntraQueueUrl"] =
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_intra_stream_internal_publisher.fifo",
                         ["TracesUpdateConsumer:ChedQueueUrl"] =
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_publisher.fifo",
 
+                        ["TracesUpdateConsumer:IntraQueueUrlForAsb"] =
+                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_intra_stream_internal_asb_publisher.fifo",
+                        ["TracesUpdateConsumer:ChedQueueUrlForAsb"] =
+                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo",
+
+                        // Traces Service Bus (development emulator) - required for ASB publisher/consumer options
+                        ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched-updates",
+                        ["TracesServiceBus:Ched:ConnectionString"] =
+                            "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                        ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra-updates",
+                        ["TracesServiceBus:Intra:ConnectionString"] =
+                            "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+
                         // The tests run against a local WireMock container emulating the Traces Gateway
                         ["TracesGateway:BaseUrl"] = WireMockBaseUrl,
+
+                        // Enable debug logging for tests to capture startup/runtime details
+                        ["Serilog:MinimumLevel:Default"] = "Debug",
                     }
                 );
             }
@@ -85,6 +103,8 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
 
             services.RemoveAll<IAmazonSecurityTokenService>();
             services.AddSingleton(sts);
+
+            services.AddLogging(c => c.AddConsole());
         });
     }
 

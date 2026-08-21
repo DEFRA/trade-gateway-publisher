@@ -1,4 +1,5 @@
 using Defra.TradeImports.Tracing;
+using Infrastructure.Messaging.Extensions;
 
 namespace Infrastructure.Messaging.Publishing.Middleware;
 

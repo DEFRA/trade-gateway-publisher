@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Messaging.Publishing;
+namespace Infrastructure.Messaging.Publishing;
 
 public interface IPublishMiddleware
 {

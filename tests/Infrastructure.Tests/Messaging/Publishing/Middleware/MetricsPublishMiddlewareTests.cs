@@ -41,7 +41,7 @@ public class MetricsPublishMiddlewareTests
 
         var sut = new MetricsPublishMiddleware(metrics);
 
-        var context = new PublishContext() { TopicArn = "arn:aws:sns:us-east-1:123456789012:orders" };
+        var context = new PublishContext() { TopicName = "orders" };
 
         // Act
         await sut.InvokeAsync(context, () => Task.CompletedTask);
