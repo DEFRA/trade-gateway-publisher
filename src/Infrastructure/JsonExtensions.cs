@@ -10,7 +10,8 @@ public static class JsonExtensions
         return JsonSerializer.Serialize(value);
     }
 
-    public static T? FromJson<T>(this string value) where T:class
+    public static T? FromJson<T>(this string value)
+        where T : class
     {
         return JsonSerializer.Deserialize<T>(value);
     }
