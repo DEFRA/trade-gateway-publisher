@@ -92,7 +92,7 @@ static void ConfigureServices(WebApplicationBuilder builder)
     ConfigureHeaderPropagation(services, configuration);
     ConfigureAppServices(services, configuration);
 
-    services.AddHealth();
+    services.AddHealth(configuration);
 }
 
 [ExcludeFromCodeCoverage]
