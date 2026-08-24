@@ -31,7 +31,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
                 duplicationId: Guid.NewGuid().ToString("N"),
                 cancellationToken: cancellationToken
             );
-            logger.LogInformation("Published CHED {Id} to {Topic}", message.Id, options.Value.ChedTopicArn);
+            logger.LogInformation("Published CHED {Id} to SNS ARN {Topic}", message.Id, options.Value.ChedTopicArn);
         }
     }
 }

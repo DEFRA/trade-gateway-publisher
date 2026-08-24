@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Infrastructure.Messaging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using TradeGatewayPublisher.Config;
@@ -50,6 +51,18 @@ public static class ServiceCollectionExtensions
             .AddSqs(
                 "SQS - Ched Internal",
                 sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrl,
+                timeout: TimeSpan.FromSeconds(10),
+                tags: [WebApplicationExtensions.Extended]
+            )
+            .AddAsbTopic(
+                "Ched",
+                sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Ched,
+                timeout: TimeSpan.FromSeconds(10),
+                tags: [WebApplicationExtensions.Extended]
+            )
+            .AddAsbTopic(
+                "Intra",
+                sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Intra,
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
             )

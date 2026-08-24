@@ -27,29 +27,4 @@ public class SqsHealthCheck(IAmazonSQS sqsClient, string queueUrl) : IHealthChec
             );
         }
     }
-
-    ////private AmazonSQSClient CreateSqsClient()
-    ////{
-    ////    var clientId = configuration.GetValue<string>("AWS_ACCESS_KEY_ID");
-    ////    var clientSecret = configuration.GetValue<string>("AWS_SECRET_ACCESS_KEY");
-
-    ////    if (!string.IsNullOrEmpty(clientSecret) && !string.IsNullOrEmpty(clientId))
-    ////    {
-    ////        var region = configuration.GetValue<string>("AWS_REGION") ?? "eu-west-2";
-    ////        var regionEndpoint = RegionEndpoint.GetBySystemName(region);
-
-    ////        return new AmazonSQSClient(
-    ////            new BasicAWSCredentials(clientId, clientSecret),
-    ////            new AmazonSQSConfig
-    ////            {
-    ////                // https://github.com/aws/aws-sdk-net/issues/1781
-    ////                AuthenticationRegion = region,
-    ////                RegionEndpoint = regionEndpoint,
-    ////                ServiceURL = configuration.GetValue<string>("SQS_Endpoint"),
-    ////            }
-    ////        );
-    ////    }
-
-    ////    return new AmazonSQSClient();
-    ////}
 }

@@ -132,12 +132,12 @@ public static class ServiceCollectionExtensions
 
             services.AddAzureClients(azureBuilder =>
             {
-                ServiceBusTopic[] queues = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
-                foreach (var queue in queues)
+                ServiceBusTopic[] topics = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
+                foreach (var topic in topics)
                 {
                     azureBuilder
-                        .AddServiceBusClient(queue.ConnectionString)
-                        .WithName(queue.TopicName)
+                        .AddServiceBusClient(topic.ConnectionString)
+                        .WithName(topic.TopicName)
                         .ConfigureOptions(
                             (options, provider) =>
                             {
@@ -156,11 +156,11 @@ public static class ServiceCollectionExtensions
                                 var clientFactory = provider.GetRequiredService<
                                     IAzureClientFactory<ServiceBusClient>
                                 >();
-                                var client = clientFactory.CreateClient(queue.TopicName);
-                                return client.CreateSender(queue.TopicName);
+                                var client = clientFactory.CreateClient(topic.TopicName);
+                                return client.CreateSender(topic.TopicName);
                             }
                         )
-                        .WithName(queue.TopicName);
+                        .WithName(topic.TopicName);
                 }
             });
         }
