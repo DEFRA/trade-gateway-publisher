@@ -20,7 +20,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
             logger.LogInformation(
                 "Publishing INTRA event {Id} to ASB topic {Topic}",
                 eventId,
-                options.Value.Ched.TopicName
+                options.Value.Intra.TopicName
             );
 
             // Placeholder deduplication id — see "Message Deduplication" in README.md
@@ -33,7 +33,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
             );
 
             logger.LogInformation(
-                "Published INTRA event id {Id} to  ASB topic {Topic}",
+                "Published INTRA event id {Id} to ASB topic {Topic}",
                 eventId,
                 options.Value.Intra.TopicName
             );
