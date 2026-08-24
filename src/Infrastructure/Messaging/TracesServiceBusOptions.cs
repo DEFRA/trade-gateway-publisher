@@ -7,8 +7,6 @@ public class TracesServiceBusOptions
 {
     public const string SectionName = "TracesServiceBus";
 
-    public static readonly string[] Topics = [nameof(Ched), nameof(Intra)];
-
     public required ServiceBusTopic Ched { get; init; }
 
     public required ServiceBusTopic Intra { get; init; }
