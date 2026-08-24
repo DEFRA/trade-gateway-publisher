@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Infrastructure;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
@@ -16,7 +17,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
         public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
         {
             // only need the envelope here
-            var eventId = JsonSerializer.Deserialize<EventEnvelope<object>>(context.Body)?.EventId;
+            var eventId = context.Body.FromJson<EventEnvelope<object>>()?.EventId;
 
             logger.LogInformation(
                 "Publishing CHED event {Id} to ASB topic {Topic}",

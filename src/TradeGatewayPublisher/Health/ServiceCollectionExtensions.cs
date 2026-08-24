@@ -72,13 +72,13 @@ public static class ServiceCollectionExtensions
         {
             builder
                 .AddAsbTopic(
-                    "Ched",
+                    "ASB - Ched",
                     sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Ched,
                     timeout: TimeSpan.FromSeconds(10),
                     tags: [WebApplicationExtensions.Extended]
                 )
                 .AddAsbTopic(
-                    "Intra",
+                    "ASB - Intra",
                     sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Intra,
                     timeout: TimeSpan.FromSeconds(10),
                     tags: [WebApplicationExtensions.Extended]

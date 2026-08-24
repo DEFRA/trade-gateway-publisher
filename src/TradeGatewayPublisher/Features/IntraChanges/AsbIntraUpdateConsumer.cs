@@ -1,8 +1,10 @@
-using System.Text.Json;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
+
 using Microsoft.Extensions.Options;
+
+using Infrastructure;
 using Trade.Gateway.Api.Contract.Events;
 
 namespace TradeGatewayPublisher.Features.IntraChanges
@@ -15,7 +17,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
     {
         public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
         {
-            var eventId = JsonSerializer.Deserialize<EventEnvelope<object>>(context.Body)?.EventId;
+            var eventId = context.Body.FromJson<EventEnvelope<object>>()?.EventId;
 
             logger.LogInformation(
                 "Publishing INTRA event {Id} to ASB topic {Topic}",
