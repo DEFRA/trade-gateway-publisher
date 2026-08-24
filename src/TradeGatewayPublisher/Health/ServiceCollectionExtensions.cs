@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Infrastructure;
 using Infrastructure.Messaging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -9,9 +10,9 @@ namespace TradeGatewayPublisher.Health;
 [ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddHealth(this IServiceCollection services)
+    public static void AddHealth(this IServiceCollection services, IConfiguration configuration)
     {
-        services
+        var builder = services
             .AddHealthChecks()
             .AddMongoDb(
                 provider => provider.GetRequiredService<IMongoDatabase>(),
@@ -54,20 +55,36 @@ public static class ServiceCollectionExtensions
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
             )
-            .AddAsbTopic(
-                "Ched",
-                sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Ched,
+            .AddSqs(
+                "SQS - Intra Internal for ASB",
+                sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrlForAsb,
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
             )
-            .AddAsbTopic(
-                "Intra",
-                sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Intra,
+            .AddSqs(
+                "SQS - Ched Internal for ASB",
+                sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrlForAsb,
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
-            )
-            .AddTracesGateway(timeout: TimeSpan.FromSeconds(10), tags: [WebApplicationExtensions.Extended]);
+            );
 
-        return services;
+        if (configuration.GetValue<bool>($"FeatureManagement:{FeatureFlags.AzureServiceBusPublishing}"))
+        {
+            builder
+                .AddAsbTopic(
+                    "Ched",
+                    sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Ched,
+                    timeout: TimeSpan.FromSeconds(10),
+                    tags: [WebApplicationExtensions.Extended]
+                )
+                .AddAsbTopic(
+                    "Intra",
+                    sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Intra,
+                    timeout: TimeSpan.FromSeconds(10),
+                    tags: [WebApplicationExtensions.Extended]
+                );
+        }
+
+        builder.AddTracesGateway(timeout: TimeSpan.FromSeconds(10), tags: [WebApplicationExtensions.Extended]);
     }
 }
