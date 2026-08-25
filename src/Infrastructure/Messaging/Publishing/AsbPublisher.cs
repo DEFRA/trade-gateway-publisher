@@ -20,7 +20,7 @@ public class AsbPublisher(
     )
     {
         if (string.IsNullOrWhiteSpace(topicName))
-            throw new ArgumentException("Queue name is required.", nameof(topicName));
+            throw new ArgumentException("Topic name is required.", nameof(topicName));
 
         if (string.IsNullOrWhiteSpace(messageBody))
             throw new ArgumentException("Message body is required.", nameof(messageBody));

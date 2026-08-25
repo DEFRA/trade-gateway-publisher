@@ -32,6 +32,10 @@ public class IntraUpdateConsumer(
             duplicationId: Guid.NewGuid().ToString("N"),
             cancellationToken: cancellationToken
         );
-        logger.LogInformation("Published INTRA {Id} to {Topic}", message.Id, options.Value.IntraTopicArn);
+        logger.LogInformation(
+            "Published INTRA event {Id} to SNS ARN {Topic}",
+            @event.EventId,
+            options.Value.IntraTopicArn
+        );
     }
 }

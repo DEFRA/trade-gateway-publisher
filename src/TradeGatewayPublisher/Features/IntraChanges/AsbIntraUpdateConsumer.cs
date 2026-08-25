@@ -1,7 +1,9 @@
+using Infrastructure;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
+using Trade.Gateway.Api.Contract.Events;
 
 namespace TradeGatewayPublisher.Features.IntraChanges
 {
@@ -13,6 +15,14 @@ namespace TradeGatewayPublisher.Features.IntraChanges
     {
         public async Task ConsumeAsync(MessageContext context, CancellationToken cancellationToken = default)
         {
+            var eventId = context.Body.FromJson<EventEnvelope<object>>()?.EventId;
+
+            logger.LogInformation(
+                "Publishing INTRA event {Id} to ASB topic {Topic}",
+                eventId,
+                options.Value.Intra.TopicName
+            );
+
             // Placeholder deduplication id — see "Message Deduplication" in README.md
             await awsPublisher.PublishAsync(
                 options.Value.Intra.TopicName,
@@ -23,8 +33,8 @@ namespace TradeGatewayPublisher.Features.IntraChanges
             );
 
             logger.LogInformation(
-                "Published INTRA message id {Id} to {Queue}",
-                context.MessageId,
+                "Published INTRA event id {Id} to ASB topic {Topic}",
+                eventId,
                 options.Value.Intra.TopicName
             );
         }

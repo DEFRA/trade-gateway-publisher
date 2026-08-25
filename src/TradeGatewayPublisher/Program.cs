@@ -87,11 +87,12 @@ static void ConfigureServices(WebApplicationBuilder builder)
     services.AddHttpContextAccessor();
     services.AddTraceContextAccessor(configuration);
 
+    services.AddHttpProxyClients();
+
     ConfigureHeaderPropagation(services, configuration);
-    ConfigureHttpClients(services);
     ConfigureAppServices(services, configuration);
 
-    services.AddHealth();
+    services.AddHealth(configuration);
 }
 
 [ExcludeFromCodeCoverage]
@@ -106,44 +107,6 @@ static void ConfigureHeaderPropagation(IServiceCollection services, IConfigurati
             options.Headers.Add(traceHeader);
         }
     });
-}
-
-[ExcludeFromCodeCoverage]
-static void ConfigureHttpClients(IServiceCollection services)
-{
-    // Register IWebProxy for components (e.g., Azure Service Bus clients) that request it.
-    services.AddSingleton<IWebProxy>(sp =>
-    {
-        var options = sp.GetRequiredService<IOptions<CdpOptions>>().Value;
-        var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("proxy");
-
-        var proxy = new WebProxy { BypassProxyOnLocal = true };
-        if (!string.IsNullOrWhiteSpace(options.CdpHttpsProxy))
-        {
-            logger.LogDebug("Creating proxy http client");
-            var uriBuilder = new UriBuilder(options.CdpHttpsProxy);
-
-            var username = uriBuilder.UserName;
-            var password = uriBuilder.Password;
-            if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
-            {
-                proxy.Credentials = new NetworkCredential(username, password);
-            }
-
-            // Remove credentials from the URI so they don't get logged
-            uriBuilder.UserName = "";
-            uriBuilder.Password = "";
-            proxy.Address = uriBuilder.Uri;
-        }
-        else
-        {
-            logger.LogWarning("CDP_HTTPS_PROXY is NOT set, proxy client will be disabled");
-        }
-
-        return proxy;
-    });
-
-    services.AddTransient<ProxyHttpMessageHandler>();
 }
 
 [ExcludeFromCodeCoverage]
