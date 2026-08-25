@@ -24,6 +24,7 @@ jobs:
       packages: read
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DEFRA_NUGET_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 #v6
@@ -32,11 +33,6 @@ jobs:
         with:
           dotnet-version: |
             10.0
-      - name: Update NuGet.config
-        run: |
-          dotnet nuget remove source defra
-          dotnet nuget add source --username USERNAME --password $GITHUB_TOKEN --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile NuGet.config
-
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@5f3ba75f66a3ef96855322c137727ff996cc2995
         with:
