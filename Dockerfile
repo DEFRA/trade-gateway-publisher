@@ -14,9 +14,6 @@ RUN apt update && \
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-ARG DEFRA_NUGET_PAT
-ENV DEFRA_NUGET_PAT=${DEFRA_NUGET_PAT}
-
 # Restore tools
 COPY .config/dotnet-tools.json .config/dotnet-tools.json
 COPY .csharpierrc .csharpierrc
