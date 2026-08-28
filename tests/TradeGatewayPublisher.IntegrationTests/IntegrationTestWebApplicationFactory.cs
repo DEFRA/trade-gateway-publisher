@@ -17,7 +17,7 @@ using Serilog.Extensions.Logging;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper testOutputHelper)
+public sealed class IntegrationTestWebApplicationFactory()
     : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
@@ -92,9 +92,6 @@ public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper testO
 
         builder.ConfigureServices(services =>
         {
-            // Clean Mongo in-case the tests are re-run
-            DropDatabase();
-
             // Floci does not implement the STS GetWebIdentityToken operation that the real
             // StsAuthDelegatingHandler relies on, so stub the STS client to return a fake token.
             // Without this, every Traces Gateway request throws before it is sent.
@@ -111,60 +108,24 @@ public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper testO
             services.RemoveAll<IAmazonSecurityTokenService>();
             services.AddSingleton(sts);
 
-            // Route the app's Serilog output (console, as configured, plus the xunit test output
-            // helper when one is supplied) so API logs show up next to the test that triggered them.
+            // Route the app's Serilog output to the console (as configured) and to whichever test
+            // is currently running - see TestOutputHelperSink. This factory is shared across the
+            // whole test collection (IntegrationTestFixture), so the target test isn't known here.
             services.Replace(
                 ServiceDescriptor.Singleton<ILoggerFactory>(sp =>
                 {
-                    var loggerConfiguration = new LoggerConfiguration()
+                    var logger = new LoggerConfiguration()
                         .ReadFrom.Configuration(sp.GetRequiredService<IConfiguration>())
-                        .Enrich.FromLogContext();
+                        .Enrich.FromLogContext()
+                        .WriteTo.TestOutputHelper()
+                        .CreateLogger();
 
-                    if (testOutputHelper != null)
-                        loggerConfiguration.WriteTo.TestOutputHelper(testOutputHelper);
-
-                    return new SerilogLoggerFactory(loggerConfiguration.CreateLogger(), dispose: true);
+                    return new SerilogLoggerFactory(logger, dispose: true);
                 })
             );
-
-            // Replace production Mongo registrations that call AddAWSAuthentication (which is process-global)
-            // with test-safe equivalents to avoid "Mechanism named 'MONGODB-AWS' already registered" errors
-            services.RemoveAll(typeof(IMongoDatabase));
-            services.RemoveAll(typeof(IMongoCollection<Infrastructure.Data.Entities.LeaseEntity>));
-            services.RemoveAll(typeof(IMongoCollection<Infrastructure.Data.Entities.JobWatermarkEntity>));
-
-            services.AddSingleton<IMongoDatabase>(sp =>
-            {
-                var settings = MongoClientSettings.FromConnectionString(MongoUri);
-                var client = new MongoClient(settings);
-                var db = client.GetDatabase(MongoDatabaseName);
-
-                // Attempt to create the leases TTL index as production does; ignore errors in tests
-                try
-                {
-                    var coll = db.GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases");
-                    var indexModel = new CreateIndexModel<Infrastructure.Data.Entities.LeaseEntity>(
-                        Builders<Infrastructure.Data.Entities.LeaseEntity>.IndexKeys.Ascending(x => x.ExpiresAt),
-                        new CreateIndexOptions { Name = "ExpiresAtTtlIdx", Background = true, ExpireAfter = TimeSpan.FromMinutes(5) }
-                    );
-
-                    coll.Indexes.CreateOne(indexModel);
-                }
-                catch
-                {
-                    // best-effort in test environment
-                }
-                return db;
-            });
 
             services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases"));
             services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Infrastructure.Data.Entities.JobWatermarkEntity>("job_watermarks"));
         });
-    }
-
-    private static void DropDatabase()
-    {
-        var client = new MongoClient(MongoUri);
-        client.DropDatabase(MongoDatabaseName);
     }
 }
