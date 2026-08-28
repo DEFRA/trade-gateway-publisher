@@ -1,18 +1,23 @@
-using System.Collections.Concurrent;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+
 using MongoDB.Driver;
+using MongoDB.Driver.Core.Misc;
+
 using NSubstitute;
+
+using System.Collections.Concurrent;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory<Program>
+public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
     private const string MongoDatabaseName = "trade-gateway-publisher";
@@ -21,6 +26,8 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        Serilog.Debugging.SelfLog.Enable(msg => File.AppendAllText("C:\\dev\\ee\\serilog-selflog.txt", msg));
+
         builder.UseEnvironment("Development");
 
         builder.ConfigureAppConfiguration(
@@ -30,8 +37,14 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                     new Dictionary<string, string?>
                     {
                         ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "* * * * * *",
+
                         // Until the CHED ticket is picked up
                         ["Scheduler:Jobs:TracesChedChangesJob:Disabled"] = "true",
+
+                        ////["ASPNETCORE_ENVIRONMENT"] = "Development",
+                        ////["Serilog:MinimumLevel:Default"] = "Verbose",
+                        ////["Serilog:MinimumLevel:Override:Microsoft"] = "Information",
+                        ////["Serilog:MinimumLevel:Override:System"] = "Information",
 
                         // The tests run against a local Mongo running via Docker
                         ["Mongo:DatabaseUri"] = MongoUri,
@@ -66,12 +79,12 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo",
 
                         // Traces Service Bus (development emulator) - required for ASB publisher/consumer options
-                        ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched-updates",
+                        ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched",
                         ["TracesServiceBus:Ched:ConnectionString"] =
-                            "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
-                        ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra-updates",
+                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                        ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra",
                         ["TracesServiceBus:Intra:ConnectionString"] =
-                            "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
 
                         // The tests run against a local WireMock container emulating the Traces Gateway
                         ["TracesGateway:BaseUrl"] = WireMockBaseUrl,
@@ -103,6 +116,7 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
 
             services.RemoveAll<IAmazonSecurityTokenService>();
             services.AddSingleton(sts);
+
 
             services.AddLogging(c => c.AddConsole());
         });

@@ -1,30 +1,33 @@
+using System;
+using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Testing;
+using Infrastructure.Watermark;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 [Trait("Category", "IntegrationTest")]
-public class IntraPollingSnsIntegrationTest : IAsyncLifetime
+[Collection(NonParallelCollection.Name)]
+public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) : IAsyncLifetime
 {
-    private const string TestQueueName = "trade_gateway_publisher_intra_updates_test.fifo";
-    private const string IntraId = "intra-test-1";
-
     private IntegrationTestWebApplicationFactory _factory = null!;
     private IAmazonSQS _sqs = null!;
     private string _queueUrl = null!;
+    private readonly string IntraId = $"intra-test-1-aws-{Random.Shared.Next(1,10000)}";
+    private HttpClient? _client;
 
     [Fact]
     public async Task IntraPollingJobPolls_AndThenPublishesToSns()
     {
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = TestContext.Current.CancellationToken;
 
         await WireMockStubber.StubAsync(_factory.WireMockBaseUrl, IntraId, cancellationToken);
 
         var received = await WaitHelper.WaitUntilAsync(
-            () => QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, cancellationToken).GetAwaiter().GetResult(),
+            () => QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, testOutputHelper, cancellationToken).GetAwaiter().GetResult(),
             TimeSpan.FromSeconds(120),
             TimeSpan.FromMilliseconds(500),
             cancellationToken
@@ -37,6 +40,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
         IAmazonSQS sqs,
         string queueUrl,
         string expectedId,
+        ITestOutputHelper testOutputHelper,
         CancellationToken cancellationToken
     )
     {
@@ -46,7 +50,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
                 QueueUrl = queueUrl,
                 MaxNumberOfMessages = 10,
                 WaitTimeSeconds = 2,
-                MessageAttributeNames = ["All"],
+                MessageAttributeNames = ["All"]
             },
             cancellationToken
         );
@@ -56,6 +60,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
 
         foreach (var message in response.Messages)
         {
+            testOutputHelper.WriteLine($"Deleting message {message.Body}");
             await sqs.DeleteMessageAsync(queueUrl, message.ReceiptHandle, cancellationToken);
 
             if (message.Body.Contains(expectedId, StringComparison.Ordinal))
@@ -68,11 +73,10 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         _factory = new IntegrationTestWebApplicationFactory();
-
-        _ = _factory.CreateClient();
+        _client = _factory.CreateClient();
 
         _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();
-        _queueUrl = (await _sqs.GetQueueUrlAsync(TestQueueName)).QueueUrl;
+        _queueUrl = (await _sqs.GetQueueUrlAsync("trade_gateway_publisher_intra_updates_test.fifo")).QueueUrl;
 
         await _sqs.PurgeQueueAsync(_queueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
@@ -81,6 +85,7 @@ public class IntraPollingSnsIntegrationTest : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl);
+        _client?.Dispose();
         await _factory.DisposeAsync();
     }
 }

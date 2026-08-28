@@ -15,7 +15,8 @@ internal static class WireMockStubber
     )
     {
         using var http = new HttpClient { BaseAddress = new Uri(wireMockBaseUrl) };
-        var updated = new DateTimeOffset(2026, 06, 24, 10, 00, 00, TimeSpan.Zero);
+        // Use a fresh updated timestamp per stub so the polling job treats this as a new item on every run
+        var updated = DateTimeOffset.UtcNow;
         var certificationBody = JsonSerializer.Serialize(
             new DefraUNVTDCHEDProfile()
             {
