@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using AwesomeAssertions;
+using Infrastructure.Watermark;
 using Microsoft.Extensions.DependencyInjection;
 using Testing;
-using Infrastructure.Watermark;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
@@ -16,7 +16,7 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
     private IntegrationTestWebApplicationFactory _factory = null!;
     private IAmazonSQS _sqs = null!;
     private string _queueUrl = null!;
-    private readonly string IntraId = $"intra-test-1-aws-{Random.Shared.Next(1,10000)}";
+    private readonly string IntraId = $"intra-test-1-aws-{Random.Shared.Next(1, 10000)}";
     private HttpClient? _client;
 
     [Fact]
@@ -27,7 +27,10 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
         await WireMockStubber.StubAsync(_factory.WireMockBaseUrl, IntraId, cancellationToken);
 
         var received = await WaitHelper.WaitUntilAsync(
-            () => QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, testOutputHelper, cancellationToken).GetAwaiter().GetResult(),
+            () =>
+                QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, testOutputHelper, cancellationToken)
+                    .GetAwaiter()
+                    .GetResult(),
             TimeSpan.FromSeconds(120),
             TimeSpan.FromMilliseconds(500),
             cancellationToken
@@ -50,7 +53,7 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
                 QueueUrl = queueUrl,
                 MaxNumberOfMessages = 10,
                 WaitTimeSeconds = 2,
-                MessageAttributeNames = ["All"]
+                MessageAttributeNames = ["All"],
             },
             cancellationToken
         );
@@ -72,7 +75,7 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new IntegrationTestWebApplicationFactory();
+        _factory = new IntegrationTestWebApplicationFactory(testOutputHelper);
         _client = _factory.CreateClient();
 
         _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();

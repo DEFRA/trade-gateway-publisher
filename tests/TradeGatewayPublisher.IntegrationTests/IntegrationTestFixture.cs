@@ -1,8 +1,6 @@
 using Amazon.SQS;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
 using TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 namespace TradeGatewayPublisher.IntegrationTests
@@ -59,7 +57,8 @@ namespace TradeGatewayPublisher.IntegrationTests
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            if (_disposed)
+                return;
 
             if (disposing)
             {

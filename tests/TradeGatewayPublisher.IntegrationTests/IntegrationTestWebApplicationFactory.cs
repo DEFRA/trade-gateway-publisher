@@ -1,23 +1,22 @@
+using System.Collections.Concurrent;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Misc;
-
 using NSubstitute;
-
-using System.Collections.Concurrent;
+using Serilog;
+using Serilog.Extensions.Logging;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFactory<Program>
+public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? testOutputHelper = null)
+    : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
     private const string MongoDatabaseName = "trade-gateway-publisher";
@@ -26,7 +25,7 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        Serilog.Debugging.SelfLog.Enable(msg => File.AppendAllText("C:\\dev\\ee\\serilog-selflog.txt", msg));
+        ////Serilog.Debugging.SelfLog.Enable(msg => File.AppendAllText("C:\\dev\\ee\\serilog-selflog.txt", msg));
 
         builder.UseEnvironment("Development");
 
@@ -117,8 +116,21 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
             services.RemoveAll<IAmazonSecurityTokenService>();
             services.AddSingleton(sts);
 
+            // Route the app's Serilog output (console, as configured, plus the xunit test output
+            // helper when one is supplied) so API logs show up next to the test that triggered them.
+            services.Replace(
+                ServiceDescriptor.Singleton<ILoggerFactory>(sp =>
+                {
+                    var loggerConfiguration = new LoggerConfiguration()
+                        .ReadFrom.Configuration(sp.GetRequiredService<IConfiguration>())
+                        .Enrich.FromLogContext();
 
-            services.AddLogging(c => c.AddConsole());
+                    if (testOutputHelper != null)
+                        loggerConfiguration.WriteTo.TestOutputHelper(testOutputHelper);
+
+                    return new SerilogLoggerFactory(loggerConfiguration.CreateLogger(), dispose: true);
+                })
+            );
         });
     }
 

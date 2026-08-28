@@ -2,17 +2,12 @@ using System;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-
 using AwesomeAssertions;
-
 using Azure.Messaging.ServiceBus;
-
 using Infrastructure.Messaging;
 using Infrastructure.Watermark;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
@@ -55,17 +50,31 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
         var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
         var connectionString = tracesOptions.Intra.ConnectionString;
         var topicName = tracesOptions.Intra.TopicName;
-        
+
         var subscription = "trade-gateway-publisher-intra-test-sub";
 
         var receivedOnAsb = await WaitHelper.WaitUntilAsync(
-            () => ServiceBusQueueContainsExpectedAsync(connectionString, topicName, subscription, IntraId, _testOutputHelper, cancellationToken).GetAwaiter().GetResult(),
+            () =>
+                ServiceBusQueueContainsExpectedAsync(
+                        connectionString,
+                        topicName,
+                        subscription,
+                        IntraId,
+                        _testOutputHelper,
+                        cancellationToken
+                    )
+                    .GetAwaiter()
+                    .GetResult(),
             TimeSpan.FromSeconds(120),
             TimeSpan.FromMilliseconds(500),
             cancellationToken
         );
 
-        receivedOnAsb.Should().BeTrue("The Intra polling job should have published a message to the Service Bus topic subscription within 120s");
+        receivedOnAsb
+            .Should()
+            .BeTrue(
+                "The Intra polling job should have published a message to the Service Bus topic subscription within 120s"
+            );
     }
 
     private static async Task<bool> ServiceBusQueueContainsExpectedAsync(
@@ -81,12 +90,17 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
         {
             await using var client = new ServiceBusClient(connectionString);
             // Receive from the topic's subscription (receive from topic-subscription pair)
-            var receiver = client.CreateReceiver(topicName, subscription, new ServiceBusReceiverOptions
-            {
-                ReceiveMode = ServiceBusReceiveMode.PeekLock
-            });
+            var receiver = client.CreateReceiver(
+                topicName,
+                subscription,
+                new ServiceBusReceiverOptions { ReceiveMode = ServiceBusReceiveMode.PeekLock }
+            );
 
-            var messages = await receiver.ReceiveMessagesAsync(maxMessages: 10, maxWaitTime: TimeSpan.FromSeconds(5), cancellationToken: cancellationToken);
+            var messages = await receiver.ReceiveMessagesAsync(
+                maxMessages: 10,
+                maxWaitTime: TimeSpan.FromSeconds(5),
+                cancellationToken: cancellationToken
+            );
 
             if (messages == null || messages.Count == 0)
                 return false;
@@ -98,7 +112,7 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
                 {
                     await receiver.CompleteMessageAsync(msg, cancellationToken);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     // best-effort complete; ignore if emulator behaves differently
                     testOutputHelper.WriteLine(ex.Message);
