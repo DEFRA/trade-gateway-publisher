@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Reflection.Metadata;
 using System.Text.Json;
 using Trade.Gateway.Api.Contract.Certificate;
 
@@ -37,17 +38,17 @@ internal static class WireMockStubber
                     status = 200,
                     jsonBody = new
                     {
-                        items = new[]
+                        items = new List<DefraUNVTDINTRASummaryProfileItem>
                         {
-                            new
+                            new DefraUNVTDINTRASummaryProfileItem
                             {
                                 Id = intraId,
                                 Updated = updated,
                                 Created = DateTimeOffset.UtcNow,
                                 Origin = "Int-Test",
-                            },
-                        },
-                    },
+                            }
+                        }
+                    }
                 },
             },
             cancellationToken

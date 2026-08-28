@@ -1,10 +1,10 @@
-using System;
-using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+
 using AwesomeAssertions;
-using Infrastructure.Watermark;
+
 using Microsoft.Extensions.DependencyInjection;
+
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
@@ -16,7 +16,7 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
     private IntegrationTestWebApplicationFactory _factory = null!;
     private IAmazonSQS _sqs = null!;
     private string _queueUrl = null!;
-    private readonly string IntraId = $"intra-test-1-aws-{Random.Shared.Next(1, 10000)}";
+    private readonly string IntraId = $"intra-test-1-aws-{Random.Shared.Next(1, 100000)}";
     private HttpClient? _client;
 
     [Fact]
@@ -76,6 +76,7 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
     public async ValueTask InitializeAsync()
     {
         _factory = new IntegrationTestWebApplicationFactory(testOutputHelper);
+        await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl, TestContext.Current.CancellationToken);
         _client = _factory.CreateClient();
 
         _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();
@@ -87,7 +88,6 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
 
     public async ValueTask DisposeAsync()
     {
-        await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl);
         _client?.Dispose();
         await _factory.DisposeAsync();
     }

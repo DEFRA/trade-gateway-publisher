@@ -10,12 +10,14 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Misc;
 using NSubstitute;
+
+using TradeGatewayPublisher.IntegrationTests.IntraChanges;
 using Serilog;
 using Serilog.Extensions.Logging;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? testOutputHelper = null)
+public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper testOutputHelper)
     : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
@@ -25,8 +27,6 @@ public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? test
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        ////Serilog.Debugging.SelfLog.Enable(msg => File.AppendAllText("C:\\dev\\ee\\serilog-selflog.txt", msg));
-
         builder.UseEnvironment("Development");
 
         builder.ConfigureAppConfiguration(
@@ -39,11 +39,6 @@ public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? test
 
                         // Until the CHED ticket is picked up
                         ["Scheduler:Jobs:TracesChedChangesJob:Disabled"] = "true",
-
-                        ////["ASPNETCORE_ENVIRONMENT"] = "Development",
-                        ////["Serilog:MinimumLevel:Default"] = "Verbose",
-                        ////["Serilog:MinimumLevel:Override:Microsoft"] = "Information",
-                        ////["Serilog:MinimumLevel:Override:System"] = "Information",
 
                         // The tests run against a local Mongo running via Docker
                         ["Mongo:DatabaseUri"] = MongoUri,
@@ -131,6 +126,39 @@ public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? test
                     return new SerilogLoggerFactory(loggerConfiguration.CreateLogger(), dispose: true);
                 })
             );
+
+            // Replace production Mongo registrations that call AddAWSAuthentication (which is process-global)
+            // with test-safe equivalents to avoid "Mechanism named 'MONGODB-AWS' already registered" errors
+            services.RemoveAll(typeof(IMongoDatabase));
+            services.RemoveAll(typeof(IMongoCollection<Infrastructure.Data.Entities.LeaseEntity>));
+            services.RemoveAll(typeof(IMongoCollection<Infrastructure.Data.Entities.JobWatermarkEntity>));
+
+            services.AddSingleton<IMongoDatabase>(sp =>
+            {
+                var settings = MongoClientSettings.FromConnectionString(MongoUri);
+                var client = new MongoClient(settings);
+                var db = client.GetDatabase(MongoDatabaseName);
+
+                // Attempt to create the leases TTL index as production does; ignore errors in tests
+                try
+                {
+                    var coll = db.GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases");
+                    var indexModel = new CreateIndexModel<Infrastructure.Data.Entities.LeaseEntity>(
+                        Builders<Infrastructure.Data.Entities.LeaseEntity>.IndexKeys.Ascending(x => x.ExpiresAt),
+                        new CreateIndexOptions { Name = "ExpiresAtTtlIdx", Background = true, ExpireAfter = TimeSpan.FromMinutes(5) }
+                    );
+
+                    coll.Indexes.CreateOne(indexModel);
+                }
+                catch
+                {
+                    // best-effort in test environment
+                }
+                return db;
+            });
+
+            services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases"));
+            services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Infrastructure.Data.Entities.JobWatermarkEntity>("job_watermarks"));
         });
     }
 

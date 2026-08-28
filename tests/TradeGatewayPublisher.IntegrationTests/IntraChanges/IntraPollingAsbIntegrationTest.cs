@@ -1,33 +1,28 @@
-using System;
-using System.Threading.Tasks;
 using Amazon.SQS;
-using Amazon.SQS.Model;
+
 using AwesomeAssertions;
+
 using Azure.Messaging.ServiceBus;
+
 using Infrastructure.Messaging;
-using Infrastructure.Watermark;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
-public class IntraPollingAsbIntegrationTest : IAsyncLifetime
+public class IntraPollingAsbIntegrationTest(ITestOutputHelper testOutputHelper) : IAsyncLifetime
 {
     private IntegrationTestWebApplicationFactory _factory = null!;
     private IAmazonSQS _sqs = null!;
     private string _queueUrl = null!;
-    private readonly ITestOutputHelper _testOutputHelper;
     private bool _serviceBusIsEnabled;
 
-    private const string IntraId = "intra-test-1-asb";
-
-    public IntraPollingAsbIntegrationTest(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
+    private readonly string IntraId = $"intra-test-1-asb-{Random.Shared.Next(1, 100000)}";
 
     [Fact]
     public async Task IntraPollingJobPolls_AndThenPublishesToAsb()
@@ -35,7 +30,7 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
         if (!_serviceBusIsEnabled)
         {
             // Nothing more to assert for Service Bus in this environment
-            _testOutputHelper.WriteLine("Service bus not enabled, test not run");
+            testOutputHelper.WriteLine("Service bus not enabled, test not run");
             return;
         }
 
@@ -60,7 +55,7 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
                         topicName,
                         subscription,
                         IntraId,
-                        _testOutputHelper,
+                        testOutputHelper,
                         cancellationToken
                     )
                     .GetAwaiter()
@@ -136,7 +131,8 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new IntegrationTestWebApplicationFactory();
+        _factory = new IntegrationTestWebApplicationFactory(testOutputHelper);
+        await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl, TestContext.Current.CancellationToken);
         _client = _factory.CreateClient();
 
         _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();
@@ -151,7 +147,6 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl);
         _client?.Dispose();
         await _factory.DisposeAsync();
     }
