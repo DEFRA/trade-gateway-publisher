@@ -15,8 +15,7 @@ using Serilog.Extensions.Logging;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? testOutputHelper = null)
-    : WebApplicationFactory<Program>
+public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
     private const string MongoDatabaseName = "trade-gateway-publisher";
@@ -116,19 +115,19 @@ public sealed class IntegrationTestWebApplicationFactory(ITestOutputHelper? test
             services.RemoveAll<IAmazonSecurityTokenService>();
             services.AddSingleton(sts);
 
-            // Route the app's Serilog output (console, as configured, plus the xunit test output
-            // helper when one is supplied) so API logs show up next to the test that triggered them.
+            // Route the app's Serilog output to the console (as configured) and to whichever test
+            // is currently running - see TestOutputHelperSink. This factory is shared across the
+            // whole test collection (IntegrationTestFixture), so the target test isn't known here.
             services.Replace(
                 ServiceDescriptor.Singleton<ILoggerFactory>(sp =>
                 {
-                    var loggerConfiguration = new LoggerConfiguration()
+                    var logger = new LoggerConfiguration()
                         .ReadFrom.Configuration(sp.GetRequiredService<IConfiguration>())
-                        .Enrich.FromLogContext();
+                        .Enrich.FromLogContext()
+                        .WriteTo.TestOutputHelper()
+                        .CreateLogger();
 
-                    if (testOutputHelper != null)
-                        loggerConfiguration.WriteTo.TestOutputHelper(testOutputHelper);
-
-                    return new SerilogLoggerFactory(loggerConfiguration.CreateLogger(), dispose: true);
+                    return new SerilogLoggerFactory(logger, dispose: true);
                 })
             );
         });

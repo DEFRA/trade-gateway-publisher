@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Amazon.SQS;
-using Amazon.SQS.Model;
 using AwesomeAssertions;
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging;
@@ -16,23 +14,22 @@ namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
 [Collection(NonParallelCollection.Name)]
 public class IntraPollingAsbIntegrationTest : IAsyncLifetime
 {
-    private IntegrationTestWebApplicationFactory _factory = null!;
-    private IAmazonSQS _sqs = null!;
-    private string _queueUrl = null!;
+    private readonly IntegrationTestFixture _fixture;
     private readonly ITestOutputHelper _testOutputHelper;
-    private bool _serviceBusIsEnabled;
+    private IDisposable? _logCapture;
 
     private const string IntraId = "intra-test-1-asb";
 
-    public IntraPollingAsbIntegrationTest(ITestOutputHelper testOutputHelper)
+    public IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper)
     {
+        _fixture = fixture;
         _testOutputHelper = testOutputHelper;
     }
 
     [Fact]
     public async Task IntraPollingJobPolls_AndThenPublishesToAsb()
     {
-        if (!_serviceBusIsEnabled)
+        if (!_fixture.ServiceBusIsEnabled)
         {
             // Nothing more to assert for Service Bus in this environment
             _testOutputHelper.WriteLine("Service bus not enabled, test not run");
@@ -40,11 +37,11 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
         }
 
         // If ASB publishing is feature-switched off, skip ASB check
-        var config = _factory.Services.GetRequiredService<IConfiguration>();
+        var config = _fixture.Factory.Services.GetRequiredService<IConfiguration>();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         // Stub the traces gateway so the polling job will find the update
-        await WireMockStubber.StubAsync(_factory.WireMockBaseUrl, IntraId, cancellationToken);
+        await WireMockStubber.StubAsync(_fixture.Factory.WireMockBaseUrl, IntraId, cancellationToken);
 
         // Read Service Bus configuration and verify message on the queue subscribed to the topic (emulator)
         var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
@@ -136,23 +133,18 @@ public class IntraPollingAsbIntegrationTest : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new IntegrationTestWebApplicationFactory();
-        _client = _factory.CreateClient();
+        _logCapture = TestOutputHelperSink.Capture(_testOutputHelper);
 
-        _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();
-        _queueUrl = (await _sqs.GetQueueUrlAsync("trade_gateway_publisher_intra_updates_test.fifo")).QueueUrl;
+        _client = _fixture.Factory.CreateClient();
 
-        await _sqs.PurgeQueueAsync(_queueUrl);
+        await _fixture.AmazonSqs.PurgeQueueAsync(_fixture.QueueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
-
-        var config = _factory.Services.GetRequiredService<IConfiguration>();
-        _serviceBusIsEnabled = config.GetValue<bool>("FeatureManagement:AzureServiceBusPublishing");
     }
 
     public async ValueTask DisposeAsync()
     {
-        await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl);
+        await WireMockStubber.ResetAsync(_fixture.Factory.WireMockBaseUrl);
         _client?.Dispose();
-        await _factory.DisposeAsync();
+        _logCapture?.Dispose();
     }
 }

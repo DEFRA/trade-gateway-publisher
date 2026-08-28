@@ -4,31 +4,35 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using AwesomeAssertions;
 using Infrastructure.Watermark;
-using Microsoft.Extensions.DependencyInjection;
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
-public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) : IAsyncLifetime
+public class IntraPollingSnsIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper)
+    : IAsyncLifetime
 {
-    private IntegrationTestWebApplicationFactory _factory = null!;
-    private IAmazonSQS _sqs = null!;
-    private string _queueUrl = null!;
     private readonly string IntraId = $"intra-test-1-aws-{Random.Shared.Next(1, 10000)}";
     private HttpClient? _client;
+    private IDisposable? _logCapture;
 
     [Fact]
     public async Task IntraPollingJobPolls_AndThenPublishesToSns()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        await WireMockStubber.StubAsync(_factory.WireMockBaseUrl, IntraId, cancellationToken);
+        await WireMockStubber.StubAsync(fixture.Factory.WireMockBaseUrl, IntraId, cancellationToken);
 
         var received = await WaitHelper.WaitUntilAsync(
             () =>
-                QueueContainsExpectedAsync(_sqs, _queueUrl, IntraId, testOutputHelper, cancellationToken)
+                QueueContainsExpectedAsync(
+                        fixture.AmazonSqs,
+                        fixture.QueueUrl,
+                        IntraId,
+                        testOutputHelper,
+                        cancellationToken
+                    )
                     .GetAwaiter()
                     .GetResult(),
             TimeSpan.FromSeconds(120),
@@ -75,20 +79,18 @@ public class IntraPollingSnsIntegrationTest(ITestOutputHelper testOutputHelper) 
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new IntegrationTestWebApplicationFactory(testOutputHelper);
-        _client = _factory.CreateClient();
+        _logCapture = TestOutputHelperSink.Capture(testOutputHelper);
 
-        _sqs = _factory.Services.GetRequiredService<IAmazonSQS>();
-        _queueUrl = (await _sqs.GetQueueUrlAsync("trade_gateway_publisher_intra_updates_test.fifo")).QueueUrl;
+        _client = fixture.Factory.CreateClient();
 
-        await _sqs.PurgeQueueAsync(_queueUrl);
+        await fixture.AmazonSqs.PurgeQueueAsync(fixture.QueueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
     public async ValueTask DisposeAsync()
     {
-        await WireMockStubber.ResetAsync(_factory.WireMockBaseUrl);
+        await WireMockStubber.ResetAsync(fixture.Factory.WireMockBaseUrl);
         _client?.Dispose();
-        await _factory.DisposeAsync();
+        _logCapture?.Dispose();
     }
 }
