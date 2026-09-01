@@ -35,10 +35,12 @@ public sealed class IntegrationTestWebApplicationFactory()
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "* * * * * *",
 
+                        ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "*/11 * * * * *",
+                        //// ["Scheduler:Jobs:TracesIntraChangesJob:Disabled"] = "true",
+                        
                         // Until the CHED ticket is picked up
-                        ["Scheduler:Jobs:TracesChedChangesJob:Disabled"] = "true",
+                        ["Scheduler:Jobs:TracesChedChangesJob:Cron"] = "*/9 * * * * *",
 
                         // The tests run against a local Mongo running via Docker
                         ["Mongo:DatabaseUri"] = MongoUri,

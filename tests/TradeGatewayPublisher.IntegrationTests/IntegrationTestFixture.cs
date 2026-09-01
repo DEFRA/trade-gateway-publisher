@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using MongoDB.Driver;
+using MongoDB.Driver.Core.Misc;
+
+using Xunit.v3;
 
 namespace TradeGatewayPublisher.IntegrationTests
 {
@@ -13,13 +16,14 @@ namespace TradeGatewayPublisher.IntegrationTests
 
         private IConfiguration configuration => Factory.Services.GetRequiredService<IConfiguration>();
 
-        public const string TestSqsQueueName = "trade_gateway_publisher_intra_updates_test.fifo";
-        public const string TestAsbSubsName = "trade-gateway-publisher-intra-test-sub";
+        public const string TestIntraSqsQueueName = "trade_gateway_publisher_intra_updates_test.fifo";
+        public const string TestChedSqsQueueName = "trade_gateway_publisher_ched_updates_test.fifo";
 
         public IAmazonSQS AmazonSqs { get; private set; } = null!;
 
-        public string QueueUrl { get; private set; } = null!;
-        
+        public string TestIntraQueueUrl { get; private set; } = null!;
+        public string TestChedQueueUrl { get; private set; } = null!;
+
         public bool ServiceBusIsEnabled { get; private set; }
 
         private bool _disposed;
@@ -29,9 +33,13 @@ namespace TradeGatewayPublisher.IntegrationTests
         public async ValueTask InitializeAsync()
         {
             AmazonSqs = Factory.Services.GetRequiredService<IAmazonSQS>();
-            QueueUrl = (await AmazonSqs.GetQueueUrlAsync(TestSqsQueueName)).QueueUrl;
-
+            TestIntraQueueUrl = (await AmazonSqs.GetQueueUrlAsync(TestIntraSqsQueueName)).QueueUrl;
+            TestChedQueueUrl = (await AmazonSqs.GetQueueUrlAsync(TestChedSqsQueueName)).QueueUrl;
             ServiceBusIsEnabled = configuration.GetValue<bool>("FeatureManagement:AzureServiceBusPublishing");
+        }
+
+        public void StartClient()
+        {
             _client = Factory.CreateClient();
         }
 

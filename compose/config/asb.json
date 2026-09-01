@@ -9,6 +9,9 @@
             "Subscriptions": [
               {
                 "Name": "trade-gateway-publisher-ched-sub"
+              },
+			  {
+                "Name": "trade-gateway-publisher-ched-test-sub"
               }
             ]
           },

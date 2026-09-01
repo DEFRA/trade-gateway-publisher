@@ -7,18 +7,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Testing;
 
-namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
+namespace TradeGatewayPublisher.IntegrationTests.ChedChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
-public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper) : IAsyncLifetime
+public class ChedPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper) : IAsyncLifetime
 {
     private IDisposable? _logCapture;
 
-    private readonly string IntraId = $"intra-test-1-asb-{Random.Shared.Next(1, 100000)}";
+    private readonly string ChedId = $"ched-test-1-asb-{Random.Shared.Next(1, 100000)}";
 
     [Fact]
-    public async Task IntraPollingJobPolls_AndThenPublishesToAsb()
+    public async Task ChedPollingJobPolls_AndThenPublishesToAsb()
     {
         if (!fixture.ServiceBusIsEnabled)
         {
@@ -34,14 +34,14 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
         var cancellationToken = TestContext.Current.CancellationToken;
 
         // Stub the traces gateway so the polling job will find the update
-        await WireMockStubber.StubIntrasAsync(fixture.Factory.WireMockBaseUrl, IntraId, cancellationToken);
+        await WireMockStubber.StubChedsAsync(fixture.Factory.WireMockBaseUrl, ChedId, cancellationToken);
 
         // Read Service Bus configuration and verify message on the queue subscribed to the topic (emulator)
         var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
-        var connectionString = tracesOptions.Intra.ConnectionString;
-        var topicName = tracesOptions.Intra.TopicName;
+        var connectionString = tracesOptions.Ched.ConnectionString;
+        var topicName = tracesOptions.Ched.TopicName;
 
-        var subscription = "trade-gateway-publisher-intra-test-sub";
+        var subscription = "trade-gateway-publisher-ched-test-sub";
 
         var receivedOnAsb = await WaitHelper.WaitUntilAsync(
             () =>
@@ -49,7 +49,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
                         connectionString,
                         topicName,
                         subscription,
-                        IntraId,
+                        ChedId,
                         testOutputHelper,
                         cancellationToken
                     )
@@ -63,7 +63,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
         receivedOnAsb
             .Should()
             .BeTrue(
-                "The Intra polling job should have published a message to the Service Bus topic subscription within 120s"
+                "The Ched polling job should have published a message to the Service Bus topic subscription within 120s"
             );
     }
 
@@ -72,10 +72,10 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
         _logCapture = TestOutputHelperSink.Capture(testOutputHelper);
 
         await WireMockStubber.ResetAsync(fixture.Factory.WireMockBaseUrl);
-        await WireMockStubber.StubIntrasAsync(fixture.Factory.WireMockBaseUrl, IntraId, CancellationToken.None);
+        await WireMockStubber.StubChedsAsync(fixture.Factory.WireMockBaseUrl, ChedId, CancellationToken.None);
 
         await fixture.DeleteDatabaseAsync();
-        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestIntraQueueUrl);
+        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestChedQueueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
