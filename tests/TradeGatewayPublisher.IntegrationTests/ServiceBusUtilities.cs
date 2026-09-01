@@ -5,9 +5,7 @@ namespace TradeGatewayPublisher.IntegrationTests
     public static class ServiceBusUtilities
     {
         public static async Task<bool> ServiceBusQueueContainsExpectedAsync(
-            string connectionString,
-            string topicName,
-            string subscription,
+            ServiceBusReceiver receiver,
             string expectedId,
             ITestOutputHelper testOutputHelper,
             CancellationToken cancellationToken
@@ -15,13 +13,7 @@ namespace TradeGatewayPublisher.IntegrationTests
         {
             try
             {
-                await using var client = new ServiceBusClient(connectionString);
-                // Receive from the topic's subscription (receive from topic-subscription pair)
-                var receiver = client.CreateReceiver(
-                    topicName,
-                    subscription,
-                    new ServiceBusReceiverOptions { ReceiveMode = ServiceBusReceiveMode.PeekLock }
-                );
+
 
                 var messages = await receiver.ReceiveMessagesAsync(
                     maxMessages: 10,

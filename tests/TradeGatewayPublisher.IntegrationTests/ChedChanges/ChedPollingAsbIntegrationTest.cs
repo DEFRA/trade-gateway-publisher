@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-
+using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging;
 
 using Microsoft.Extensions.Configuration;
@@ -43,12 +43,18 @@ public class ChedPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITest
 
         var subscription = "trade-gateway-publisher-ched-test-sub";
 
+        await using var client = new ServiceBusClient(connectionString);
+        // Receive from the topic's subscription (receive from topic-subscription pair)
+        var receiver = client.CreateReceiver(
+            topicName,
+            subscription,
+            new ServiceBusReceiverOptions { ReceiveMode = ServiceBusReceiveMode.PeekLock }
+        );
+
         var receivedOnAsb = await WaitHelper.WaitUntilAsync(
             () =>
                 ServiceBusUtilities.ServiceBusQueueContainsExpectedAsync(
-                        connectionString,
-                        topicName,
-                        subscription,
+                        receiver,
                         ChedId,
                         testOutputHelper,
                         cancellationToken
