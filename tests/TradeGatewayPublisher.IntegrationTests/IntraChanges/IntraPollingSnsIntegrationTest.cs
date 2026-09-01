@@ -1,10 +1,7 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
-
 using AwesomeAssertions;
-
 using Microsoft.Extensions.DependencyInjection;
-
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.IntraChanges;
@@ -27,7 +24,8 @@ public class IntraPollingSnsIntegrationTest(IntegrationTestFixture fixture, ITes
 
         var received = await WaitHelper.WaitUntilAsync(
             () =>
-                SnsUtilities.SnsQueueContainsExpectedAsync(
+                SnsUtilities
+                    .SnsQueueContainsExpectedAsync(
                         fixture.AmazonSqs,
                         fixture.TestIntraQueueUrl,
                         IntraId,

@@ -13,8 +13,6 @@ namespace TradeGatewayPublisher.IntegrationTests
         {
             try
             {
-
-
                 var messages = await receiver.ReceiveMessagesAsync(
                     maxMessages: 10,
                     maxWaitTime: TimeSpan.FromSeconds(5),

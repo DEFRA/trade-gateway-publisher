@@ -1,17 +1,16 @@
 using AwesomeAssertions;
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.ChedChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
-public class ChedPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper) : IAsyncLifetime
+public class ChedPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper)
+    : IAsyncLifetime
 {
     private IDisposable? _logCapture;
 
@@ -53,12 +52,8 @@ public class ChedPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITest
 
         var receivedOnAsb = await WaitHelper.WaitUntilAsync(
             () =>
-                ServiceBusUtilities.ServiceBusQueueContainsExpectedAsync(
-                        receiver,
-                        ChedId,
-                        testOutputHelper,
-                        cancellationToken
-                    )
+                ServiceBusUtilities
+                    .ServiceBusQueueContainsExpectedAsync(receiver, ChedId, testOutputHelper, cancellationToken)
                     .GetAwaiter()
                     .GetResult(),
             TimeSpan.FromSeconds(120),

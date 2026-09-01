@@ -1,14 +1,19 @@
 using System.Net.Http.Json;
 using System.Reflection.Metadata;
 using System.Text.Json;
-
 using Trade.Gateway.Api.Contract.Certificate;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
 internal static class WireMockStubber
 {
-    private static readonly string[] s_mappingIds = ["intra-find-updates", "intra-get-certification", "ched-find-updates", "ched-get-certification"];
+    private static readonly string[] s_mappingIds =
+    [
+        "intra-find-updates",
+        "intra-get-certification",
+        "ched-find-updates",
+        "ched-get-certification",
+    ];
 
     public static async Task StubIntrasAsync(
         string wireMockBaseUrl,
@@ -42,13 +47,12 @@ internal static class WireMockStubber
                         Items = [],
                         HasMore = false,
                         Offset = 0,
-                        PageSize = 5
-                    }
+                        PageSize = 5,
+                    },
                 },
             },
             cancellationToken
         );
-
 
         await PostMappingAsync(
             http,
@@ -62,16 +66,17 @@ internal static class WireMockStubber
                     status = 200,
                     jsonBody = new DefraUNVTDINTRASummaryProfile
                     {
-                        Items = [
+                        Items =
+                        [
                             new DefraUNVTDINTRASummaryProfileItem
                             {
                                 Id = intraId,
                                 Updated = updated,
                                 Created = DateTimeOffset.UtcNow,
                                 Origin = "Int-Test",
-                            }
-                        ]
-                    }
+                            },
+                        ],
+                    },
                 },
             },
             cancellationToken
@@ -91,10 +96,10 @@ internal static class WireMockStubber
     }
 
     public static async Task StubChedsAsync(
-    string wireMockBaseUrl,
-    string chedId,
-    CancellationToken cancellationToken = default
-)
+        string wireMockBaseUrl,
+        string chedId,
+        CancellationToken cancellationToken = default
+    )
     {
         using var http = new HttpClient { BaseAddress = new Uri(wireMockBaseUrl) };
         // Use a fresh updated timestamp per stub so the polling job treats this as a new item on every run
@@ -117,12 +122,7 @@ internal static class WireMockStubber
                 response = new
                 {
                     status = 200,
-                    jsonBody = new
-                    {
-                        items = new List<DefraUNVTDCHEDSummaryProfileItem>
-                        {
-                        }
-                    }
+                    jsonBody = new { items = new List<DefraUNVTDCHEDSummaryProfileItem> { } },
                 },
             },
             cancellationToken
@@ -140,19 +140,20 @@ internal static class WireMockStubber
                     status = 200,
                     jsonBody = new DefraUNVTDCHEDSummaryProfile
                     {
-                        Items = [
+                        Items =
+                        [
                             new DefraUNVTDCHEDSummaryProfileItem
                             {
                                 Id = chedId,
                                 Updated = updated,
                                 Created = DateTimeOffset.UtcNow,
-                                Origin = "Int-Test",                                
-                            }
+                                Origin = "Int-Test",
+                            },
                         ],
                         HasMore = false,
                         Offset = 0,
-                        PageSize = 5
-                    }
+                        PageSize = 5,
+                    },
                 },
             },
             cancellationToken

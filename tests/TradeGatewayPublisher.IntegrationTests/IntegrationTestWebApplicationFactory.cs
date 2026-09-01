@@ -10,15 +10,13 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Misc;
 using NSubstitute;
-
-using TradeGatewayPublisher.IntegrationTests.IntraChanges;
 using Serilog;
 using Serilog.Extensions.Logging;
+using TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory()
-    : WebApplicationFactory<Program>
+public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
     private const string MongoDatabaseName = "trade-gateway-publisher";
@@ -35,10 +33,9 @@ public sealed class IntegrationTestWebApplicationFactory()
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-
                         ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "*/11 * * * * *",
                         //// ["Scheduler:Jobs:TracesIntraChangesJob:Disabled"] = "true",
-                        
+
                         // Until the CHED ticket is picked up
                         ["Scheduler:Jobs:TracesChedChangesJob:Cron"] = "*/9 * * * * *",
 
@@ -126,8 +123,14 @@ public sealed class IntegrationTestWebApplicationFactory()
                 })
             );
 
-            services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases"));
-            services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Infrastructure.Data.Entities.JobWatermarkEntity>("job_watermarks"));
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<IMongoDatabase>()
+                    .GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases")
+            );
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<IMongoDatabase>()
+                    .GetCollection<Infrastructure.Data.Entities.JobWatermarkEntity>("job_watermarks")
+            );
         });
     }
 }

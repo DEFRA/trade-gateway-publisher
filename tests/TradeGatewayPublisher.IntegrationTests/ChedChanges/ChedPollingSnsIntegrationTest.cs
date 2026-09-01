@@ -1,8 +1,6 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
-
 using AwesomeAssertions;
-
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.ChedChanges;
@@ -25,7 +23,8 @@ public class ChedPollingSnsIntegrationTest(IntegrationTestFixture fixture, ITest
 
         var received = await WaitHelper.WaitUntilAsync(
             () =>
-                SnsUtilities.SnsQueueContainsExpectedAsync(
+                SnsUtilities
+                    .SnsQueueContainsExpectedAsync(
                         fixture.AmazonSqs,
                         fixture.TestChedQueueUrl,
                         ChedId,
