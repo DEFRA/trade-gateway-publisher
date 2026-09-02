@@ -56,5 +56,6 @@ public class ChedPollingSnsIntegrationTest(IntegrationTestFixture fixture, ITest
     public async ValueTask DisposeAsync()
     {
         _logCapture?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

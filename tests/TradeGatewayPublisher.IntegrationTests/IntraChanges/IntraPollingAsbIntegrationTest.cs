@@ -82,5 +82,6 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
     public async ValueTask DisposeAsync()
     {
         _logCapture?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
