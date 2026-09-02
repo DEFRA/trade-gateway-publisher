@@ -10,8 +10,10 @@ function is_ready() {
   
   awslocal sqs get-queue-url --queue-name trade_gateway_publisher_ched_stream_internal_publisher.fifo || return 1
   awslocal sqs get-queue-url --queue-name trade_gateway_publisher_intra_stream_internal_publisher.fifo || return 1
+  
+  awslocal sqs get-queue-url --queue-name trade_gateway_publisher_ched_updates_test.fifo || return 1
   awslocal sqs get-queue-url --queue-name trade_gateway_publisher_intra_updates_test.fifo || return 1
-
+  
   awslocal sqs get-queue-url --queue-name trade_gateway_publisher_intra_stream_internal_asb_publisher.fifo || return 1
   awslocal sqs get-queue-url --queue-name trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo || return 1
   return 0
