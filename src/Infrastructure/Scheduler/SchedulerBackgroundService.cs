@@ -67,7 +67,7 @@ public class SchedulerBackgroundService(
 
                 _ = RunJobAsync(jobName, stoppingToken);
 
-                nextRuns[jobName] = expression.GetNextOccurrence(now.AddSeconds(60), _timeZoneInfo);
+                nextRuns[jobName] = expression.GetNextOccurrence(now, _timeZoneInfo);
 
                 logger.LogInformation("Next run of {Job} scheduled at {NextRun}", jobName, nextRuns[jobName]);
             }
