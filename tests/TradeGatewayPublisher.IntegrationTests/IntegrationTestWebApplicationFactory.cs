@@ -8,11 +8,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MongoDB.Driver.Core.Misc;
 using NSubstitute;
+using Serilog;
+using Serilog.Extensions.Logging;
+using TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
-public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory<Program>
+public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFactory<Program>
 {
     private const string FlociEndpoint = "http://localhost:4566";
     private const string MongoDatabaseName = "trade-gateway-publisher";
@@ -29,9 +33,11 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "* * * * * *",
+                        ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "*/11 * * * * *",
+                        //// ["Scheduler:Jobs:TracesIntraChangesJob:Disabled"] = "true",
+
                         // Until the CHED ticket is picked up
-                        ["Scheduler:Jobs:TracesChedChangesJob:Disabled"] = "true",
+                        ["Scheduler:Jobs:TracesChedChangesJob:Cron"] = "*/9 * * * * *",
 
                         // The tests run against a local Mongo running via Docker
                         ["Mongo:DatabaseUri"] = MongoUri,
@@ -66,12 +72,12 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo",
 
                         // Traces Service Bus (development emulator) - required for ASB publisher/consumer options
-                        ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched-updates",
+                        ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched",
                         ["TracesServiceBus:Ched:ConnectionString"] =
-                            "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
-                        ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra-updates",
+                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                        ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra",
                         ["TracesServiceBus:Intra:ConnectionString"] =
-                            "Endpoint=sb://127.0.0.1;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
 
                         // The tests run against a local WireMock container emulating the Traces Gateway
                         ["TracesGateway:BaseUrl"] = WireMockBaseUrl,
@@ -85,9 +91,6 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
 
         builder.ConfigureServices(services =>
         {
-            // Clean Mongo in-case the tests are re-run
-            DropDatabase();
-
             // Floci does not implement the STS GetWebIdentityToken operation that the real
             // StsAuthDelegatingHandler relies on, so stub the STS client to return a fake token.
             // Without this, every Traces Gateway request throws before it is sent.
@@ -104,13 +107,30 @@ public sealed class IntegrationTestWebApplicationFactory : WebApplicationFactory
             services.RemoveAll<IAmazonSecurityTokenService>();
             services.AddSingleton(sts);
 
-            services.AddLogging(c => c.AddConsole());
-        });
-    }
+            // Route the app's Serilog output to the console (as configured) and to whichever test
+            // is currently running - see TestOutputHelperSink. This factory is shared across the
+            // whole test collection (IntegrationTestFixture), so the target test isn't known here.
+            services.Replace(
+                ServiceDescriptor.Singleton<ILoggerFactory>(sp =>
+                {
+                    var logger = new LoggerConfiguration()
+                        .ReadFrom.Configuration(sp.GetRequiredService<IConfiguration>())
+                        .Enrich.FromLogContext()
+                        .WriteTo.TestOutputHelper()
+                        .CreateLogger();
 
-    private static void DropDatabase()
-    {
-        var client = new MongoClient(MongoUri);
-        client.DropDatabase(MongoDatabaseName);
+                    return new SerilogLoggerFactory(logger, dispose: true);
+                })
+            );
+
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<IMongoDatabase>()
+                    .GetCollection<Infrastructure.Data.Entities.LeaseEntity>("leases")
+            );
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<IMongoDatabase>()
+                    .GetCollection<Infrastructure.Data.Entities.JobWatermarkEntity>("job_watermarks")
+            );
+        });
     }
 }
