@@ -594,6 +594,59 @@ Each job run creates its own DI scope, so scoped services (repositories, DbConte
 
 ---
 
+### Queue Architecture
+
+```mermaid
+
+sequenceDiagram
+    participant TGPublisher as Trade Gateway Publisher
+    participant TradeGateway as Trade Gateway
+    
+    box rgb(255, 153, 0, 0.3) Amazon SNS
+      participant StreamTopic as Certificate Summary Update SNS Topic
+      participant StreamQueue@{ "type" : "queue" } as Certificate Summary Update Queue
+      participant SingleUpdateTopic as Single Update SNS Topic
+      participant SingleUpdateQueue@{ "type" : "queue" } as Single Certificate Update Queue (CDP Consumers)
+      participant SNSAsbQueue@{ "type" : "queue" } as Single Certificate Update Queue (for ASB Topic)
+    end
+
+    box rgb(60, 203, 244, 0.3) Azure Service Bus
+       participant AsbTopic as Asb Topic
+    end
+    TGPublisher->>TradeGateway: Find Update List
+    TradeGateway->>TGPublisher: Update List
+        
+    loop For Each Certificate Update
+        TGPublisher->>StreamTopic:Update Notification
+        StreamTopic->>StreamQueue: Update Notification
+
+        StreamQueue-->>TGPublisher: Update event
+
+        TGPublisher->>TradeGateway: Get Full Ched
+        TradeGateway->>TGPublisher: Full Ched 
+
+        TGPublisher->>SingleUpdateTopic: Post Full Ched
+        SingleUpdateTopic->>SingleUpdateQueue: Receive Full Ched
+
+        SingleUpdateTopic->>SNSAsbQueue: Receive Full Ched
+
+        SNSAsbQueue-->>TGPublisher:Receive Full Ched
+
+        TGPublisher->>AsbTopic: Publish to ASB Topic
+    end
+
+    %%{init:{'themeCSS':'.actor[data-id=StreamQueue], .actor[data-id=SNSAsbQueue] { fill: rgb(255, 153, 0); };.actor[data-id=SingleUpdateQueue]{ fill: rgb(255, 255, 0); } '}}%%
+ 
+ ```
+
+|Entity|Update Summary SNS topic|Update Summary SMS Queue|Single Update SNS topic|Single Update SNS Queue (CDP Consumers)|Single Update SNS Queue (For Azure Publish)|Service Bus Topic|
+|-|-|-|-|-|-|-|
+|CHED|trade_gateway_publisher_ched_stream_internal|trade_gateway_publisher_ched_stream_internal_publisher|trade_gateway_publisher_ched_updates|*|trade_gateway_publisher_ched_stream_internal_asb_publisher|trade-gateway-publisher-ched|
+|INTRA|trade_gateway_publisher_intra_stream_internal|trade_gateway_publisher_intra_stream_internal_publisher|trade_gateway_publisher_intra_updates|*|trade_gateway_publisher_intra_stream_internal_asb_publisher|trade-gateway-publisher-intra|
+|DOCOM|-|-|-|-|-|-|
+
+***NOTE*** Single Update SNS Queue (CDP Consumers) would be created for a CDP consumer, for integration tests it is represented by trade_gateway_publisher_{certificate-type}_updates_test
+
 ## API Reference
 
 ### `ICronJob`
