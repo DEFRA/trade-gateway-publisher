@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Infrastructure;
 using Infrastructure.Messaging.Publishing;
@@ -11,6 +12,7 @@ namespace TradeGatewayPublisher.Endpoints;
 
 public static class EndpointRouteBuilderExtensions
 {
+    [ExcludeFromCodeCoverage(Justification = "Covered by integration tests")]
     public static void MapEndpoints(this IEndpointRouteBuilder app)
     {
         const string groupName = "Jobs";
