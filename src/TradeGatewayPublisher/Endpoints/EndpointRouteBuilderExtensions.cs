@@ -23,15 +23,6 @@ public static class EndpointRouteBuilderExtensions
             .ProducesProblem(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
-
-        app.MapGet("intra/{chedId}", PublishIntra)
-            .WithName("ForceIntraPublish")
-            .WithTags(groupName)
-            .WithSummary("Forces a publish of a intra")
-            .WithDescription("Forces a publish of a intra")
-            .ProducesProblem(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
     /// <param name="chedId"></param>
@@ -49,7 +40,7 @@ public static class EndpointRouteBuilderExtensions
         CancellationToken cancellationToken
     )
     {
-        var apiResponse = await gatewayChedClient.GetChedCertification(chedId, cancellationToken); 
+        var apiResponse = await gatewayChedClient.GetChedCertification(chedId, cancellationToken);
         if (apiResponse.StatusCode == HttpStatusCode.NotFound)
         {
             return Results.NotFound();
@@ -57,41 +48,15 @@ public static class EndpointRouteBuilderExtensions
         await apiResponse.EnsureSuccessfulAsync();
         await snsPublisher.PublishAsync(
             options.Value.ChedInternalTopicArn,
-            new DefraUNVTDCHEDSummaryProfileItem(){ Id = chedId, Origin = "Force", Created = DateTimeOffset.UtcNow, Updated = DateTimeOffset.UtcNow}.ToJson(),
+            new DefraUNVTDCHEDSummaryProfileItem()
+            {
+                Id = chedId,
+                Origin = "Force",
+                Created = DateTimeOffset.UtcNow,
+                Updated = DateTimeOffset.UtcNow,
+            }.ToJson(),
             cancellationToken: cancellationToken,
-            duplicationId: Guid.NewGuid().ToString("N")
-        );
-
-        return Results.Ok();
-    }
-
-    /// <param name="chedId"></param>
-    /// <param name="gatewayIntraClient"></param>
-    /// <param name="snsPublisher"></param>
-    /// <param name="options"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    [HttpGet]
-    private static async Task<IResult> PublishIntra(
-        [FromRoute] string chedId,
-        [FromServices] ITracesGatewayIntraClient gatewayIntraClient,
-        [FromServices] ISnsPublisher snsPublisher,
-        [FromServices] IOptions<TracesUpdatePublisherOptions> options,
-        CancellationToken cancellationToken
-    )
-    {
-        var apiResponse = await gatewayIntraClient.GetIntraCertification(chedId, cancellationToken);
-        if (apiResponse.StatusCode == HttpStatusCode.NotFound)
-        {
-            return Results.NotFound();
-        }
-
-        await apiResponse.EnsureSuccessfulAsync();
-        await snsPublisher.PublishAsync(
-            options.Value.IntraInternalTopicArn,
-            new DefraUNVTDINTRASummaryProfileItem() { Id = chedId, Origin = "Force", Created = DateTimeOffset.UtcNow, Updated = DateTimeOffset.UtcNow }.ToJson(),
-            cancellationToken: cancellationToken,
-            duplicationId: Guid.NewGuid().ToString("N")
+            duplicationId: apiResponse.GetDuplicationId()
         );
 
         return Results.Ok();
