@@ -32,7 +32,7 @@ public static class EndpointRouteBuilderExtensions
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpGet]
-    private static async Task<IResult> PublishChed(
+    internal static async Task<IResult> PublishChed(
         [FromRoute] string chedId,
         [FromServices] ITracesGatewayChedClient gatewayChedClient,
         [FromServices] ISnsPublisher snsPublisher,
