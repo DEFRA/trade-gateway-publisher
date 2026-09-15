@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Infrastructure;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
@@ -28,7 +29,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
             await snsPublisher.PublishAsync(
                 options.Value.ChedTopicArn,
                 JsonSerializer.Serialize(@event),
-                duplicationId: Guid.NewGuid().ToString("N"),
+                duplicationId: message.GetDuplicationId(),
                 cancellationToken: cancellationToken
             );
             logger.LogInformation(

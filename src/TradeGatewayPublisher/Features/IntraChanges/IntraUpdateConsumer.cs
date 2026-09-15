@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Infrastructure;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
@@ -29,7 +30,7 @@ public class IntraUpdateConsumer(
         await snsPublisher.PublishAsync(
             options.Value.IntraTopicArn,
             JsonSerializer.Serialize(@event),
-            duplicationId: Guid.NewGuid().ToString("N"),
+            duplicationId: message.GetDuplicationId(),
             cancellationToken: cancellationToken
         );
         logger.LogInformation(
