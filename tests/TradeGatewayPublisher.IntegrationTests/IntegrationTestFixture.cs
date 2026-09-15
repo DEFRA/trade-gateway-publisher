@@ -27,6 +27,8 @@ namespace TradeGatewayPublisher.IntegrationTests
 
         private HttpClient? _client;
 
+        public HttpClient Client => _client ??= Factory.CreateClient();
+
         public async ValueTask InitializeAsync()
         {
             AmazonSqs = Factory.Services.GetRequiredService<IAmazonSQS>();
@@ -37,7 +39,7 @@ namespace TradeGatewayPublisher.IntegrationTests
 
         public void StartClient()
         {
-            _client = Factory.CreateClient();
+            _ = Client;
         }
 
         public async Task DeleteDatabaseAsync()
