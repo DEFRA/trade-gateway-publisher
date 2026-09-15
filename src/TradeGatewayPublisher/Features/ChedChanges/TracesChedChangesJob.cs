@@ -1,3 +1,4 @@
+using Infrastructure;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
 using Trade.Gateway.Api.Client.Clients;
@@ -19,7 +20,7 @@ public sealed class TracesChedChangesJob(
 
     protected override string GetTopicArn() => options.Value.ChedInternalTopicArn;
 
-    protected override string GetId(DefraUNVTDCHEDSummaryProfileItem item) => item.Id;
+    protected override string GetId(DefraUNVTDCHEDSummaryProfileItem item) => item.GetDuplicationId();
 
     protected override async Task<TracesChangesPage<DefraUNVTDCHEDSummaryProfileItem>> FetchPageAsync(
         DateTimeOffset watermark,

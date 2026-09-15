@@ -1,3 +1,4 @@
+using Infrastructure;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
 using Trade.Gateway.Api.Client.Clients;
@@ -19,7 +20,7 @@ public sealed class TracesIntraChangesJob(
 
     protected override string GetTopicArn() => options.Value.IntraInternalTopicArn;
 
-    protected override string GetId(DefraUNVTDINTRASummaryProfileItem item) => item.Id;
+    protected override string GetId(DefraUNVTDINTRASummaryProfileItem item) => item.GetDuplicationId();
 
     protected override async Task<TracesChangesPage<DefraUNVTDINTRASummaryProfileItem>> FetchPageAsync(
         DateTimeOffset watermark,
