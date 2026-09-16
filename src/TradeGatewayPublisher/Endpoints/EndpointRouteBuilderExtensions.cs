@@ -47,20 +47,32 @@ public static class EndpointRouteBuilderExtensions
         {
             return Results.NotFound();
         }
-        await apiResponse.EnsureSuccessfulAsync();
-        await snsPublisher.PublishAsync(
-            options.Value.ChedInternalTopicArn,
-            new DefraUNVTDCHEDSummaryProfileItem()
-            {
-                Id = chedId,
-                Origin = "Force",
-                Created = DateTimeOffset.UtcNow,
-                Updated = DateTimeOffset.UtcNow,
-            }.ToJson(),
-            cancellationToken: cancellationToken,
-            duplicationId: apiResponse.GetDuplicationId()
-        );
 
-        return Results.Ok();
+        if (apiResponse.IsSuccessful)
+        {
+            await snsPublisher.PublishAsync(
+                options.Value.ChedInternalTopicArn,
+                new DefraUNVTDCHEDSummaryProfileItem()
+                {
+                    Id = chedId,
+                    Origin = "Force",
+                    Created = DateTimeOffset.UtcNow,
+                    Updated = DateTimeOffset.UtcNow,
+                }.ToJson(),
+                cancellationToken: cancellationToken,
+                duplicationId: apiResponse.GetDuplicationId()
+            );
+
+            return Results.Ok();
+        }
+
+        return Results.Problem(
+            new ProblemDetails()
+            {
+                Title = "Error retrieving ched",
+                Status = apiResponse.StatusCode.HasValue ? (int)apiResponse.StatusCode.Value : 500,
+                Detail = apiResponse.Error.Message,
+            }
+        );
     }
 }
