@@ -35,5 +35,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="TradeGatewayPublisher.IntegrationTests" />
+    <InternalsVisibleTo Include="TradeGatewayPublisher.Tests" />
   </ItemGroup>
 </Project>

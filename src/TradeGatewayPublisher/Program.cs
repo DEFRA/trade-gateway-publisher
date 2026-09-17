@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Net;
 using Defra.TradeImports.EmfExporter;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
@@ -12,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Trade.Gateway.Api.Client.Extensions;
 using TradeGatewayPublisher.Config;
+using TradeGatewayPublisher.Endpoints;
 using TradeGatewayPublisher.Features.ChedChanges;
 using TradeGatewayPublisher.Features.IntraChanges;
 using TradeGatewayPublisher.Health;
@@ -142,6 +142,8 @@ static void ConfigureMiddleware(WebApplication app)
     app.UseSerilogRequestLogging();
 
     app.UseHeaderPropagation();
+
+    app.MapEndpoints();
 }
 
 [ExcludeFromCodeCoverage]
