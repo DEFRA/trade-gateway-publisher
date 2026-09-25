@@ -23,12 +23,9 @@ public class AsbChedUpdateConsumerTests
         var options = Options.Create(
             new TracesServiceBusOptions
             {
-                Intra = new ServiceBusTopic
-                {
-                    TopicName = "intra-topic",
-                    ConnectionString = "Endpoint=sb://127.0.0.1;",
-                },
-                Ched = new ServiceBusTopic { TopicName = "ched-topic", ConnectionString = "Endpoint=sb://127.0.0.1;" },
+                Intra = new ServiceBusTopic { TopicName = "intra-topic" },
+                Ched = new ServiceBusTopic { TopicName = "ched-topic" },
+                ConnectionString = "Endpoint=sb://127.0.0.1;",
             }
         );
 

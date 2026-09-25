@@ -1,11 +1,15 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using Azure.Core;
 using Azure.Core.Pipeline;
 using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
 using HealthChecks.AzureServiceBus;
 using HealthChecks.AzureServiceBus.Configuration;
+using Infrastructure;
 using Infrastructure.Messaging;
+using Infrastructure.Messaging.Extensions;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using TradeGatewayPublisher.Utils.Http;
@@ -42,33 +46,50 @@ public static class AsbHealthCheckBuilderExtensions
         ServiceBusTopic subscription
     )
     {
-        var options = new AzureServiceBusTopicHealthCheckOptions(subscription.TopicName)
-        {
-            ConnectionString = subscription.ConnectionString,
-        };
+        var options = new AzureServiceBusTopicHealthCheckOptions(subscription.TopicName);
 
-        return new AzureServiceBusTopicHealthCheck(options, new ServiceBusClientProvider(serviceProvider));
+        var provider = new ServiceBusClientProvider(serviceProvider);
+
+        return new AzureServiceBusTopicHealthCheck(options, provider);
     }
 
     private sealed class ServiceBusClientProvider(IServiceProvider serviceProvider)
         : HealthChecks.AzureServiceBus.ServiceBusClientProvider
     {
+        private readonly TracesServiceBusOptions _tracesServiceBusOptions = serviceProvider
+            .GetRequiredService<IOptions<TracesServiceBusOptions>>()
+            .Value;
+
+        private readonly bool _useSharedServiceBusKey = serviceProvider
+            .GetRequiredService<IConfiguration>()
+            .FeatureIsEnabled(FeatureFlags.UseSharedAccessKeyForServiceBus);
+
+        private readonly bool _isProxyEnabled = serviceProvider
+            .GetRequiredService<IOptions<CdpOptions>>()
+            .Value.IsProxyEnabled;
+
         public override ServiceBusClient CreateClient(string? connectionString)
         {
-            var clientOptions = !serviceProvider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled
-                ? new ServiceBusClientOptions()
-                : new ServiceBusClientOptions
+            var clientOptions = _isProxyEnabled
+                ? new ServiceBusClientOptions
                 {
                     WebProxy = serviceProvider.GetRequiredService<IWebProxy>(),
                     TransportType = ServiceBusTransportType.AmqpWebSockets,
-                };
+                }
+                : new ServiceBusClientOptions();
 
-            return new ServiceBusClient(connectionString, clientOptions);
+            return _useSharedServiceBusKey
+                ? new ServiceBusClient(_tracesServiceBusOptions.ConnectionString, clientOptions)
+                : new ServiceBusClient(
+                    _tracesServiceBusOptions.EntraOptions?.Namespace,
+                    GetTokenCredential(),
+                    clientOptions
+                );
         }
 
         public override ServiceBusAdministrationClient CreateManagementClient(string? connectionString)
         {
-            var clientOptions = !serviceProvider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled
+            var clientOptions = _isProxyEnabled
                 ? new ServiceBusAdministrationClientOptions()
                 : new ServiceBusAdministrationClientOptions
                 {
@@ -81,7 +102,18 @@ public static class AsbHealthCheckBuilderExtensions
 
             clientOptions.Retry.MaxRetries = 0;
 
-            return new ServiceBusAdministrationClient(connectionString, clientOptions);
+            return _useSharedServiceBusKey
+                ? new ServiceBusAdministrationClient(_tracesServiceBusOptions.ConnectionString, clientOptions)
+                : new ServiceBusAdministrationClient(
+                    _tracesServiceBusOptions.EntraOptions?.Namespace,
+                    GetTokenCredential(),
+                    clientOptions
+                );
+        }
+
+        private TokenCredential GetTokenCredential()
+        {
+            return serviceProvider.GetRequiredService<TokenCredential>();
         }
     }
 }
