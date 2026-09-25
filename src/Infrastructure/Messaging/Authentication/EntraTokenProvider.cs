@@ -13,24 +13,24 @@ public class EntraTokenProvider(
     IClientAssertionCredentialFactory clientAssertionCredentialFactory
 ) : IEntraTokenProvider
 {
-    private readonly ILogger<EntraTokenProvider> _logger = logger;
-
     public async Task<(string AccessToken, DateTimeOffset ExpiresOn)> ExchangeForAccessTokenAsync(
-        string scope,
         CancellationToken cancellationToken = default
     )
     {
-        var opts = options.Value ?? throw new InvalidOperationException("EntraOptions not configured");
+        var entraOptions = options.Value ?? throw new InvalidOperationException("EntraOptions not configured");
 
         var assertionCallback = new Func<CancellationToken, Task<string>>(GetWebIdentityTokenAsync);
 
-        var credential = clientAssertionCredentialFactory.Create(opts.TenantId!, opts.ClientId!, assertionCallback);
+        var credential = clientAssertionCredentialFactory.Create(
+            entraOptions.TenantId,
+            entraOptions.ClientId,
+            assertionCallback
+        );
 
-        var tokenScope = string.IsNullOrEmpty(scope) ? opts.Scope : scope;
-        var tokenRequest = new TokenRequestContext([tokenScope]);
+        var tokenRequest = new TokenRequestContext([entraOptions.Scope]);
 
         var accessToken = await credential.GetTokenAsync(tokenRequest, cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation("Obtained a new access token - expiration : {ExpiresOn}", accessToken.ExpiresOn);
+        logger.LogInformation("Obtained a new access token - expiration : {ExpiresOn}", accessToken.ExpiresOn);
         return (accessToken.Token, accessToken.ExpiresOn);
     }
 

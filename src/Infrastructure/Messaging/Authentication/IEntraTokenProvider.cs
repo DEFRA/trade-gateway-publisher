@@ -1,7 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Infrastructure.Messaging.Authentication;
 
 public interface IEntraTokenProvider
@@ -11,7 +7,6 @@ public interface IEntraTokenProvider
     /// Returns the token string and its expiry time.
     /// </summary>
     Task<(string AccessToken, DateTimeOffset ExpiresOn)> ExchangeForAccessTokenAsync(
-        string scope,
         CancellationToken cancellationToken = default
     );
 }

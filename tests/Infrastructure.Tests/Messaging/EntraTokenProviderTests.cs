@@ -1,4 +1,3 @@
-using System.Net;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using Infrastructure.Messaging;
@@ -43,7 +42,7 @@ public class EntraTokenProviderTests
         var fakeFactory = new FakeClientAssertionCredentialFactory(fakeCredential);
         var provider = new EntraTokenProvider(options, logger, sts, fakeFactory);
 
-        var (token, expiresOn) = await provider.ExchangeForAccessTokenAsync("scope", CancellationToken.None);
+        var (token, expiresOn) = await provider.ExchangeForAccessTokenAsync(CancellationToken.None);
 
         Assert.Equal("entra-token", token);
         Assert.True(expiresOn > DateTimeOffset.UtcNow);
