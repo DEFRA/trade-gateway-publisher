@@ -26,18 +26,6 @@ public class EntraTokenProviderTests
                 )
             );
 
-        // Create a fake HttpMessageHandler that returns a successful token response
-        var handler = new TestHttpMessageHandler(
-            new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("{\"access_token\":\"entra-token\", \"expires_in\": 3600}"),
-            }
-        );
-
-        var httpClient = new HttpClient(handler);
-        var httpFactory = Substitute.For<IHttpClientFactory>();
-        httpFactory.CreateClient("EntraTokenExchange").Returns(httpClient);
-
         var options = Options.Create(
             new EntraOptions
             {
@@ -49,7 +37,11 @@ public class EntraTokenProviderTests
         );
         var logger = new NullLogger<EntraTokenProvider>();
 
-        var provider = new EntraTokenProvider(httpFactory, options, logger, sts);
+        // Fake TokenCredential that returns a known access token
+        var fakeCredential = new FakeTokenCredential("entra-token", DateTimeOffset.UtcNow.AddHours(1));
+
+        var fakeFactory = new FakeClientAssertionCredentialFactory(fakeCredential);
+        var provider = new EntraTokenProvider(options, logger, sts, fakeFactory);
 
         var (token, expiresOn) = await provider.ExchangeForAccessTokenAsync("scope", CancellationToken.None);
 
@@ -57,14 +49,28 @@ public class EntraTokenProviderTests
         Assert.True(expiresOn > DateTimeOffset.UtcNow);
     }
 
-    private class TestHttpMessageHandler(HttpResponseMessage response) : HttpMessageHandler
+    private class FakeTokenCredential(string value, DateTimeOffset expires) : Azure.Core.TokenCredential
     {
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
+        private readonly Azure.Core.AccessToken _token = new(value, expires);
+
+        public override Azure.Core.AccessToken GetToken(
+            Azure.Core.TokenRequestContext requestContext,
             CancellationToken cancellationToken
-        )
-        {
-            return Task.FromResult(response);
-        }
+        ) => _token;
+
+        public override ValueTask<Azure.Core.AccessToken> GetTokenAsync(
+            Azure.Core.TokenRequestContext requestContext,
+            CancellationToken cancellationToken
+        ) => new(_token);
+    }
+
+    private class FakeClientAssertionCredentialFactory(Azure.Core.TokenCredential credential)
+        : IClientAssertionCredentialFactory
+    {
+        public Azure.Core.TokenCredential Create(
+            string tenantId,
+            string clientId,
+            Func<CancellationToken, Task<string>> clientAssertionCallback
+        ) => credential;
     }
 }

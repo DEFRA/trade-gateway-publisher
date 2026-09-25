@@ -133,9 +133,21 @@ public static class ServiceCollectionExtensions
             var useSharedServiceBusKey = configuration.FeatureIsEnabled(FeatureFlags.UseSharedAccessKeyForServiceBus);
             if (!useSharedServiceBusKey)
             {
+                // Ensure Entra options are available from the TracesServiceBus configuration
+                var entraOpts =
+                    tracesServiceBusOptions.EntraOptions
+                    ?? throw new InvalidOperationException(
+                        "TracesServiceBus:EntraOptions must be configured when using Entra authentication"
+                    );
+
+                // Register a named IOptions<EntraOptions> backed by the TracesServiceBus configuration
+                services.AddSingleton<IOptions<EntraOptions>>(Options.Create(entraOpts));
+
                 services.AddSingleton<IAmazonSecurityTokenService>(sp => new AmazonSecurityTokenServiceClient());
 
                 services.AddHttpClient();
+                // Factory for creating ClientAssertionCredential (used by EntraTokenProvider)
+                services.AddSingleton<IClientAssertionCredentialFactory, ClientAssertionCredentialFactory>();
                 services.AddSingleton<IEntraTokenProvider, EntraTokenProvider>();
                 services.AddSingleton<TokenCredential, EntraTokenCredential>();
             }

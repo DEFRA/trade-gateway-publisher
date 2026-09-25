@@ -23,6 +23,7 @@ public class ServiceBusTopic
     public required string TopicName { get; init; }
 }
 
+[ExcludeFromCodeCoverage]
 public class EntraOptions
 {
     // Fully qualified namespace to use for TokenCredential-based clients (e.g. "my-namespace.servicebus.windows.net")
