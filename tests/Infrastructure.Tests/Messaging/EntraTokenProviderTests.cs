@@ -21,7 +21,7 @@ public class EntraTokenProviderTests
                     new GetWebIdentityTokenResponse
                     {
                         WebIdentityToken = "aws-jwt",
-                        Expiration = System.DateTime.UtcNow.AddHours(1),
+                        Expiration = DateTime.UtcNow.AddHours(1),
                     }
                 )
             );
