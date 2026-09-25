@@ -3,9 +3,12 @@ using System.Diagnostics.Metrics;
 using System.Net;
 using Amazon;
 using Amazon.Runtime;
+using Amazon.SecurityToken;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
+using Azure.Core;
 using Azure.Messaging.ServiceBus;
+using Infrastructure.Messaging.Authentication;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Messaging.Publishing.Middleware;
@@ -13,6 +16,7 @@ using Infrastructure.Resilience;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
@@ -22,11 +26,7 @@ namespace Infrastructure.Messaging.Extensions;
 [ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddMessaging(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        bool useFloci = false
-    )
+    public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<FlociOptions>().Bind(configuration);
         services.AddSingleton<ISnsPublisher, SnsPublisher>();
@@ -122,7 +122,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration
     )
     {
-        if (configuration.GetValue<bool>($"FeatureManagement:{FeatureFlags.AzureServiceBusPublishing}"))
+        if (configuration.FeatureIsEnabled(FeatureFlags.AzureServiceBusPublishing))
         {
             services.AddSingleton<IAsbPublisher, AsbPublisher>();
 
@@ -130,24 +130,63 @@ public static class ServiceCollectionExtensions
                 .GetRequiredSection(TracesServiceBusOptions.SectionName)
                 .Get<TracesServiceBusOptions>()!;
 
+            var useSharedServiceBusKey = configuration.FeatureIsEnabled(FeatureFlags.UseSharedAccessKeyForServiceBus);
+            if (!useSharedServiceBusKey)
+            {
+                services.AddSingleton<IAmazonSecurityTokenService>(sp => new AmazonSecurityTokenServiceClient());
+
+                services.AddHttpClient();
+                services.AddSingleton<IEntraTokenProvider, EntraTokenProvider>();
+                services.AddSingleton<TokenCredential, EntraTokenCredential>();
+            }
+
             services.AddAzureClients(azureBuilder =>
             {
                 ServiceBusTopic[] topics = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
-                foreach (var topic in topics)
+                foreach (var topicName in topics.Select(topic => topic.TopicName))
                 {
                     azureBuilder
-                        .AddServiceBusClient(topic.ConnectionString)
-                        .WithName(topic.TopicName)
-                        .ConfigureOptions(
-                            (options, provider) =>
+                        .AddClient<ServiceBusClient, ServiceBusClientOptions>(
+                            (_, _, provider) =>
                             {
+                                var env = provider.GetRequiredService<IHostEnvironment>();
+
+                                // Optionally use the connection string (development only)
+                                if (useSharedServiceBusKey)
+                                {
+                                    if (!env.IsDevelopment())
+                                        throw new InvalidOperationException(
+                                            "UseSharedAccessKey is only supported for Development environments."
+                                        );
+
+                                    if (string.IsNullOrEmpty(tracesServiceBusOptions.ConnectionString))
+                                        throw new InvalidOperationException(
+                                            "TracesServiceBus:ConnectionString must be configured when using shared access key."
+                                        );
+
+                                    return new ServiceBusClient(tracesServiceBusOptions.ConnectionString);
+                                }
+
+                                // Use TokenCredential (Entra) in non-dev or when feature disabled
+                                var credential = provider.GetRequiredService<TokenCredential>();
+                                var clientOptions = new ServiceBusClientOptions();
+
                                 if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
                                 {
-                                    options.TransportType = ServiceBusTransportType.AmqpWebSockets;
-                                    options.WebProxy = provider.GetRequiredService<IWebProxy>();
+                                    clientOptions.TransportType = ServiceBusTransportType.AmqpWebSockets;
+                                    clientOptions.WebProxy = provider.GetRequiredService<IWebProxy>();
                                 }
+
+                                var fullyQualifiedNamespace =
+                                    tracesServiceBusOptions.EntraOptions?.Namespace
+                                    ?? throw new InvalidOperationException(
+                                        "Entra namespace must be configured in TracesServiceBus:EntraOptions:Namespace when using Entra authentication"
+                                    );
+
+                                return new ServiceBusClient(fullyQualifiedNamespace, credential, clientOptions);
                             }
-                        );
+                        )
+                        .WithName(topicName);
 
                     azureBuilder
                         .AddClient<ServiceBusSender, ServiceBusClientOptions>(
@@ -156,11 +195,11 @@ public static class ServiceCollectionExtensions
                                 var clientFactory = provider.GetRequiredService<
                                     IAzureClientFactory<ServiceBusClient>
                                 >();
-                                var client = clientFactory.CreateClient(topic.TopicName);
-                                return client.CreateSender(topic.TopicName);
+                                var client = clientFactory.CreateClient(topicName);
+                                return client.CreateSender(topicName);
                             }
                         )
-                        .WithName(topic.TopicName);
+                        .WithName(topicName);
                 }
             });
         }
