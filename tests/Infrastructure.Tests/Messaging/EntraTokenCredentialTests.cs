@@ -1,9 +1,6 @@
 using Azure.Core;
-
 using Infrastructure.Messaging.Authentication;
-
 using Microsoft.Extensions.Logging.Abstractions;
-
 using NSubstitute;
 
 namespace Infrastructure.Tests.Messaging;

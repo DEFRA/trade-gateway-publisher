@@ -131,89 +131,15 @@ public static class ServiceCollectionExtensions
                 .Get<TracesServiceBusOptions>()!;
 
             var useSharedServiceBusKey = configuration.FeatureIsEnabled(FeatureFlags.UseSharedAccessKeyForServiceBus);
+
             if (!useSharedServiceBusKey)
             {
-                // Ensure Entra options are available from the TracesServiceBus configuration
-                var entraOpts =
-                    tracesServiceBusOptions.EntraOptions
-                    ?? throw new InvalidOperationException(
-                        "TracesServiceBus:EntraOptions must be configured when using Entra authentication"
-                    );
-
-                // Register a named IOptions<EntraOptions> backed by the TracesServiceBus configuration
-                services.AddSingleton<IOptions<EntraOptions>>(Options.Create(entraOpts));
-
-                services.AddSingleton<IAmazonSecurityTokenService>(sp => new AmazonSecurityTokenServiceClient());
-
-                services.AddHttpClient();
-                // Factory for creating ClientAssertionCredential (used by EntraTokenProvider)
-                services.AddSingleton<IClientAssertionCredentialFactory, ClientAssertionCredentialFactory>();
-                services.AddSingleton<IEntraTokenProvider, EntraTokenProvider>();
-                services.AddSingleton<TokenCredential, EntraTokenCredential>();
+                RegisterEntraServices(services, tracesServiceBusOptions);
             }
 
             services.AddAzureClients(azureBuilder =>
-            {
-                ServiceBusTopic[] topics = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
-                foreach (var topicName in topics.Select(topic => topic.TopicName))
-                {
-                    azureBuilder
-                        .AddClient<ServiceBusClient, ServiceBusClientOptions>(
-                            (_, _, provider) =>
-                            {
-                                var env = provider.GetRequiredService<IHostEnvironment>();
-
-                                // Optionally use the connection string (development only)
-                                if (useSharedServiceBusKey)
-                                {
-                                    if (!env.IsDevelopment())
-                                        throw new InvalidOperationException(
-                                            "UseSharedAccessKey is only supported for Development environments."
-                                        );
-
-                                    if (string.IsNullOrEmpty(tracesServiceBusOptions.ConnectionString))
-                                        throw new InvalidOperationException(
-                                            "TracesServiceBus:ConnectionString must be configured when using shared access key."
-                                        );
-
-                                    return new ServiceBusClient(tracesServiceBusOptions.ConnectionString);
-                                }
-
-                                // Use TokenCredential (Entra) in non-dev or when feature disabled
-                                var credential = provider.GetRequiredService<TokenCredential>();
-                                var clientOptions = new ServiceBusClientOptions();
-
-                                if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
-                                {
-                                    clientOptions.TransportType = ServiceBusTransportType.AmqpWebSockets;
-                                    clientOptions.WebProxy = provider.GetRequiredService<IWebProxy>();
-                                }
-
-                                var fullyQualifiedNamespace =
-                                    tracesServiceBusOptions.EntraOptions?.Namespace
-                                    ?? throw new InvalidOperationException(
-                                        "Entra namespace must be configured in TracesServiceBus:EntraOptions:Namespace when using Entra authentication"
-                                    );
-
-                                return new ServiceBusClient(fullyQualifiedNamespace, credential, clientOptions);
-                            }
-                        )
-                        .WithName(topicName);
-
-                    azureBuilder
-                        .AddClient<ServiceBusSender, ServiceBusClientOptions>(
-                            (_, _, provider) =>
-                            {
-                                var clientFactory = provider.GetRequiredService<
-                                    IAzureClientFactory<ServiceBusClient>
-                                >();
-                                var client = clientFactory.CreateClient(topicName);
-                                return client.CreateSender(topicName);
-                            }
-                        )
-                        .WithName(topicName);
-                }
-            });
+                ConfigureAzureClients(azureBuilder, tracesServiceBusOptions, useSharedServiceBusKey)
+            );
         }
         else
         {
@@ -221,5 +147,101 @@ public static class ServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    private static void RegisterEntraServices(
+        IServiceCollection services,
+        TracesServiceBusOptions tracesServiceBusOptions
+    )
+    {
+        // Ensure Entra options are available from the TracesServiceBus configuration
+        var entraOpts =
+            tracesServiceBusOptions.EntraOptions
+            ?? throw new InvalidOperationException(
+                "TracesServiceBus:EntraOptions must be configured when using Entra authentication"
+            );
+
+        // Register a named IOptions<EntraOptions> backed by the TracesServiceBus configuration
+        services.AddSingleton<IOptions<EntraOptions>>(Options.Create(entraOpts));
+
+        services.AddSingleton<IAmazonSecurityTokenService>(sp => new AmazonSecurityTokenServiceClient());
+
+        services.AddHttpClient();
+        // Factory for creating ClientAssertionCredential (used by EntraTokenProvider)
+        services.AddSingleton<IClientAssertionCredentialFactory, ClientAssertionCredentialFactory>();
+        services.AddSingleton<IEntraTokenProvider, EntraTokenProvider>();
+        services.AddSingleton<TokenCredential, EntraTokenCredential>();
+    }
+
+    private static void ConfigureAzureClients(
+        AzureClientFactoryBuilder azureBuilder,
+        TracesServiceBusOptions tracesServiceBusOptions,
+        bool useSharedServiceBusKey
+    )
+    {
+        ServiceBusTopic[] topics = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra];
+        foreach (var topicName in topics.Select(topic => topic.TopicName))
+        {
+            azureBuilder
+                .AddClient<ServiceBusClient, ServiceBusClientOptions>(
+                    (_, _, provider) =>
+                        CreateServiceBusClient(provider, tracesServiceBusOptions, useSharedServiceBusKey)
+                )
+                .WithName(topicName);
+
+            azureBuilder
+                .AddClient<ServiceBusSender, ServiceBusClientOptions>(
+                    (_, _, provider) =>
+                    {
+                        var clientFactory = provider.GetRequiredService<IAzureClientFactory<ServiceBusClient>>();
+                        var client = clientFactory.CreateClient(topicName);
+                        return client.CreateSender(topicName);
+                    }
+                )
+                .WithName(topicName);
+        }
+    }
+
+    private static ServiceBusClient CreateServiceBusClient(
+        IServiceProvider provider,
+        TracesServiceBusOptions tracesServiceBusOptions,
+        bool useSharedServiceBusKey
+    )
+    {
+        var env = provider.GetRequiredService<IHostEnvironment>();
+
+        // Optionally use the connection string (development only)
+        if (useSharedServiceBusKey)
+        {
+            if (!env.IsDevelopment())
+                throw new InvalidOperationException(
+                    "UseSharedAccessKey is only supported for Development environments."
+                );
+
+            if (string.IsNullOrEmpty(tracesServiceBusOptions.ConnectionString))
+                throw new InvalidOperationException(
+                    "TracesServiceBus:ConnectionString must be configured when using shared access key."
+                );
+
+            return new ServiceBusClient(tracesServiceBusOptions.ConnectionString);
+        }
+
+        // Use TokenCredential (Entra) in non-dev or when feature disabled
+        var credential = provider.GetRequiredService<TokenCredential>();
+        var clientOptions = new ServiceBusClientOptions();
+
+        if (provider.GetRequiredService<IOptions<CdpOptions>>().Value.IsProxyEnabled)
+        {
+            clientOptions.TransportType = ServiceBusTransportType.AmqpWebSockets;
+            clientOptions.WebProxy = provider.GetRequiredService<IWebProxy>();
+        }
+
+        var fullyQualifiedNamespace =
+            tracesServiceBusOptions.EntraOptions?.Namespace
+            ?? throw new InvalidOperationException(
+                "Entra namespace must be configured in TracesServiceBus:EntraOptions:Namespace when using Entra authentication"
+            );
+
+        return new ServiceBusClient(fullyQualifiedNamespace, credential, clientOptions);
     }
 }
