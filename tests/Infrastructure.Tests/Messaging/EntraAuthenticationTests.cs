@@ -130,6 +130,31 @@ public class EntraAuthenticationTests
         await provider.Received(1).ExchangeForAccessTokenAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public void EntraTokenCredential_GetToken_sync_invokes_provider_once()
+    {
+        var provider = Substitute.For<IEntraTokenProvider>();
+        var now = DateTimeOffset.UtcNow;
+        provider
+            .ExchangeForAccessTokenAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(("token-sync", now.AddMinutes(5))));
+
+        var logger = new NullLogger<EntraTokenCredential>();
+        var credential = new EntraTokenCredential(provider, logger);
+
+        var ctx = new TokenRequestContext(new[] { "scope" });
+
+        // First synchronous call (wraps GetTokenAsync) should fetch from provider
+        var t1 = credential.GetToken(ctx, CancellationToken.None);
+
+        // Second synchronous call should use cached path
+        var t2 = credential.GetToken(ctx, CancellationToken.None);
+
+        Assert.Equal("token-sync", t1.Token);
+        Assert.Equal("token-sync", t2.Token);
+        provider.Received(1).ExchangeForAccessTokenAsync(Arg.Any<CancellationToken>());
+    }
+
     private class CallbackTokenCredential(Func<TokenRequestContext, CancellationToken, Task<AccessToken>> cb)
         : TokenCredential
     {
