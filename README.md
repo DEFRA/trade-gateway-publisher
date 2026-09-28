@@ -80,6 +80,31 @@ Run CDP-Deployments application:
 dotnet run --project TradeGatewayPublisher --launch-profile Development
 ```
 
+### Azure Entra (Workload Identity) authentication for Service Bus
+
+This project supports two Service Bus authentication modes: a shared access connection string (development only) and Microsoft Entra (OIDC) tokens exchanged from an AWS STS web-identity token. Configuration lives under `TracesServiceBus`.
+
+Required configuration keys (example):
+
+```yaml
+TracesServiceBus:
+  ConnectionString: "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=..." # dev only
+  Ched:
+    TopicName: ched-topic
+  Intra:
+    TopicName: intra-topic
+  EntraOptions:
+    Namespace: "my-namespace.servicebus.windows.net"
+    TenantId: "<entra-tenant-id>"
+    ClientId: "<entra-app-id>"
+    Scope: "https://servicebus.azure.net/.default"
+```
+
+Notes:
+- Feature flag `UseSharedAccessKeyForServiceBus` enables shared-key usage and must only be enabled in Development environments. Otherwise the app uses Entra tokens.
+- The Entra token flow obtains a short-lived OIDC JWT from AWS STS (requires permission sts:GetWebIdentityToken) and exchanges it with Microsoft Entra for an access token.
+- The Entra App must be configured with a federated identity credential for the AWS identity.
+
 ### SonarCloud
 
 Example SonarCloud configuration are available in the GitHub Action workflows.

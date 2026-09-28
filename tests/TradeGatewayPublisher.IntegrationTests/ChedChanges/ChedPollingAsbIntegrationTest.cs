@@ -37,7 +37,7 @@ public class ChedPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITest
 
         // Read Service Bus configuration and verify message on the queue subscribed to the topic (emulator)
         var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
-        var connectionString = tracesOptions.Ched.ConnectionString;
+        var connectionString = tracesOptions.ConnectionString;
         var topicName = tracesOptions.Ched.TopicName;
 
         var subscription = "trade-gateway-publisher-ched-test-sub";
