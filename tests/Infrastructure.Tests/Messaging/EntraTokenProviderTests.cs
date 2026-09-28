@@ -32,6 +32,8 @@ public class EntraTokenProviderTests
                 TenantId = "tenant",
                 ClientId = "client",
                 Scope = "scope",
+                Audience = "aud",
+                SigningAlgorithm = "RS256",
             }
         );
         var logger = new NullLogger<EntraTokenProvider>();

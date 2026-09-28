@@ -37,6 +37,8 @@ public class EntraAuthenticationTests
                 TenantId = "t",
                 ClientId = "c",
                 Scope = "s",
+                Audience = "aud",
+                SigningAlgorithm = "RS256",
             }
         );
         var logger = new NullLogger<EntraTokenProvider>();
@@ -82,6 +84,8 @@ public class EntraAuthenticationTests
                 TenantId = "t",
                 ClientId = "c",
                 Scope = "s",
+                Audience = "aud",
+                SigningAlgorithm = "RS256",
             }
         );
         var logger = new NullLogger<EntraTokenProvider>();

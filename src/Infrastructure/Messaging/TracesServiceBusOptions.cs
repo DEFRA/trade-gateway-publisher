@@ -34,4 +34,8 @@ public class EntraOptions
     public required string ClientId { get; init; }
 
     public required string Scope { get; init; }
+
+    public required string Audience { get; init; }
+
+    public required string SigningAlgorithm { get; init; }
 }
