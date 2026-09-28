@@ -38,7 +38,7 @@ public class EntraOptionsTests
                 Scope = "s",
                 Audience = "aud",
                 SigningAlgorithm = "RS256",
-            }
+            },
         };
 
         Assert.NotNull(traces.EntraOptions);
