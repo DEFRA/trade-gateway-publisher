@@ -17,7 +17,7 @@ public class EntraTokenCredential(IEntraTokenProvider provider, ILogger<EntraTok
 
     public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
     {
-        return GetTokenAsync(requestContext, cancellationToken).GetAwaiter().GetResult();
+        throw new NotSupportedException("Use GetTokenAsync");
     }
 
     public override async ValueTask<AccessToken> GetTokenAsync(
