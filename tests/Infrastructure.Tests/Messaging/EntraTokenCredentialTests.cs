@@ -7,6 +7,8 @@ namespace Infrastructure.Tests.Messaging;
 
 public class EntraTokenCredentialTests
 {
+    private static readonly string[] s_contextScopes = ["scopes"];
+
     [Fact]
     public async Task GetTokenAsync_caches_token_and_refreshes_after_expiry()
     {
@@ -20,7 +22,7 @@ public class EntraTokenCredentialTests
 
         var credential = new EntraTokenCredential(provider, logger);
 
-        var ctx = new TokenRequestContext(new[] { "scope" });
+        var ctx = new TokenRequestContext(s_contextScopes);
 
         var t1 = await credential.GetTokenAsync(ctx, CancellationToken.None);
         var t2 = await credential.GetTokenAsync(ctx, CancellationToken.None);

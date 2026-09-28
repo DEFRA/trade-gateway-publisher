@@ -10,13 +10,15 @@ namespace Infrastructure.Tests.Messaging;
 
 public class EntraAuthenticationTests
 {
+    private static readonly string[] s_contextScopes = ["scopes"];
+
     [Fact]
     public void ClientAssertionCredentialFactory_creates_credential()
     {
         var factory = new ClientAssertionCredentialFactory();
         var cred = factory.Create("t", "c", _ => Task.FromResult("jwt"));
         Assert.NotNull(cred);
-        Assert.IsAssignableFrom<TokenCredential>(cred);
+        Assert.IsType<TokenCredential>(cred, false);
         // Type name sanity check (avoid strong dependency on Azure.Identity public type)
         Assert.Equal("ClientAssertionCredential", cred.GetType().Name);
     }
@@ -120,7 +122,7 @@ public class EntraAuthenticationTests
         var logger = new NullLogger<EntraTokenCredential>();
         var credential = new EntraTokenCredential(provider, logger);
 
-        var ctx = new TokenRequestContext(new[] { "scope" });
+        var ctx = new TokenRequestContext(s_contextScopes);
 
         // Call async GetToken twice and ensure provider called once (caching)
         var t1 = await credential.GetTokenAsync(ctx, CancellationToken.None);
@@ -142,7 +144,7 @@ public class EntraAuthenticationTests
         var logger = new NullLogger<EntraTokenCredential>();
         var credential = new EntraTokenCredential(provider, logger);
 
-        var ctx = new TokenRequestContext(new[] { "scope" });
+        var ctx = new TokenRequestContext(s_contextScopes);
 
         // First synchronous call (wraps GetTokenAsync) should fetch from provider
         Assert.Throws<NotSupportedException>(() => credential.GetToken(ctx, CancellationToken.None));
