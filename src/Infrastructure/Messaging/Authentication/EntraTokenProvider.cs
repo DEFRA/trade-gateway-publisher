@@ -3,6 +3,7 @@ using Amazon.SecurityToken.Model;
 using Azure.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SharpCompress.Common;
 
 namespace Infrastructure.Messaging.Authentication;
 
@@ -36,7 +37,11 @@ public class EntraTokenProvider(
 
     private async Task<string> GetWebIdentityTokenAsync(CancellationToken cancellationToken = default)
     {
-        var req = new GetWebIdentityTokenRequest();
+        var req = new GetWebIdentityTokenRequest()
+        {
+            Audience = [options.Value.Audience],
+            SigningAlgorithm = options.Value.SigningAlgorithm,
+        };
         var res = await sts.GetWebIdentityTokenAsync(req, cancellationToken).ConfigureAwait(false);
 
         return res?.WebIdentityToken
