@@ -33,8 +33,8 @@ public class EntraAuthenticationTests
         // Return a well-formed JWT so the diagnostic parsing in EntraTokenProvider can read claims
         var handlerStub = new JwtSecurityTokenHandler();
         var jwtStub = new JwtSecurityToken(
-            issuer: "https://a1927cb9-3f34-4982-a9bd-b638154692a1.tokens.sts.global.api.aws",
-            audience: "api://AzureADTokenExchange",
+            issuer: "https://issuer.tokens.sts.global.api.aws",
+            audience: "api://audience",
             claims: [new Claim("sub", "arn:aws:iam::123456:role/rolename")],
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddMinutes(5)
