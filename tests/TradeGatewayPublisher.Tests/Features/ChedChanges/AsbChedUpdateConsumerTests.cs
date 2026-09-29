@@ -58,7 +58,7 @@ public class AsbChedUpdateConsumerTests
             .Log(
                 Arg.Any<LogLevel>(),
                 Arg.Any<EventId>(),
-                Arg.Is<object>(o => o!.ToString()!.Contains(TestEventId)),
+                Arg.Is<object>(o => o.ToString()!.Contains(TestEventId)),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>()
             );

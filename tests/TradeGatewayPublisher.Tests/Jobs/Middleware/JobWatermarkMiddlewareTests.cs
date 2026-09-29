@@ -96,7 +96,7 @@ public class JobWatermarkMiddlewareTests
 
         // Assert
         captured.Should().NotBeNull();
-        captured!.Now.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        captured.Now.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]

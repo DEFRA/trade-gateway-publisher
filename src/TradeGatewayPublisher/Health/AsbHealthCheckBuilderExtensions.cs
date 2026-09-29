@@ -89,16 +89,17 @@ public static class AsbHealthCheckBuilderExtensions
 
         public override ServiceBusAdministrationClient CreateManagementClient(string? connectionString)
         {
+            // When proxy is enabled, ensure the management client uses an HttpClient configured with the proxy
             var clientOptions = _isProxyEnabled
-                ? new ServiceBusAdministrationClientOptions()
-                : new ServiceBusAdministrationClientOptions
+                ? new ServiceBusAdministrationClientOptions
                 {
                     Transport = new HttpClientTransport(
                         serviceProvider
                             .GetRequiredService<IHttpClientFactory>()
                             .CreateClient(HttpClientRegistrationExtensions.ProxyClientName)
                     ),
-                };
+                }
+                : new ServiceBusAdministrationClientOptions();
 
             clientOptions.Retry.MaxRetries = 0;
 

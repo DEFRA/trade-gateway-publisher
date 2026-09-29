@@ -1,3 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using Azure.Core;
 using Infrastructure.Messaging;
@@ -15,7 +18,8 @@ public class EntraAuthenticationTests
     [Fact]
     public void ClientAssertionCredentialFactory_creates_credential()
     {
-        var factory = new ClientAssertionCredentialFactory();
+        var httpClientFactory = Substitute.For<IHttpClientFactory>();
+        var factory = new ClientAssertionCredentialFactory(httpClientFactory, Options.Create(new CdpOptions()));
         var cred = factory.Create("t", "c", _ => Task.FromResult("jwt"));
         Assert.NotNull(cred);
         Assert.IsType<TokenCredential>(cred, false);
@@ -26,9 +30,20 @@ public class EntraAuthenticationTests
     [Fact]
     public async Task EntraTokenProvider_uses_assertion_callback_to_get_web_identity_token()
     {
-        var sts = Substitute.For<Amazon.SecurityToken.IAmazonSecurityTokenService>();
+        var sts = Substitute.For<IAmazonSecurityTokenService>();
+        // Return a well-formed JWT so the diagnostic parsing in EntraTokenProvider can read claims
+        var handlerStub = new JwtSecurityTokenHandler();
+        var jwtStub = new JwtSecurityToken(
+            issuer: "https://issuer.tokens.sts.global.api.aws",
+            audience: "api://audience",
+            claims: [new Claim("sub", "arn:aws:iam::123456:role/rolename")],
+            notBefore: DateTime.UtcNow,
+            expires: DateTime.UtcNow.AddMinutes(5)
+        );
+        var tokenString = handlerStub.WriteToken(jwtStub);
+
         sts.GetWebIdentityTokenAsync(Arg.Any<GetWebIdentityTokenRequest>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new GetWebIdentityTokenResponse { WebIdentityToken = "aws-jwt" }));
+            .Returns(Task.FromResult(new GetWebIdentityTokenResponse { WebIdentityToken = tokenString }));
 
         var options = Options.Create(
             new EntraOptions
@@ -63,7 +78,7 @@ public class EntraAuthenticationTests
         var provider = new EntraTokenProvider(options, logger, sts, factory);
         var (token, expiresOn) = await provider.ExchangeForAccessTokenAsync(CancellationToken.None);
 
-        Assert.Equal("returned-aws-jwt", token);
+        Assert.Equal("returned-" + tokenString, token);
         Assert.True(expiresOn > DateTimeOffset.UtcNow);
         await sts.Received(1)
             .GetWebIdentityTokenAsync(Arg.Any<GetWebIdentityTokenRequest>(), Arg.Any<CancellationToken>());
@@ -72,7 +87,7 @@ public class EntraAuthenticationTests
     [Fact]
     public async Task EntraTokenProvider_throws_when_sts_returns_no_token()
     {
-        var sts = Substitute.For<Amazon.SecurityToken.IAmazonSecurityTokenService>();
+        var sts = Substitute.For<IAmazonSecurityTokenService>();
         // STS returns no token
         sts.GetWebIdentityTokenAsync(Arg.Any<GetWebIdentityTokenRequest>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new GetWebIdentityTokenResponse { WebIdentityToken = null! }));
@@ -150,7 +165,7 @@ public class EntraAuthenticationTests
 
         var ctx = new TokenRequestContext(s_contextScopes);
 
-        // First synchronous call (wraps GetTokenAsync) should fetch from provider
+        // First synchronous call (wraps GetTokenAsync) should throw not supported
         Assert.Throws<NotSupportedException>(() => credential.GetToken(ctx, CancellationToken.None));
     }
 
@@ -163,6 +178,6 @@ public class EntraAuthenticationTests
         public override ValueTask<AccessToken> GetTokenAsync(
             TokenRequestContext requestContext,
             CancellationToken cancellationToken
-        ) => new ValueTask<AccessToken>(cb(requestContext, cancellationToken));
+        ) => new(cb(requestContext, cancellationToken));
     }
 }
