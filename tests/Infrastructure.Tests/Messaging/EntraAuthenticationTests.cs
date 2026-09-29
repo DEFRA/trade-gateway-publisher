@@ -18,7 +18,8 @@ public class EntraAuthenticationTests
     [Fact]
     public void ClientAssertionCredentialFactory_creates_credential()
     {
-        var factory = new ClientAssertionCredentialFactory();
+        var httpClientFactory = Substitute.For<IHttpClientFactory>();
+        var factory = new ClientAssertionCredentialFactory(httpClientFactory, Options.Create(new CdpOptions()));
         var cred = factory.Create("t", "c", _ => Task.FromResult("jwt"));
         Assert.NotNull(cred);
         Assert.IsType<TokenCredential>(cred, false);
@@ -86,7 +87,7 @@ public class EntraAuthenticationTests
     [Fact]
     public async Task EntraTokenProvider_throws_when_sts_returns_no_token()
     {
-        var sts = Substitute.For<Amazon.SecurityToken.IAmazonSecurityTokenService>();
+        var sts = Substitute.For<IAmazonSecurityTokenService>();
         // STS returns no token
         sts.GetWebIdentityTokenAsync(Arg.Any<GetWebIdentityTokenRequest>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new GetWebIdentityTokenResponse { WebIdentityToken = null! }));
