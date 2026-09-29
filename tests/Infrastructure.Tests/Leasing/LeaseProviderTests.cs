@@ -31,7 +31,7 @@ public class LeaseProviderTests
         var persisted = collection._items.Find(x => x.Id == "test-lease");
 
         Assert.NotNull(persisted);
-        Assert.Equal("test-lease", persisted!.Id);
+        Assert.Equal("test-lease", persisted.Id);
         Assert.NotNull(persisted.Owner);
         Assert.NotEqual(string.Empty, persisted.Owner);
 
@@ -68,7 +68,7 @@ public class LeaseProviderTests
         var persisted = collection._items.Find(x => x.Id == "existing-lease");
 
         Assert.NotNull(persisted);
-        Assert.Equal("existing-owner", persisted!.Owner);
+        Assert.Equal("existing-owner", persisted.Owner);
     }
 
     /// <summary>
@@ -104,8 +104,8 @@ public class LeaseProviderTests
         Assert.NotNull(leaseA);
         Assert.NotNull(leaseB);
 
-        Assert.Equal("owner-a", leaseA!.Owner);
-        Assert.Equal("lease-b", leaseB!.Id);
+        Assert.Equal("owner-a", leaseA.Owner);
+        Assert.Equal("lease-b", leaseB.Id);
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ public class LeaseProviderTests
         var maxExpected = after.Add(duration);
 
         Assert.True(
-            persisted!.ExpiresAt >= minExpected && persisted.ExpiresAt <= maxExpected,
+            persisted.ExpiresAt >= minExpected && persisted.ExpiresAt <= maxExpected,
             $"Expected expiration between {minExpected:o} and {maxExpected:o} but found {persisted.ExpiresAt:o}"
         );
     }
@@ -162,7 +162,7 @@ public class LeaseProviderTests
 
         Assert.NotNull(handle);
 
-        await handle!.DisposeAsync();
+        await handle.DisposeAsync();
 
         // Assert
         var persisted = collection._items.Find(x => x.Id == "disposable-lease");

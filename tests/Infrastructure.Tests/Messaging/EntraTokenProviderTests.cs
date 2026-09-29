@@ -1,10 +1,12 @@
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
+using Azure.Core;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Authentication;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using static NSubstitute.Arg;
 
 namespace Infrastructure.Tests.Messaging;
 
@@ -13,15 +15,13 @@ public class EntraTokenProviderTests
     [Fact]
     public async Task ExchangeForAccessTokenAsync_posts_client_assertion_and_returns_token()
     {
+        var tokenExpirationDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
         var sts = Substitute.For<IAmazonSecurityTokenService>();
-        sts.GetWebIdentityTokenAsync(Arg.Any<GetWebIdentityTokenRequest>(), Arg.Any<CancellationToken>())
+        sts.GetWebIdentityTokenAsync(Any<GetWebIdentityTokenRequest>(), Any<CancellationToken>())
             .Returns(
                 Task.FromResult(
-                    new GetWebIdentityTokenResponse
-                    {
-                        WebIdentityToken = "aws-jwt",
-                        Expiration = DateTime.UtcNow.AddHours(1),
-                    }
+                    new GetWebIdentityTokenResponse { WebIdentityToken = "aws-jwt", Expiration = tokenExpirationDate }
                 )
             );
 
@@ -36,39 +36,54 @@ public class EntraTokenProviderTests
                 SigningAlgorithm = "RS256",
             }
         );
-        var logger = new NullLogger<EntraTokenProvider>();
+        var logger = Substitute.For<ILogger<EntraTokenProvider>>();
 
         // Fake TokenCredential that returns a known access token
-        var fakeCredential = new FakeTokenCredential("entra-token", DateTimeOffset.UtcNow.AddHours(1));
+        var fakeCredential = new FakeTokenCredential("entra-token", tokenExpirationDate);
 
         var fakeFactory = new FakeClientAssertionCredentialFactory(fakeCredential);
+
+        // capture the log state as logger uses internal FormattedLogValues - https://github.com/nsubstitute/NSubstitute/issues/597
+        object? capturedState = null;
+        logger
+            .When(x =>
+                x.Log(
+                    Any<LogLevel>(),
+                    Any<EventId>(),
+                    Any<object>(),
+                    Any<Exception>(),
+                    Any<Func<object, Exception?, string>>()
+                )
+            )
+            .Do(ci => capturedState = ci.ArgAt<object>(2));
+
         var provider = new EntraTokenProvider(options, logger, sts, fakeFactory);
 
         var (token, expiresOn) = await provider.ExchangeForAccessTokenAsync(CancellationToken.None);
 
         Assert.Equal("entra-token", token);
-        Assert.True(expiresOn > DateTimeOffset.UtcNow);
+        Assert.Equal(tokenExpirationDate, expiresOn);
+
+        Assert.NotNull(capturedState);
+        Assert.Contains("Obtained a new access token", capturedState.ToString());
     }
 
-    private class FakeTokenCredential(string value, DateTimeOffset expires) : Azure.Core.TokenCredential
+    private class FakeTokenCredential(string value, DateTimeOffset expires) : TokenCredential
     {
-        private readonly Azure.Core.AccessToken _token = new(value, expires);
+        private readonly AccessToken _token = new(value, expires);
 
-        public override Azure.Core.AccessToken GetToken(
-            Azure.Core.TokenRequestContext requestContext,
-            CancellationToken cancellationToken
-        ) => _token;
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken) =>
+            _token;
 
-        public override ValueTask<Azure.Core.AccessToken> GetTokenAsync(
-            Azure.Core.TokenRequestContext requestContext,
+        public override ValueTask<AccessToken> GetTokenAsync(
+            TokenRequestContext requestContext,
             CancellationToken cancellationToken
         ) => new(_token);
     }
 
-    private class FakeClientAssertionCredentialFactory(Azure.Core.TokenCredential credential)
-        : IClientAssertionCredentialFactory
+    private class FakeClientAssertionCredentialFactory(TokenCredential credential) : IClientAssertionCredentialFactory
     {
-        public Azure.Core.TokenCredential Create(
+        public TokenCredential Create(
             string tenantId,
             string clientId,
             Func<CancellationToken, Task<string>> clientAssertionCallback
