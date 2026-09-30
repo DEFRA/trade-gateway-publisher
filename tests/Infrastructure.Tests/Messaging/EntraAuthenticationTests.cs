@@ -31,7 +31,7 @@ public class EntraAuthenticationTests
     public async Task EntraTokenProvider_uses_assertion_callback_to_get_web_identity_token()
     {
         var sts = Substitute.For<IAmazonSecurityTokenService>();
-        // Return a well-formed JWT so the diagnostic parsing in EntraTokenProvider can read claims
+        // Return a well-formed JWT to represent AWS
         var handlerStub = new JwtSecurityTokenHandler();
         var jwtStub = new JwtSecurityToken(
             issuer: "https://issuer.tokens.sts.global.api.aws",
