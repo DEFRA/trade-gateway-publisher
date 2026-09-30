@@ -31,7 +31,6 @@
     <PackageReference Include="Cronos" Version="0.13.0" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.3" />
     <PackageReference Include="AWSSDK.Core" Version="4.0.7.5" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
   </ItemGroup>
 
   <ItemGroup>

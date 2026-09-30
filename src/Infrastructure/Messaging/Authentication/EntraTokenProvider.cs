@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using Azure.Core;
@@ -54,12 +53,6 @@ public class EntraTokenProvider(
             requestId ?? "<null>",
             res.HttpStatusCode
         );
-
-        // Parse JWT claims for diagnostics (do not log the raw token)
-        var handler = new JwtSecurityTokenHandler();
-        var jwt = handler.ReadJwtToken(token);
-
-        logger.LogInformation("AWS web identity token claims: iss={Issuer}, sub={Subject}", jwt.Issuer, jwt.Subject);
 
         return token;
     }
