@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using Infrastructure;
 using Infrastructure.Messaging;
 using Microsoft.Extensions.Options;
 
@@ -8,7 +9,7 @@ namespace TradeGatewayPublisher.Utils.Http;
 [ExcludeFromCodeCoverage]
 public static class HttpClientRegistrationExtensions
 {
-    public const string ProxyClientName = "proxy";
+    public const string ProxyClientName = HttpClientNames.Proxy;
 
     public static IServiceCollection AddHttpProxyClients(this IServiceCollection services)
     {
@@ -46,16 +47,9 @@ public static class HttpClientRegistrationExtensions
 
         services.AddTransient<ProxyHttpMessageHandler>();
 
-        // Some .net connections use this http client - notably health-check
         services
             .AddHttpClient(ProxyClientName)
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var options = sp.GetRequiredService<IOptions<CdpOptions>>();
-                var proxy = sp.GetRequiredService<IWebProxy>();
-
-                return new HttpClientHandler { Proxy = proxy, UseProxy = options.Value.CdpHttpsProxy != null };
-            });
+            .ConfigurePrimaryHttpMessageHandler(sp => sp.GetRequiredService<ProxyHttpMessageHandler>());
 
         return services;
     }

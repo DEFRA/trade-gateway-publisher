@@ -37,4 +37,8 @@
     <InternalsVisibleTo Include="TradeGatewayPublisher.IntegrationTests" />
     <InternalsVisibleTo Include="TradeGatewayPublisher.Tests" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
+  </ItemGroup>
 </Project>

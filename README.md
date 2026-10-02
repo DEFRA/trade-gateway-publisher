@@ -80,6 +80,51 @@ Run CDP-Deployments application:
 dotnet run --project TradeGatewayPublisher --launch-profile Development
 ```
 
+### Azure Entra (Workload Identity) authentication for Service Bus
+
+This project supports two Service Bus authentication modes: a shared access connection string (development only) and Microsoft Entra (OIDC) tokens exchanged from an AWS STS web-identity token. Configuration lives under the `TracesServiceBus` section.
+
+TracesServiceBus options (shape and requirements):
+
+- TracesServiceBus:ConnectionString (string, optional)
+  - A Service Bus connection string for development/emulator scenarios. Only used when the feature flag `UseSharedAccessKeyForServiceBus` is enabled.
+- TracesServiceBus:Ched (object, required)
+  - TopicName (string, required) — topic used for CHED publications.
+- TracesServiceBus:Intra (object, required)
+  - TopicName (string, required) — topic used for INTRA publications.
+- TracesServiceBus:EntraOptions (object, required when not using shared-key)
+  - Namespace (string, required) — fully qualified Service Bus namespace (e.g. `my-namespace.servicebus.windows.net`).
+  - TenantId (string, required) — Entra tenant id.
+  - ClientId (string, required) — Entra application (client) id.
+  - Scope (string, required) — scope requested for Service Bus (typically `https://servicebus.azure.net/.default`).
+  - Audience (string, required) — expected audience value for the incoming OIDC token (used when exchanging the AWS web identity token).
+  - SigningAlgorithm (string, required) — signing algorithm expected on the web-identity token (e.g. `RS256`).
+
+Example YAML configuration:
+
+```yaml
+TracesServiceBus:
+  # Optional - development only
+  ConnectionString: "Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=..."
+
+  Ched:
+    TopicName: ched-topic
+  Intra:
+    TopicName: intra-topic
+
+  EntraOptions:
+    Namespace: "my-namespace.servicebus.windows.net"
+    TenantId: "<entra-tenant-id>"
+    ClientId: "<entra-app-id>"
+    Scope: "https://servicebus.azure.net/.default"
+    Audience: "arn:aws:sts::123456789012:abcdefg/hijklmnop"
+    SigningAlgorithm: "RS256"
+```
+
+Operational notes:
+- The feature flag `UseSharedAccessKeyForServiceBus` (set in configuration) switches the client to use `ConnectionString` and is intended only for Development/emulator scenarios. When disabled (the default for non-development), the app requires a valid `EntraOptions` object and uses TokenCredential-based authentication.
+- When using Entra (OIDC) authentication the service performs an exchange: it obtains a short-lived OIDC token from AWS STS (requires `sts:GetWebIdentityToken`) and exchanges that token for an access token from Microsoft Entra. The Entra application must have a federated identity credential configured that matches the subject/audience from the AWS token.
+
 ### SonarCloud
 
 Example SonarCloud configuration are available in the GitHub Action workflows.

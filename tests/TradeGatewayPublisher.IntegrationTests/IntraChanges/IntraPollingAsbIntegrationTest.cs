@@ -37,7 +37,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
 
         // Read Service Bus configuration and verify message on the queue subscribed to the topic (emulator)
         var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
-        var connectionString = tracesOptions.Intra.ConnectionString;
+        var connectionString = tracesOptions.ConnectionString;
         var topicName = tracesOptions.Intra.TopicName;
 
         var subscription = "trade-gateway-publisher-intra-test-sub";

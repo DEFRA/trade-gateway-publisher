@@ -32,4 +32,8 @@
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.3" />
     <PackageReference Include="AWSSDK.Core" Version="4.0.7.5" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
+  </ItemGroup>
 </Project>

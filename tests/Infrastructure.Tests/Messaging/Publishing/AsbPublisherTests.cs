@@ -59,7 +59,7 @@ public class AsbPublisherTests
         await _sut.PublishAsync("topic1", "msg-1", headers, "hello-body");
 
         Assert.NotNull(sent);
-        Assert.Equal("msg-1", sent!.MessageId);
+        Assert.Equal("msg-1", sent.MessageId);
         Assert.True(sent.ApplicationProperties.ContainsKey("h1"));
         Assert.Equal("v1", sent.ApplicationProperties["h1"]);
         Assert.Contains("hello-body", sent.Body.ToString());
@@ -109,7 +109,7 @@ public class AsbPublisherTests
         await sut.PublishAsync("topic-x", "id-42", headers, "payload");
 
         Assert.NotNull(sent);
-        Assert.Equal("id-42", sent!.MessageId);
+        Assert.Equal("id-42", sent.MessageId);
         Assert.True(sent.ApplicationProperties.ContainsKey("from-mw1"));
         Assert.True(sent.ApplicationProperties.ContainsKey("from-mw2"));
         Assert.Equal("1", sent.ApplicationProperties["from-mw1"]);
