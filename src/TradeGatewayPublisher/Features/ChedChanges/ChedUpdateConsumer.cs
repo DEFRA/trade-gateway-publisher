@@ -36,13 +36,13 @@ namespace TradeGatewayPublisher.Features.ChedChanges
             // Placeholder deduplication id — see "Message Deduplication" in README.md
             await PublishAsync(certificate!, message.GetDuplicationId(), context, cancellationToken);
 
-            await ProcessLinkedCheds(context, cancellationToken, certificate);
+            await ProcessLinkedCheds(context, certificate, cancellationToken);
         }
 
         private async Task ProcessLinkedCheds(
             MessageContext context,
-            CancellationToken cancellationToken,
-            DefraUNVTDCHEDProfile? certificate
+            DefraUNVTDCHEDProfile? certificate,
+            CancellationToken cancellationToken
         )
         {
             foreach (var linkedId in GetLinkedChedIds(certificate!))
