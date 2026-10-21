@@ -86,7 +86,13 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Published {Source} with duplicationId {DuplicationId} to topicArn {Topic}"
+        Message = "Job {JobName} failed validation with validation error '{ValidationError}'"
     )]
     private partial void LogJobFailedValidation(string jobName, string validationError);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "{JobName} completed. {ChangeCount} changes found"
+    )]
+    private partial void LogJobComplete(string jobName, int changeCount);
 }
