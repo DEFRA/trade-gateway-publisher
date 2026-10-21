@@ -14,8 +14,9 @@ namespace TradeGatewayPublisher.Tests.Features.ClassificationTreeNodeChanges;
 public class AsbClassificationTreeNodeUpdateConsumerTests
 {
     private readonly IAsbPublisher _asbPublisher = Substitute.For<IAsbPublisher>();
-    private readonly ILogger<AsbClassificationTreeNodeUpdateConsumer> _logger =
-        Substitute.For<ILogger<AsbClassificationTreeNodeUpdateConsumer>>();
+    private readonly ILogger<AsbClassificationTreeNodeUpdateConsumer> _logger = Substitute.For<
+        ILogger<AsbClassificationTreeNodeUpdateConsumer>
+    >();
 
     private const string TestEventId = "00000000-0000-0000-0000-111111111111";
     private readonly AsbClassificationTreeNodeUpdateConsumer _sut;

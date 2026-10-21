@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-
 using Trade.Gateway.Api.Contract.Certificate;
 using Trade.Gateway.Api.Contract.ReferenceData;
 
@@ -137,7 +136,7 @@ internal static class WireMockStubber
                         HasMore = false,
                         Offset = 0,
                         PageSize = 5,
-                    }
+                    },
                 },
             },
             cancellationToken
@@ -177,11 +176,11 @@ internal static class WireMockStubber
             RetrievedAt = retrievedAt,
             Node = new DefraUNVTDProfileClassificationTreeNodeDetailResponseNode
             {
-                Selectable = true, 
-                CnCode = "12345", 
+                Selectable = true,
+                CnCode = "12345",
                 Label = "Mules",
                 NodeType = "nomenclature",
-            }
+            },
         };
 
         await StubChedUpdatesReturnsEmptyCollection(http, cancellationToken);
@@ -194,24 +193,30 @@ internal static class WireMockStubber
             new
             {
                 priority = 1,
-                request = new { method = "GET", urlPathTemplate = "/reference-data/classifications/trees/{treeId}/nodes" },
+                request = new
+                {
+                    method = "GET",
+                    urlPathTemplate = "/reference-data/classifications/trees/{treeId}/nodes",
+                },
                 response = new
                 {
                     status = 200,
-                    jsonBody = new DefraUNVTDProfileClassificationTreeResponse {
-                                Nodes = [
-                                    new ClassificationTreeNode
-                                    {
-                                        NodeId = nodeDetailResponse.NodeId,
-                                        Path = nodeDetailResponse.NodePath,
-                                        Label = nodeDetailResponse.Node.Label,
-                                        Selectable = nodeDetailResponse.Node.Selectable,
-                                        NodeType = nodeDetailResponse.Node.NodeType,
-                                        CnCode = nodeDetailResponse.Node.CnCode,
-                                    }
-                                ],
-                                RetrievedAt = retrievedAt
-                            }
+                    jsonBody = new DefraUNVTDProfileClassificationTreeResponse
+                    {
+                        Nodes =
+                        [
+                            new ClassificationTreeNode
+                            {
+                                NodeId = nodeDetailResponse.NodeId,
+                                Path = nodeDetailResponse.NodePath,
+                                Label = nodeDetailResponse.Node.Label,
+                                Selectable = nodeDetailResponse.Node.Selectable,
+                                NodeType = nodeDetailResponse.Node.NodeType,
+                                CnCode = nodeDetailResponse.Node.CnCode,
+                            },
+                        ],
+                        RetrievedAt = retrievedAt,
+                    },
                 },
             },
             cancellationToken
@@ -223,18 +228,21 @@ internal static class WireMockStubber
             new
             {
                 priority = 1,
-                request = new { method = "GET", urlPathTemplate = "/reference-data/classifications/trees/{treeId}/nodes/{nodeId}" },
-                response = new
+                request = new
                 {
-                    status = 200,
-                    jsonBody = nodeDetailResponse
+                    method = "GET",
+                    urlPathTemplate = "/reference-data/classifications/trees/{treeId}/nodes/{nodeId}",
                 },
+                response = new { status = 200, jsonBody = nodeDetailResponse },
             },
             cancellationToken
         );
     }
 
-    private static async Task StubIntraUpdatesReturnsEmptyCollection(HttpClient http, CancellationToken cancellationToken)
+    private static async Task StubIntraUpdatesReturnsEmptyCollection(
+        HttpClient http,
+        CancellationToken cancellationToken
+    )
     {
         await PostMappingAsync(
             http,
@@ -247,19 +255,22 @@ internal static class WireMockStubber
                 {
                     status = 200,
                     jsonBody = new DefraUNVTDINTRASummaryProfile
-                        {
-                            HasMore = false,
-                            Offset = 0,
-                            PageSize = 25,
-                            Items = []
-                        }
+                    {
+                        HasMore = false,
+                        Offset = 0,
+                        PageSize = 25,
+                        Items = [],
+                    },
                 },
             },
             cancellationToken
         );
     }
 
-    private static async Task StubChedUpdatesReturnsEmptyCollection(HttpClient http, CancellationToken cancellationToken)
+    private static async Task StubChedUpdatesReturnsEmptyCollection(
+        HttpClient http,
+        CancellationToken cancellationToken
+    )
     {
         await PostMappingAsync(
             http,
@@ -271,21 +282,23 @@ internal static class WireMockStubber
                 response = new
                 {
                     status = 200,
-                    jsonBody =
-                            new DefraUNVTDCHEDSummaryProfile
-                            {
-                                HasMore = false,
-                                Offset = 0,
-                                PageSize = 25,
-                                Items = []
-                            }
+                    jsonBody = new DefraUNVTDCHEDSummaryProfile
+                    {
+                        HasMore = false,
+                        Offset = 0,
+                        PageSize = 25,
+                        Items = [],
+                    },
                 },
             },
             cancellationToken
         );
     }
 
-    private static async Task StubClassificationTreeNodeUpdatesReturnsEmptyCollection(HttpClient http, CancellationToken cancellationToken)
+    private static async Task StubClassificationTreeNodeUpdatesReturnsEmptyCollection(
+        HttpClient http,
+        CancellationToken cancellationToken
+    )
     {
         await PostMappingAsync(
             http,
@@ -293,14 +306,18 @@ internal static class WireMockStubber
             new
             {
                 priority = 1,
-                request = new { method = "GET", urlPathTemplate = "/reference-data/classifications/trees/{treeId}/nodes" },
+                request = new
+                {
+                    method = "GET",
+                    urlPathTemplate = "/reference-data/classifications/trees/{treeId}/nodes",
+                },
                 response = new
                 {
                     status = 200,
                     jsonBody = new DefraUNVTDProfileClassificationTreeResponse
                     {
                         Nodes = [],
-                        RetrievedAt = new DateTimeOffset(2026, 10,1,0,0,0, TimeSpan.Zero)
+                        RetrievedAt = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero),
                     },
                 },
             },
@@ -313,9 +330,14 @@ internal static class WireMockStubber
         using var http = new HttpClient();
         http.BaseAddress = new Uri(wireMockBaseUrl);
 
-        var mappingsResponse = await http.GetFromJsonAsync<WireMockMappingsResponse>("/__admin/mappings", cancellationToken);
+        var mappingsResponse = await http.GetFromJsonAsync<WireMockMappingsResponse>(
+            "/__admin/mappings",
+            cancellationToken
+        );
 
-        foreach (var id in mappingsResponse?.Mappings?.Select(m => m.Id).Where(id => !string.IsNullOrWhiteSpace(id)) ?? [])
+        foreach (
+            var id in mappingsResponse?.Mappings?.Select(m => m.Id).Where(id => !string.IsNullOrWhiteSpace(id)) ?? []
+        )
         {
             await http.DeleteAsync($"/__admin/mappings/{id}", cancellationToken);
         }

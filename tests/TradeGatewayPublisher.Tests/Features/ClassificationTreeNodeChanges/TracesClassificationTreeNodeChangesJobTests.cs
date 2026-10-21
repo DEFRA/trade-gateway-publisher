@@ -1,6 +1,6 @@
 using System.Net;
-using Infrastructure.Scheduler;
 using Infrastructure.Messaging.Publishing;
+using Infrastructure.Scheduler;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -137,7 +137,8 @@ public class TracesClassificationTreeNodeChangesJobTests
 
         foreach (var treeId in options.Value.ClassificationTreeIds)
         {
-            await _referenceDataClient.Received(1)
+            await _referenceDataClient
+                .Received(1)
                 .FindCommodityTreeUpdates(
                     treeId,
                     Arg.Any<DateTimeOffset>(),

@@ -5,8 +5,10 @@ namespace TradeGatewayPublisher.IntegrationTests.ClassificationTreeNodeChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
-public class ClassificationTreeNodePollingSnsIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper)
-    : IAsyncLifetime
+public class ClassificationTreeNodePollingSnsIntegrationTest(
+    IntegrationTestFixture fixture,
+    ITestOutputHelper testOutputHelper
+) : IAsyncLifetime
 {
     private readonly string NodeId = $"Node-{Random.Shared.Next(1, 100000)}";
 
@@ -36,7 +38,11 @@ public class ClassificationTreeNodePollingSnsIntegrationTest(IntegrationTestFixt
             cancellationToken
         );
 
-        received.Should().BeTrue("The ClassificationTreeNode polling job should have polled Traces and published to SNS within 120s");
+        received
+            .Should()
+            .BeTrue(
+                "The ClassificationTreeNode polling job should have polled Traces and published to SNS within 120s"
+            );
     }
 
     public async ValueTask InitializeAsync()
@@ -44,7 +50,12 @@ public class ClassificationTreeNodePollingSnsIntegrationTest(IntegrationTestFixt
         _logCapture = TestOutputHelperSink.Capture(testOutputHelper);
 
         await WireMockStubber.ResetAsync(fixture.Factory.WireMockBaseUrl);
-        await WireMockStubber.StubClassificationTreeNodesAsync(fixture.Factory.WireMockBaseUrl, NodeId,"cheda", CancellationToken.None);
+        await WireMockStubber.StubClassificationTreeNodesAsync(
+            fixture.Factory.WireMockBaseUrl,
+            NodeId,
+            "cheda",
+            CancellationToken.None
+        );
 
         await fixture.DeleteDatabaseAsync();
         await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestChedQueueUrl);

@@ -16,7 +16,8 @@ namespace TradeGatewayPublisher.IntegrationTests
         public const string TestIntraSqsQueueName = "trade_gateway_publisher_intra_updates_test.fifo";
         public const string TestChedSqsQueueName = "trade_gateway_publisher_ched_updates_test.fifo";
 
-        public const string TestCommodityTreeNodeSqsQueueName = "trade_gateway_publisher_classificationtreenode_updates_test.fifo";
+        public const string TestCommodityTreeNodeSqsQueueName =
+            "trade_gateway_publisher_classificationtreenode_updates_test.fifo";
 
         public IAmazonSQS AmazonSqs { get; private set; } = null!;
 
@@ -39,7 +40,9 @@ namespace TradeGatewayPublisher.IntegrationTests
             AmazonSqs = Factory.Services.GetRequiredService<IAmazonSQS>();
             TestIntraQueueUrl = (await AmazonSqs.GetQueueUrlAsync(TestIntraSqsQueueName)).QueueUrl;
             TestChedQueueUrl = (await AmazonSqs.GetQueueUrlAsync(TestChedSqsQueueName)).QueueUrl;
-            TestCommodityTreeNodeQueueUrl = (await AmazonSqs.GetQueueUrlAsync(TestCommodityTreeNodeSqsQueueName)).QueueUrl;
+            TestCommodityTreeNodeQueueUrl = (
+                await AmazonSqs.GetQueueUrlAsync(TestCommodityTreeNodeSqsQueueName)
+            ).QueueUrl;
             ServiceBusIsEnabled = configuration.GetValue<bool>("FeatureManagement:AzureServiceBusPublishing");
         }
 

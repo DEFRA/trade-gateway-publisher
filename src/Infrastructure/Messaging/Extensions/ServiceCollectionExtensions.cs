@@ -179,7 +179,12 @@ public static class ServiceCollectionExtensions
         bool useSharedServiceBusKey
     )
     {
-        ServiceBusTopic[] topics = [tracesServiceBusOptions.Ched, tracesServiceBusOptions.Intra, tracesServiceBusOptions.ClassificationTreeNode];
+        ServiceBusTopic[] topics =
+        [
+            tracesServiceBusOptions.Ched,
+            tracesServiceBusOptions.Intra,
+            tracesServiceBusOptions.ClassificationTreeNode,
+        ];
         foreach (var topicName in topics.Select(topic => topic.TopicName))
         {
             azureBuilder

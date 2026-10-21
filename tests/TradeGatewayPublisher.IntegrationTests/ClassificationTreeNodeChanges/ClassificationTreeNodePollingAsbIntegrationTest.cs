@@ -9,8 +9,10 @@ namespace TradeGatewayPublisher.IntegrationTests.ChedChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
-public class ClassificationTreeNodePollingAsbIntegrationTest(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper)
-    : IAsyncLifetime
+public class ClassificationTreeNodePollingAsbIntegrationTest(
+    IntegrationTestFixture fixture,
+    ITestOutputHelper testOutputHelper
+) : IAsyncLifetime
 {
     private IDisposable? _logCapture;
 
@@ -70,7 +72,12 @@ public class ClassificationTreeNodePollingAsbIntegrationTest(IntegrationTestFixt
         _logCapture = TestOutputHelperSink.Capture(testOutputHelper);
 
         await WireMockStubber.ResetAsync(fixture.Factory.WireMockBaseUrl);
-        await WireMockStubber.StubClassificationTreeNodesAsync(fixture.Factory.WireMockBaseUrl, NodeId,"cheda", CancellationToken.None);
+        await WireMockStubber.StubClassificationTreeNodesAsync(
+            fixture.Factory.WireMockBaseUrl,
+            NodeId,
+            "cheda",
+            CancellationToken.None
+        );
 
         await fixture.DeleteDatabaseAsync();
         await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestChedQueueUrl);

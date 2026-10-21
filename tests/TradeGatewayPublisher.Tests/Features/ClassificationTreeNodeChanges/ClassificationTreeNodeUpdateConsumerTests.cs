@@ -63,7 +63,8 @@ public class ClassificationTreeNodeUpdateConsumerTests
         await _sut.ConsumeAsync(context, CancellationToken.None);
 
         // Assert
-        await _gateway.Received(1)
+        await _gateway
+            .Received(1)
             .GetClassificationTreeNodeDetail(expectedTreeId, "Node-1", Arg.Any<CancellationToken>());
 
         await _sns.Received(1)

@@ -29,7 +29,8 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
                 cancellationToken
             );
 
-            await apiResponse.EnsureSuccessStatusCodeAsync();            var treeNodeDetailResponse = apiResponse.Content!;
+            await apiResponse.EnsureSuccessStatusCodeAsync();
+            var treeNodeDetailResponse = apiResponse.Content!;
 
             await PublishAsync(treeNodeDetailResponse, duplicationId, context, cancellationToken);
         }

@@ -89,8 +89,8 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
 
                         ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched",
                         ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra",
-                        ["TracesServiceBus:ClassificationTreeNode:TopicName"] = "trade-gateway-publisher-classificationtreenode",
-
+                        ["TracesServiceBus:ClassificationTreeNode:TopicName"] =
+                            "trade-gateway-publisher-classificationtreenode",
 
                         // The tests run against a local WireMock container emulating the Traces Gateway
                         ["TracesGateway:BaseUrl"] = WireMockBaseUrl,
