@@ -9,7 +9,7 @@ using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
 {
-    public class ClassificationTreeNodeUpdateConsumer(
+    public partial class ClassificationTreeNodeUpdateConsumer(
         ITracesGatewayClient tracesGateway,
         ISnsPublisher snsPublisher,
         IOptions<TracesUpdatePublisherOptions> options,
@@ -51,13 +51,18 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
                 cancellationToken: cancellationToken
             );
 
-            logger.LogInformation(
-                "Published event {EventId} for classification tree node {Id} from tree {TreeId} to SNS ARN {Topic}",
+            LogPublishedTreeNode(
                 @event.EventId,
                 treeNodeDetail.NodeId,
                 treeNodeDetail.TreeId,
                 options.Value.ClassificationTreeNodeInternalTopicArn
             );
         }
+
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Published event {EventId} for classification tree node {Id} from tree {TreeId} to SNS ARN {Topic}"
+        )]
+        private partial void LogPublishedTreeNode(Guid? eventId, string? nodeId, string? treeId, string topic);
     }
 }

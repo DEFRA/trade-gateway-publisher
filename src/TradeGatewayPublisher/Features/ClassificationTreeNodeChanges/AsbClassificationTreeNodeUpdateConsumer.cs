@@ -7,7 +7,7 @@ using Trade.Gateway.Api.Contract.Events;
 
 namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
 {
-    public class AsbClassificationTreeNodeUpdateConsumer(
+    public partial class AsbClassificationTreeNodeUpdateConsumer(
         IAsbPublisher awsPublisher,
         IOptions<TracesServiceBusOptions> options,
         ILogger<AsbClassificationTreeNodeUpdateConsumer> logger
@@ -17,11 +17,7 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
         {
             var eventId = context.Body.FromJson<EventEnvelope<object>>()?.EventId;
 
-            logger.LogInformation(
-                "Publishing Classification Tree Node  event {Id} to ASB topic {Topic}",
-                eventId,
-                options.Value.ClassificationTreeNode.TopicName
-            );
+            LogPublishingTreeNode(eventId, options.Value.ClassificationTreeNode.TopicName);
 
             await awsPublisher.PublishAsync(
                 options.Value.ClassificationTreeNode.TopicName,
@@ -31,11 +27,19 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
                 cancellationToken: cancellationToken
             );
 
-            logger.LogInformation(
-                "Published Classification Tree Node  event {Id} to ASB topic {Topic}",
-                eventId,
-                options.Value.ClassificationTreeNode.TopicName
-            );
+            LogPublishedTreeNode(eventId, options.Value.ClassificationTreeNode.TopicName);
         }
+
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Publishing Classification Tree Node event {EventId} to ASB topic {AsbTopic}"
+        )]
+        private partial void LogPublishingTreeNode(Guid? eventId, string asbTopic);
+
+        [LoggerMessage(
+            Level = LogLevel.Information,
+            Message = "Published Classification Tree Node event {EventId} to ASB topic {AsbTopic}"
+        )]
+        private partial void LogPublishedTreeNode(Guid? eventId, string asbTopic);
     }
 }

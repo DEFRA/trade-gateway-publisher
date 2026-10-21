@@ -9,7 +9,7 @@ using TradeGatewayPublisher.Config;
 
 namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges;
 
-public sealed class TracesClassificationTreeNodeChangesJob(
+public sealed partial class TracesClassificationTreeNodeChangesJob(
     IReferenceDataClient referenceDataClient,
     ISnsPublisher snsPublisher,
     IOptions<TracesUpdatePublisherOptions> options,
@@ -60,7 +60,9 @@ public sealed class TracesClassificationTreeNodeChangesJob(
                         cancellationToken: cancellationToken,
                         duplicationId: duplicationId
                     );
-                    logger.LogInformation("Published {Source} {Id} to {Topic}", SourceTag, duplicationId, topicArn);
+
+                    LogPublishedTreeNode(SourceTag, duplicationId, topicArn);
+
                     changesFoundCount++;
                 }
             }
@@ -68,11 +70,23 @@ public sealed class TracesClassificationTreeNodeChangesJob(
             catch (ValidationApiException e)
 #pragma warning restore S2139
             {
-                logger.LogWarning(e, "{Job} failed validation - {Data}", Name, JsonSerializer.Serialize(e.Content));
+                LogJobFailedValidation(Name, JsonSerializer.Serialize(e.Content));
                 throw;
             }
         }
 
         logger.LogInformation("{Job} completed. {Count} Changes found", Name, changesFoundCount);
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Published {Source} with duplicationId {DuplicationId} to topicArn {Topic}"
+    )]
+    private partial void LogPublishedTreeNode(string source, string? duplicationId, string topic);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Published {Source} with duplicationId {DuplicationId} to topicArn {Topic}"
+    )]
+    private partial void LogJobFailedValidation(string jobName, string validationError);
 }
