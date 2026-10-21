@@ -45,7 +45,7 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
                 foreach (var update in updatesResponse.Content?.Nodes ?? [])
                 {
                     var duplicationId = update.GetDuplicationId(
-                        updatesResponse?.Content?.RetrievedAt ?? DateTimeOffset.Now
+                        updatesResponse.Content?.RetrievedAt ?? DateTimeOffset.Now
                     );
 
                     // Publish each update to SNS - this could prob become a batch
