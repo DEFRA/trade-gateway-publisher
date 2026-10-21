@@ -61,7 +61,7 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
 
         [LoggerMessage(
             Level = LogLevel.Information,
-            Message = "Published event {EventId} for classification tree node {Id} from tree {TreeId} to SNS ARN {Topic}"
+            Message = "Published event {EventId} for classification tree node {NodeId} from tree {TreeId} to SNS ARN {Topic}"
         )]
         private partial void LogPublishedTreeNode(Guid? eventId, string? nodeId, string? treeId, string topic);
     }
