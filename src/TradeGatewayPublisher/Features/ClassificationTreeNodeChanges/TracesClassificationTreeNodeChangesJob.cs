@@ -75,7 +75,7 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
             }
         }
 
-        logger.LogInformation("{Job} completed. {Count} Changes found", Name, changesFoundCount);
+        LogJobComplete(Name, changesFoundCount);
     }
 
     [LoggerMessage(
