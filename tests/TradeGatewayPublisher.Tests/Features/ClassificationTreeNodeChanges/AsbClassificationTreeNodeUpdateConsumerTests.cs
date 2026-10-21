@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Amazon.SQS.Model;
+using AwesomeAssertions;
 using Infrastructure.Messaging;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
@@ -41,6 +42,7 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
     {
         // Arrange
         var ctx = CreateContext("msg-classification");
+        _logger.IsEnabled(LogLevel.Information).Returns(true);
 
         // Act
         await _sut.ConsumeAsync(ctx, CancellationToken.None);
@@ -56,15 +58,25 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
                 Arg.Any<CancellationToken>()
             );
 
-        _logger
-            .Received(2)
-            .Log(
-                Arg.Any<LogLevel>(),
-                Arg.Any<EventId>(),
-                Arg.Is<object>(o => o.ToString()!.Contains(TestEventId)),
-                Arg.Any<Exception>(),
-                Arg.Any<Func<object, Exception?, string>>()
-            );
+        var logCalls = _logger.ReceivedCalls().Where(c => c.GetMethodInfo().Name == nameof(ILogger.Log)).ToList();
+
+        logCalls.Count.Should().Be(2);
+
+        var rendered = logCalls
+            .Select(c =>
+            {
+                var args = c.GetArguments();
+                var state = args[2];
+                var exception = args[3] as Exception;
+                var formatter = args[4];
+                var invoke = formatter!.GetType().GetMethod("Invoke")!;
+                return (string)invoke.Invoke(formatter, [state, exception])!;
+            })
+            .ToList();
+
+        rendered.Should().Contain(m => m.Contains("Publishing Classification Tree Node event"));
+
+        rendered.Should().Contain(m => m.Contains("Published Classification Tree Node event"));
     }
 
     private static MessageContext CreateContext(string id) =>
