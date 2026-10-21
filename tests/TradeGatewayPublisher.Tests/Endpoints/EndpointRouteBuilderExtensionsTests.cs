@@ -16,15 +16,7 @@ public class EndpointRouteBuilderExtensionsTests
 {
     private readonly ITracesGatewayChedClient _gateway = Substitute.For<ITracesGatewayChedClient>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
-    private readonly IOptions<TracesUpdatePublisherOptions> _options = Options.Create(
-        new TracesUpdatePublisherOptions
-        {
-            IntraTopicArn = "test-intra-topic",
-            IntraInternalTopicArn = "test-intra-internal-topic",
-            ChedTopicArn = "test-ched-topic",
-            ChedInternalTopicArn = "test-ched-internal-topic",
-        }
-    );
+    private readonly IOptions<TracesUpdatePublisherOptions> _options = TestTracesOptions.TracesUpdatePublisherOptions;
 
     [Fact]
     public async Task PublishChed_WhenCertificateExists_ReturnsOkAndPublishesToSns()

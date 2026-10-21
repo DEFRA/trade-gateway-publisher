@@ -13,8 +13,14 @@ public class TracesUpdateConsumerOptions
     public required string ChedQueueUrl { get; init; }
 
     [Required]
+    public required string ClassificationTreeNodeQueueUrl { get; init; }
+
+    [Required]
     public required string IntraQueueUrlForAsb { get; init; }
 
     [Required]
     public required string ChedQueueUrlForAsb { get; init; }
+
+    [Required]
+    public required string ClassificationTreeNodeQueueUrlForAsb { get; init; }
 }
