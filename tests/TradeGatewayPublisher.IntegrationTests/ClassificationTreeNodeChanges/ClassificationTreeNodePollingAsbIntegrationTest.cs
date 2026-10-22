@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Testing;
 
-namespace TradeGatewayPublisher.IntegrationTests.ChedChanges;
+namespace TradeGatewayPublisher.IntegrationTests.ClassificationTreeNodeChanges;
 
 [Trait("Category", "IntegrationTest")]
 [Collection(NonParallelCollection.Name)]
