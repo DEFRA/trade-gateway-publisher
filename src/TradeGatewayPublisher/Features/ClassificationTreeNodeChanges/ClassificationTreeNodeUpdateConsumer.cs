@@ -55,7 +55,7 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
                 @event.EventId,
                 treeNodeDetail.NodeId,
                 treeNodeDetail.TreeId,
-                options.Value.ClassificationTreeNodeInternalTopicArn
+                options.Value.ClassificationTreeNodeTopicArn
             );
         }
 

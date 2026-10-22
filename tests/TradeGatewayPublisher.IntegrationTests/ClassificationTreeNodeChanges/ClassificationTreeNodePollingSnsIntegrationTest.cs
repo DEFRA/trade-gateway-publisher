@@ -58,7 +58,7 @@ public class ClassificationTreeNodePollingSnsIntegrationTest(
         );
 
         await fixture.DeleteDatabaseAsync();
-        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestChedQueueUrl);
+        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestCommodityTreeNodeQueueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
