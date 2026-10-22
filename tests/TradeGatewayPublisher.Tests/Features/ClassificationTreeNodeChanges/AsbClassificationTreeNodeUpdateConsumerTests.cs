@@ -53,7 +53,12 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
             .PublishAsync(
                 Arg.Is<string>(topic => topic == "classificationtreenode-topic"),
                 Arg.Is<string>(id => id == ctx.MessageId),
-                Arg.Any<Dictionary<string, string>>(),
+                Arg.Is<Dictionary<string, string>>(headers =>
+                    headers.ContainsKey(ClassificationTreeMessageHeaderKeys.TreeId)
+                    && headers[ClassificationTreeMessageHeaderKeys.TreeId] == "cheda"
+                    && headers.ContainsKey(ClassificationTreeMessageHeaderKeys.DuplicationId)
+                    && headers[ClassificationTreeMessageHeaderKeys.DuplicationId] == "node-1_1720000000000"
+                ),
                 Arg.Is<string>(body => body == ctx.Body),
                 Arg.Any<CancellationToken>()
             );
@@ -105,6 +110,15 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
                     }
                 ),
                 MessageId = id,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    [ClassificationTreeMessageHeaderKeys.TreeId] = new() { DataType = "String", StringValue = "cheda" },
+                    [ClassificationTreeMessageHeaderKeys.DuplicationId] = new()
+                    {
+                        DataType = "String",
+                        StringValue = "node-1_1720000000000",
+                    },
+                },
             },
             QueueUrl = "queue-url",
             ConsumerType = typeof(AsbClassificationTreeNodeUpdateConsumer),
