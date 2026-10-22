@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Refit;
 using Trade.Gateway.Api.Client.Clients;
 using TradeGatewayPublisher.Config;
+using TradeGatewayPublisher.Utils;
 
 namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges;
 
@@ -44,14 +45,12 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
 
                 foreach (var update in updatesResponse.Content?.Nodes ?? [])
                 {
-                    var duplicationId = update.GetDuplicationId(
-                        updatesResponse.Content?.RetrievedAt ?? DateTimeOffset.Now
-                    );
-
+                    var updateJson = update.ToJson();
+                    var duplicationId = updateJson.GenerateHash();
                     // Publish each update to SNS - this could prob become a batch
                     await snsPublisher.PublishAsync(
                         topicArn,
-                        update.ToJson(),
+                        updateJson,
                         headers: new Dictionary<string, string>()
                         {
                             { ClassificationTreeMessageHeaderKeys.TreeId, treeId },
