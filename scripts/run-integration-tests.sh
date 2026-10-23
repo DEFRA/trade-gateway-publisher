@@ -3,6 +3,14 @@
 
 set -euo pipefail
 
-docker compose up -d --force-recreate --wait --quiet-pull floci mongodb servicebus-emulator mssql wiremock
+docker compose up -d --wait --quiet-pull mssql
+
+docker compose up -d --wait --quiet-pull wiremock
+
+docker compose up -d --wait --quiet-pull mongodb
+
+docker compose up -d --wait --quiet-pull servicebus-emulator
+
+docker compose up -d --wait --quiet-pull floci 
 
 dotnet test --filter "Category=IntegrationTest"
