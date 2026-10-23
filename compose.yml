@@ -11,7 +11,7 @@ services:
     volumes:
       - ./compose/floci/ready.d:/etc/floci/init/ready.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "/etc/floci/init/ready.d/99-ready.sh"]
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:4566/health >/dev/null || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 20
