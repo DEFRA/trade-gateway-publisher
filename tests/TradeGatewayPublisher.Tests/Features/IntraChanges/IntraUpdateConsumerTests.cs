@@ -19,19 +19,10 @@ public class IntraUpdateConsumerTests
     private readonly ITracesGatewayIntraClient _gateway = Substitute.For<ITracesGatewayIntraClient>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
     private readonly IntraUpdateConsumer _sut;
+    private readonly IOptions<TracesUpdatePublisherOptions> _options = TestTracesOptions.TracesUpdatePublisherOptions;
 
     public IntraUpdateConsumerTests()
     {
-        var options = Options.Create(
-            new TracesUpdatePublisherOptions
-            {
-                IntraTopicArn = "test-topic",
-                IntraInternalTopicArn = "test-internal-topic",
-                ChedTopicArn = "test-ched-topic",
-                ChedInternalTopicArn = "test-ched-internal-topic",
-            }
-        );
-
         var response = new ApiResponse<DefraUNVTDINTRAProfile>(
             new HttpResponseMessage(HttpStatusCode.OK),
             new DefraUNVTDINTRAProfile()
@@ -44,7 +35,7 @@ public class IntraUpdateConsumerTests
 
         _gateway.GetIntraCertification("1", Arg.Any<CancellationToken>()).Returns(response);
 
-        _sut = new IntraUpdateConsumer(_gateway, _sns, options, NullLogger<IntraUpdateConsumer>.Instance);
+        _sut = new IntraUpdateConsumer(_gateway, _sns, _options, NullLogger<IntraUpdateConsumer>.Instance);
     }
 
     [Fact]
@@ -54,7 +45,7 @@ public class IntraUpdateConsumerTests
 
         await _sns.Received(1)
             .PublishAsync(
-                "test-topic",
+                _options.Value.IntraTopicArn,
                 Arg.Any<string>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),

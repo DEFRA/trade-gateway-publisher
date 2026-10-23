@@ -14,6 +14,8 @@ public class TracesServiceBusOptions
 
     public required ServiceBusTopic Intra { get; init; }
 
+    public required ServiceBusTopic ClassificationTreeNode { get; init; }
+
     public EntraOptions? EntraOptions { get; set; }
 }
 

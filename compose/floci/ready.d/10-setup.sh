@@ -31,20 +31,27 @@ create_subscribed_queue(){ queue="" topic=""
     --attributes "$SUBSCRIPTION_ATTRIBUTES"
 }
 
-# trade-gateway-publisher topics
-awslocal sns create-topic --name trade_gateway_publisher_ched_stream_internal.fifo --attributes "$TOPIC_ATTRIBUTES"
-awslocal sns create-topic --name trade_gateway_publisher_ched_updates.fifo --attributes "$TOPIC_ATTRIBUTES"
-awslocal sns create-topic --name trade_gateway_publisher_intra_stream_internal.fifo --attributes "$TOPIC_ATTRIBUTES"
-awslocal sns create-topic --name trade_gateway_publisher_intra_updates.fifo --attributes "$TOPIC_ATTRIBUTES"
+# trade-gateway-publisher topics — created in parallel
+awslocal sns create-topic --name trade_gateway_publisher_ched_stream_internal.fifo --attributes "$TOPIC_ATTRIBUTES" &
+awslocal sns create-topic --name trade_gateway_publisher_ched_updates.fifo --attributes "$TOPIC_ATTRIBUTES" &
+awslocal sns create-topic --name trade_gateway_publisher_intra_stream_internal.fifo --attributes "$TOPIC_ATTRIBUTES" &
+awslocal sns create-topic --name trade_gateway_publisher_intra_updates.fifo --attributes "$TOPIC_ATTRIBUTES" &
+awslocal sns create-topic --name trade_gateway_publisher_classificationtreenode_stream_internal.fifo --attributes "$TOPIC_ATTRIBUTES" &
+awslocal sns create-topic --name trade_gateway_publisher_classificationtreenode_updates.fifo --attributes "$TOPIC_ATTRIBUTES" &
+wait || exit 1
 
-# SNS Queues (use create_subscribed_queue for each pair)
-create_subscribed_queue trade_gateway_publisher_ched_stream_internal_publisher trade_gateway_publisher_ched_stream_internal
-create_subscribed_queue trade_gateway_publisher_intra_stream_internal_publisher trade_gateway_publisher_intra_stream_internal
+# SNS Queues — created in parallel (topics must exist first)
+create_subscribed_queue trade_gateway_publisher_ched_stream_internal_publisher trade_gateway_publisher_ched_stream_internal &
+create_subscribed_queue trade_gateway_publisher_intra_stream_internal_publisher trade_gateway_publisher_intra_stream_internal &
+create_subscribed_queue trade_gateway_publisher_classificationtreenode_stream_internal_publisher trade_gateway_publisher_classificationtreenode_stream_internal &
 
 # SNS for Azure service bus Queues
-create_subscribed_queue trade_gateway_publisher_ched_stream_internal_asb_publisher trade_gateway_publisher_ched_updates
-create_subscribed_queue trade_gateway_publisher_intra_stream_internal_asb_publisher trade_gateway_publisher_intra_updates
+create_subscribed_queue trade_gateway_publisher_ched_stream_internal_asb_publisher trade_gateway_publisher_ched_updates &
+create_subscribed_queue trade_gateway_publisher_intra_stream_internal_asb_publisher trade_gateway_publisher_intra_updates &
+create_subscribed_queue trade_gateway_publisher_classificationtreenode_stream_internal_asb_publisher trade_gateway_publisher_classificationtreenode_updates &
 
 # test queues
-create_subscribed_queue trade_gateway_publisher_intra_updates_test trade_gateway_publisher_intra_updates
-create_subscribed_queue trade_gateway_publisher_ched_updates_test trade_gateway_publisher_ched_updates
+create_subscribed_queue trade_gateway_publisher_intra_updates_test trade_gateway_publisher_intra_updates &
+create_subscribed_queue trade_gateway_publisher_ched_updates_test trade_gateway_publisher_ched_updates &
+create_subscribed_queue trade_gateway_publisher_classificationtreenode_updates_test trade_gateway_publisher_classificationtreenode_updates &
+wait || exit 1

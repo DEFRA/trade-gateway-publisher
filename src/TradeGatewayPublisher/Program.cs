@@ -13,6 +13,7 @@ using Trade.Gateway.Api.Client.Extensions;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Endpoints;
 using TradeGatewayPublisher.Features.ChedChanges;
+using TradeGatewayPublisher.Features.ClassificationTreeNodeChanges;
 using TradeGatewayPublisher.Features.IntraChanges;
 using TradeGatewayPublisher.Health;
 using TradeGatewayPublisher.Jobs.Middleware;
@@ -76,12 +77,20 @@ static void ConfigureServices(WebApplicationBuilder builder)
         sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrl
     );
 
+    services.AddConsumer<ClassificationTreeNodeUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ClassificationTreeNodeQueueUrl
+    );
+
     services.AddConsumer<AsbIntraUpdateConsumer>(sp =>
         sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrlForAsb
     );
 
     services.AddConsumer<AsbChedUpdateConsumer>(sp =>
         sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrlForAsb
+    );
+
+    services.AddConsumer<AsbClassificationTreeNodeUpdateConsumer>(sp =>
+        sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ClassificationTreeNodeQueueUrlForAsb
     );
 
     services.AddHttpContextAccessor();
@@ -129,6 +138,7 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services.AddDbContext(configuration);
     services.AddSingleton<ICronJob, TracesIntraChangesJob>();
     services.AddSingleton<ICronJob, TracesChedChangesJob>();
+    services.AddSingleton<ICronJob, TracesClassificationTreeNodeChangesJob>();
 
     services
         .AddOptions<TracesServiceBusOptions>()

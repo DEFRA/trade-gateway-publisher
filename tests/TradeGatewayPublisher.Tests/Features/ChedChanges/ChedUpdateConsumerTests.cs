@@ -22,15 +22,7 @@ public class ChedUpdateConsumerTests
 
     public ChedUpdateConsumerTests()
     {
-        var options = Options.Create(
-            new TracesUpdatePublisherOptions
-            {
-                IntraTopicArn = "test-topic",
-                IntraInternalTopicArn = "test-internal-topic",
-                ChedTopicArn = "test-ched-topic",
-                ChedInternalTopicArn = "test-ched-internal-topic",
-            }
-        );
+        var options = TestTracesOptions.TracesUpdatePublisherOptions;
 
         var response = new ApiResponse<DefraUNVTDCHEDProfile>(
             new HttpResponseMessage(HttpStatusCode.OK),

@@ -18,21 +18,11 @@ public class TracesIntraChangesJobTests
 {
     private readonly ITracesGatewayIntraClient _gateway = Substitute.For<ITracesGatewayIntraClient>();
     private readonly ISnsPublisher _sns = Substitute.For<ISnsPublisher>();
-    private readonly IOptions<TracesUpdatePublisherOptions> _options;
     private readonly TracesIntraChangesJob _sut;
+    private readonly IOptions<TracesUpdatePublisherOptions> _options = TestTracesOptions.TracesUpdatePublisherOptions;
 
     public TracesIntraChangesJobTests()
     {
-        _options = Options.Create(
-            new TracesUpdatePublisherOptions
-            {
-                IntraTopicArn = "test-topic",
-                IntraInternalTopicArn = "test-internal-topic",
-                ChedTopicArn = "test-ched-topic",
-                ChedInternalTopicArn = "test-ched-internal-topic",
-            }
-        );
-
         _sut = new TracesIntraChangesJob(_gateway, _sns, _options, NullLogger<TracesIntraChangesJob>.Instance);
     }
 
@@ -110,7 +100,7 @@ public class TracesIntraChangesJobTests
         // Assert
         await _sns.Received(2)
             .PublishAsync(
-                "test-internal-topic",
+                _options.Value.IntraInternalTopicArn,
                 Arg.Any<string>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
@@ -248,7 +238,7 @@ public class TracesIntraChangesJobTests
                     new HttpResponseMessage(HttpStatusCode.OK),
                     new DefraUNVTDINTRASummaryProfile
                     {
-                        Items = list.ToArray(),
+                        Items = [.. list],
                         HasMore = true,
                         Offset = 0,
                         PageSize = 100,

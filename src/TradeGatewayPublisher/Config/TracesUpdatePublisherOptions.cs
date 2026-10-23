@@ -17,4 +17,13 @@ public class TracesUpdatePublisherOptions
 
     [Required]
     public required string ChedTopicArn { get; init; }
+
+    [Required]
+    public required string ClassificationTreeNodeInternalTopicArn { get; init; }
+
+    [Required]
+    public required string ClassificationTreeNodeTopicArn { get; init; }
+
+    [Required]
+    public required string[] ClassificationTreeIds { get; init; }
 }

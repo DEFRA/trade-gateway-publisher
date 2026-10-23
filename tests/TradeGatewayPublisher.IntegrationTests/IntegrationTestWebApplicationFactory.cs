@@ -33,11 +33,12 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "*/11 * * * * *",
+                        ["Scheduler:Jobs:TracesIntraChangesJob:Cron"] = "10/10 * * * * *",
                         //// ["Scheduler:Jobs:TracesIntraChangesJob:Disabled"] = "true",
 
-                        // Until the CHED ticket is picked up
-                        ["Scheduler:Jobs:TracesChedChangesJob:Cron"] = "*/9 * * * * *",
+                        ["Scheduler:Jobs:TracesChedChangesJob:Cron"] = "5/10 * * * * *",
+
+                        ["Scheduler:Jobs:TracesClassificationTreeNodeChangesJob:Cron"] = "1/10 * * * * *",
 
                         // The tests run against a local Mongo running via Docker
                         ["Mongo:DatabaseUri"] = MongoUri,
@@ -60,6 +61,12 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
                             "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_stream_internal.fifo",
                         ["TracesUpdatePublisher:ChedTopicArn"] =
                             "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_updates.fifo",
+                        ["TracesUpdatePublisher:ClassificationTreeNodeInternalTopicArn"] =
+                            "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_classificationtreenode_stream_internal.fifo",
+                        ["TracesUpdatePublisher:ClassificationTreeNodeTopicArn"] =
+                            "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_classificationtreenode_updates.fifo",
+
+                        ["TracesUpdatePublisher:ClassificationTreeIds:0"] = "cheda",
 
                         ["TracesUpdateConsumer:IntraQueueUrl"] =
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_intra_stream_internal_publisher.fifo",
@@ -71,13 +78,19 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
                         ["TracesUpdateConsumer:ChedQueueUrlForAsb"] =
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo",
 
+                        ["TracesUpdateConsumer:ClassificationTreeNodeQueueUrl"] =
+                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_classificationtreenode_stream_internal_publisher.fifo",
+                        ["TracesUpdateConsumer:ClassificationTreeNodeQueueUrlForAsb"] =
+                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_classificationtreenode_stream_internal_asb_publisher.fifo",
+
                         // Traces Service Bus (development emulator) - required for ASB publisher/consumer options
+                        ["TracesServiceBus:ConnectionString"] =
+                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+
                         ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched",
-                        ["TracesServiceBus:Ched:ConnectionString"] =
-                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
                         ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra",
-                        ["TracesServiceBus:Intra:ConnectionString"] =
-                            "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                        ["TracesServiceBus:ClassificationTreeNode:TopicName"] =
+                            "trade-gateway-publisher-classificationtreenode",
 
                         // The tests run against a local WireMock container emulating the Traces Gateway
                         ["TracesGateway:BaseUrl"] = WireMockBaseUrl,
