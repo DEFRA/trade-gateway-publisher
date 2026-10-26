@@ -31,7 +31,7 @@ for i in $(seq 1 "$max_attempts"); do
     break
   fi
 
-  if [ $((i % 10)) -eq 0 ]; then
+  if [[ $((i % 10)) -eq 0 ]]; then
     echo "Floci not ready yet; container status:" >&2
     docker compose ps floci >&2 || true
   fi
@@ -39,7 +39,7 @@ for i in $(seq 1 "$max_attempts"); do
   sleep 2
 done
 
-if [ "$ready" -ne 1 ]; then
+if [[ "$ready" -ne 1 ]]; then
   echo "Floci did not report ready within 120 seconds." >&2
   docker compose logs floci >&2 || true
   exit 1
