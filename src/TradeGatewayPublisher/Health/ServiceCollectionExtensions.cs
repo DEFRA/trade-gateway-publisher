@@ -43,6 +43,21 @@ public static class ServiceCollectionExtensions
                 tags: [WebApplicationExtensions.Extended],
                 timeout: TimeSpan.FromSeconds(10)
             )
+            .AddSns(
+                "SNS - ClassificationTreeNode Internal",
+                sp =>
+                    sp.GetRequiredService<
+                        IOptions<TracesUpdatePublisherOptions>
+                    >().Value.ClassificationTreeNodeInternalTopicArn,
+                tags: [WebApplicationExtensions.Extended],
+                timeout: TimeSpan.FromSeconds(10)
+            )
+            .AddSns(
+                "SNS - ClassificationTreeNode External",
+                sp => sp.GetRequiredService<IOptions<TracesUpdatePublisherOptions>>().Value.ChedInternalTopicArn,
+                tags: [WebApplicationExtensions.Extended],
+                timeout: TimeSpan.FromSeconds(10)
+            )
             .AddSqs(
                 "SQS - Intra Internal",
                 sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl,
@@ -56,6 +71,13 @@ public static class ServiceCollectionExtensions
                 tags: [WebApplicationExtensions.Extended]
             )
             .AddSqs(
+                "SQS - ClassificationTreeNode Internal",
+                sp =>
+                    sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ClassificationTreeNodeQueueUrl,
+                timeout: TimeSpan.FromSeconds(10),
+                tags: [WebApplicationExtensions.Extended]
+            )
+            .AddSqs(
                 "SQS - Intra Internal for ASB",
                 sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrlForAsb,
                 timeout: TimeSpan.FromSeconds(10),
@@ -64,6 +86,15 @@ public static class ServiceCollectionExtensions
             .AddSqs(
                 "SQS - Ched Internal for ASB",
                 sp => sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.ChedQueueUrlForAsb,
+                timeout: TimeSpan.FromSeconds(10),
+                tags: [WebApplicationExtensions.Extended]
+            )
+            .AddSqs(
+                "SQS - ClassificationTreeNode Internal for ASB",
+                sp =>
+                    sp.GetRequiredService<
+                        IOptions<TracesUpdateConsumerOptions>
+                    >().Value.ClassificationTreeNodeQueueUrlForAsb,
                 timeout: TimeSpan.FromSeconds(10),
                 tags: [WebApplicationExtensions.Extended]
             );
@@ -80,6 +111,12 @@ public static class ServiceCollectionExtensions
                 .AddAsbTopic(
                     "ASB - Intra",
                     sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.Intra,
+                    timeout: TimeSpan.FromSeconds(10),
+                    tags: [WebApplicationExtensions.Extended]
+                )
+                .AddAsbTopic(
+                    "ASB - ClassificationTreeNode",
+                    sp => sp.GetRequiredService<IOptions<TracesServiceBusOptions>>().Value.ClassificationTreeNode,
                     timeout: TimeSpan.FromSeconds(10),
                     tags: [WebApplicationExtensions.Extended]
                 );

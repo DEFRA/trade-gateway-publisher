@@ -25,7 +25,18 @@
                 "Name": "trade-gateway-publisher-intra-test-sub"
               }
             ]
-          }
+          },
+          {
+            "Name": "trade-gateway-publisher-classificationtreenode",
+            "Subscriptions": [
+              {
+                "Name": "trade-gateway-publisher-classificationtreenode-sub"
+              },
+			  {
+                "Name": "trade-gateway-publisher-treenode-test-sub"
+              }
+            ]
+          }		  
         ],
         "Queues": [
 		]

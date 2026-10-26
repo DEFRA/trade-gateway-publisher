@@ -14,7 +14,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
 {
     private IDisposable? _logCapture;
 
-    private readonly string IntraId = $"intra-test-1-asb-{Random.Shared.Next(1, 100000)}";
+    private readonly string _intraId = $"intra-test-1-asb-{Random.Shared.Next(1, 100000)}";
 
     [Fact]
     public async Task IntraPollingJobPolls_AndThenPublishesToAsb()
@@ -33,7 +33,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
         var cancellationToken = TestContext.Current.CancellationToken;
 
         // Stub the traces gateway so the polling job will find the update
-        await WireMockStubber.StubIntrasAsync(fixture.Factory.WireMockBaseUrl, IntraId, cancellationToken);
+        await WireMockStubber.StubIntrasAsync(fixture.Factory.WireMockBaseUrl, _intraId, cancellationToken);
 
         // Read Service Bus configuration and verify message on the queue subscribed to the topic (emulator)
         var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
@@ -52,7 +52,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
         var receivedOnAsb = await WaitHelper.WaitUntilAsync(
             () =>
                 ServiceBusUtilities
-                    .ServiceBusQueueContainsExpectedAsync(receiver, IntraId, testOutputHelper, cancellationToken)
+                    .ServiceBusQueueContainsExpectedAsync(receiver, _intraId, testOutputHelper, cancellationToken)
                     .GetAwaiter()
                     .GetResult(),
             TimeSpan.FromSeconds(120),
@@ -72,7 +72,7 @@ public class IntraPollingAsbIntegrationTest(IntegrationTestFixture fixture, ITes
         _logCapture = TestOutputHelperSink.Capture(testOutputHelper);
 
         await WireMockStubber.ResetAsync(fixture.Factory.WireMockBaseUrl);
-        await WireMockStubber.StubIntrasAsync(fixture.Factory.WireMockBaseUrl, IntraId, CancellationToken.None);
+        await WireMockStubber.StubIntrasAsync(fixture.Factory.WireMockBaseUrl, _intraId, CancellationToken.None);
 
         await fixture.DeleteDatabaseAsync();
         await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestIntraQueueUrl);

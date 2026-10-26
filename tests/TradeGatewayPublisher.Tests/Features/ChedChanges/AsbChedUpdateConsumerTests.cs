@@ -25,6 +25,7 @@ public class AsbChedUpdateConsumerTests
             {
                 Intra = new ServiceBusTopic { TopicName = "intra-topic" },
                 Ched = new ServiceBusTopic { TopicName = "ched-topic" },
+                ClassificationTreeNode = new ServiceBusTopic { TopicName = "classificationtreenode-topic" },
                 ConnectionString = "Endpoint=sb://127.0.0.1;",
             }
         );

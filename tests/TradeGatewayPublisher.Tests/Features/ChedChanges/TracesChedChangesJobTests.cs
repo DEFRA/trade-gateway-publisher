@@ -23,16 +23,7 @@ public class TracesChedChangesJobTests
 
     public TracesChedChangesJobTests()
     {
-        _options = Options.Create(
-            new TracesUpdatePublisherOptions
-            {
-                IntraTopicArn = "test-topic",
-                IntraInternalTopicArn = "test-internal-topic",
-                ChedTopicArn = "test-ched-topic",
-                ChedInternalTopicArn = "test-ched-internal-topic",
-            }
-        );
-
+        _options = TestTracesOptions.TracesUpdatePublisherOptions;
         _sut = new TracesChedChangesJob(_gateway, _sns, _options, NullLogger<TracesChedChangesJob>.Instance);
     }
 
@@ -241,7 +232,7 @@ public class TracesChedChangesJobTests
                     new HttpResponseMessage(HttpStatusCode.OK),
                     new DefraUNVTDCHEDSummaryProfile
                     {
-                        Items = list.ToArray(),
+                        Items = [.. list],
                         HasMore = true,
                         Offset = 0,
                         PageSize = 100,
