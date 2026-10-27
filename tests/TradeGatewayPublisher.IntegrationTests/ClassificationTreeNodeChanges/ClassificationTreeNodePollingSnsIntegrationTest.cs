@@ -26,7 +26,7 @@ public class ClassificationTreeNodePollingSnsIntegrationTest(
                 SnsUtilities
                     .SnsQueueContainsExpectedAsync(
                         fixture.AmazonSqs,
-                        fixture.TestCommodityTreeNodeQueueUrl,
+                        fixture.TestClassificationTreeNodeQueueUrl,
                         NodeId,
                         testOutputHelper,
                         cancellationToken
@@ -58,7 +58,7 @@ public class ClassificationTreeNodePollingSnsIntegrationTest(
         );
 
         await fixture.DeleteDatabaseAsync();
-        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestCommodityTreeNodeQueueUrl);
+        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestClassificationTreeNodeQueueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
