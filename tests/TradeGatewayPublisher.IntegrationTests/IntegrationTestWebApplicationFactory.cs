@@ -1,18 +1,19 @@
-using System.Collections.Concurrent;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+
 using MongoDB.Driver;
-using MongoDB.Driver.Core.Misc;
+
 using NSubstitute;
+
 using Serilog;
 using Serilog.Extensions.Logging;
-using TradeGatewayPublisher.IntegrationTests.IntraChanges;
 
 namespace TradeGatewayPublisher.IntegrationTests;
 
@@ -62,9 +63,9 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
                         ["TracesUpdatePublisher:ChedTopicArn"] =
                             "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_ched_updates.fifo",
                         ["TracesUpdatePublisher:ClassificationTreeNodeInternalTopicArn"] =
-                            "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_classificationtreenode_stream_internal.fifo",
+                            "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_refdata_stream_internal.fifo",
                         ["TracesUpdatePublisher:ClassificationTreeNodeTopicArn"] =
-                            "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_classificationtreenode_updates.fifo",
+                            "arn:aws:sns:eu-west-2:000000000000:trade_gateway_publisher_refdata_updates.fifo",
 
                         ["TracesUpdatePublisher:ClassificationTreeIds:0"] = "cheda",
 
@@ -79,9 +80,9 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_ched_stream_internal_asb_publisher.fifo",
 
                         ["TracesUpdateConsumer:ClassificationTreeNodeQueueUrl"] =
-                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_classificationtreenode_stream_internal_publisher.fifo",
+                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_refdata_stream_internal_publisher.fifo",
                         ["TracesUpdateConsumer:ClassificationTreeNodeQueueUrlForAsb"] =
-                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_classificationtreenode_stream_internal_asb_publisher.fifo",
+                            $"{FlociEndpoint}/000000000000/trade_gateway_publisher_refdata_stream_internal_asb_publisher.fifo",
 
                         // Traces Service Bus (development emulator) - required for ASB publisher/consumer options
                         ["TracesServiceBus:ConnectionString"] =
@@ -89,8 +90,7 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
 
                         ["TracesServiceBus:Ched:TopicName"] = "trade-gateway-publisher-ched",
                         ["TracesServiceBus:Intra:TopicName"] = "trade-gateway-publisher-intra",
-                        ["TracesServiceBus:ClassificationTreeNode:TopicName"] =
-                            "trade-gateway-publisher-classificationtreenode",
+                        ["TracesServiceBus:ClassificationTreeNode:TopicName"] = "trade-gateway-publisher-refdata",
 
                         // The tests run against a local WireMock container emulating the Traces Gateway
                         ["TracesGateway:BaseUrl"] = WireMockBaseUrl,
