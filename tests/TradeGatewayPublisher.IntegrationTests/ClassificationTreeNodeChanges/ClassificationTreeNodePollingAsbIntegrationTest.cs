@@ -39,7 +39,7 @@ public class ClassificationTreeNodePollingAsbIntegrationTest(
         var connectionString = tracesOptions.ConnectionString;
         var topicName = tracesOptions.ClassificationTreeNode.TopicName;
 
-        var subscription = "trade-gateway-publisher-treenode-test-sub";
+        var subscription = "trade-gateway-publisher-refdata-test-sub";
 
         await using var client = new ServiceBusClient(connectionString);
         // Receive from the topic's subscription (receive from topic-subscription pair)
@@ -80,7 +80,7 @@ public class ClassificationTreeNodePollingAsbIntegrationTest(
         );
 
         await fixture.DeleteDatabaseAsync();
-        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestCommodityTreeNodeQueueUrl);
+        await fixture.AmazonSqs.PurgeQueueAsync(fixture.TestClassificationTreeNodeQueueUrl);
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 

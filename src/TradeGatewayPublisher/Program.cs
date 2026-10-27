@@ -124,10 +124,12 @@ static void ConfigureAppServices(IServiceCollection services, IConfiguration con
     services
         .AddOptions<TracesUpdatePublisherOptions>()
         .Bind(configuration.GetSection(TracesUpdatePublisherOptions.SectionName))
+        .ValidateDataAnnotations()
         .ValidateOnStart();
     services
         .AddOptions<TracesUpdateConsumerOptions>()
         .Bind(configuration.GetSection(TracesUpdateConsumerOptions.SectionName))
+        .ValidateDataAnnotations()
         .ValidateOnStart();
 
     services.AddScoped<IJobMiddleware, JobLeaseMiddleware>();
