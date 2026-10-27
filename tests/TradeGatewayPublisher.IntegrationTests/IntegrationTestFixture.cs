@@ -1,11 +1,8 @@
 using Amazon.SQS;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Misc;
-
 using Xunit.v3;
 
 namespace TradeGatewayPublisher.IntegrationTests

@@ -1,12 +1,8 @@
 using AwesomeAssertions;
-
 using Azure.Messaging.ServiceBus;
-
 using Infrastructure.Messaging;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.ClassificationTreeNodeChanges;

@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-
 using Testing;
 
 namespace TradeGatewayPublisher.IntegrationTests.ClassificationTreeNodeChanges;
