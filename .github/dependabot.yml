@@ -39,6 +39,6 @@ updates:
     schedule:
       interval: daily
       time: "00:00"
-      timezone: "Europe/London"# 👇 Add your team/people here
+      timezone: "Europe/London"
     reviewers:
       - DEFRA/trade-data-matching
