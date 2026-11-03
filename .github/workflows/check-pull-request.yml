@@ -59,6 +59,19 @@ jobs:
             --ignore-unfixed \
             --exit-code 1 \
             trade-gateway-publisher:latest
+      # Tagged with the image name used by trade-gateway-local-environment so the journey tests pick it up
+      - name: Save image for journey tests
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          docker tag trade-gateway-publisher:latest defradigital/trade-gateway-publisher:pr-$PR_NUMBER
+          docker save defradigital/trade-gateway-publisher:pr-$PR_NUMBER -o trade-gateway-publisher.tar
+      - name: Upload image for journey tests
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+        with:
+          name: trade-gateway-publisher-image
+          path: trade-gateway-publisher.tar
+          retention-days: 1
   sonarcloud-scan:
     name: CDP SonarCloud Scan
     permissions:
@@ -70,3 +83,16 @@ jobs:
     needs: pr-validator
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  journey-tests:
+    name: Journey Tests
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: write
+    uses: DEFRA/trade-gateway-journey-tests/.github/workflows/journey-tests.yml@main
+    needs: pr-validator
+    with:
+      image-artifact: trade-gateway-publisher-image
+      image-variable: TRADE_GATEWAY_PUBLISHER
+      image-tag: pr-${{ github.event.pull_request.number }}
