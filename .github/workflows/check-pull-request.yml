@@ -44,7 +44,7 @@ jobs:
         run: |
           docker compose logs
       - name: Check Dockerfile Builds
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: ./Dockerfile
