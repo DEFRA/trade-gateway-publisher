@@ -27,6 +27,6 @@ jobs:
           dotnet-version: |
             10.0
       - name: Publish Hot Fix
-        uses: DEFRA/cdp-build-action/build-hotfix@3761ef22decf8615b8fd275cd9b7142f8d356a11
+        uses: DEFRA/cdp-build-action/build-hotfix@b1eaad635bf3305b0dd4b3a0f910424a12e77cee
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
