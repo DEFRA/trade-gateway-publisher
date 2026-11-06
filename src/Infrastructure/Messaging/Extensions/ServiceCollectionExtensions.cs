@@ -5,6 +5,8 @@ using Azure.Core;
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging.Authentication;
 using Infrastructure.Messaging.Publishing;
+using Infrastructure.Resilience;
+using Infrastructure.Resilience;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +24,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration
     )
     {
-        services.AddFeatureManagement();
+        });
 
         services.AddOptions<CdpOptions>().Bind(configuration);
 
