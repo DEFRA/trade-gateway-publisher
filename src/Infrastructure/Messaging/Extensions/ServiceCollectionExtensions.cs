@@ -12,7 +12,6 @@ using Infrastructure.Messaging.Authentication;
 using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Infrastructure.Messaging.Publishing.Middleware;
-using Infrastructure.Resilience;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,14 +51,11 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAmazonSimpleNotificationService>(sp =>
         {
-            var logger = sp.GetRequiredService<ILogger<ResilientSnsClient>>();
-
             var flociOptions = sp.GetRequiredService<IOptions<FlociOptions>>().Value;
             if (flociOptions.UseFloci == false)
-                return new ResilientSnsClient(logger);
+                return new AmazonSimpleNotificationServiceClient();
 
-            return new ResilientSnsClient(
-                logger,
+            return new AmazonSimpleNotificationServiceClient(
                 new BasicAWSCredentials(flociOptions.AccessKeyId, flociOptions.SecretAccessKey),
                 new AmazonSimpleNotificationServiceConfig
                 {
