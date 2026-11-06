@@ -159,6 +159,7 @@ internal static class WireMockStubber
         string wireMockBaseUrl,
         string nodeId,
         string treeId,
+        string? nodeLabel = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -178,7 +179,7 @@ internal static class WireMockStubber
             {
                 Selectable = true,
                 CnCode = "12345",
-                Label = "Mules",
+                Label = nodeLabel ?? "Mules",
                 NodeType = "nomenclature",
             },
         };

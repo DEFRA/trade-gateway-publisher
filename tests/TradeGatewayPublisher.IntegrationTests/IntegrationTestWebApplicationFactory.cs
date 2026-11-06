@@ -65,6 +65,8 @@ public sealed class IntegrationTestWebApplicationFactory() : WebApplicationFacto
 
                         ["TracesUpdatePublisher:ClassificationTreeIds:0"] = "cheda",
 
+                        ["TracesUpdatePublisher:ReferenceDataCompressionThresholdBytes"] = (128 * 1024).ToString(),
+
                         ["TracesUpdateConsumer:IntraQueueUrl"] =
                             $"{FlociEndpoint}/000000000000/trade_gateway_publisher_intra_stream_internal_publisher.fifo",
                         ["TracesUpdateConsumer:ChedQueueUrl"] =

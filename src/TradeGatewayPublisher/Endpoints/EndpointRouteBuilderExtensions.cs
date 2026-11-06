@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.AspNetCore.Mvc;

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Defra.TradeImports.EmfExporter;
+using Defra.TradeImports.Messaging.Extensions;
 using Defra.TradeImports.Tracing;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
@@ -68,6 +69,8 @@ static void ConfigureServices(WebApplicationBuilder builder)
             return traceContextAccessor.Context?.TraceId ?? Guid.CreateVersion7().ToString("N");
         });
     services.AddMessaging(configuration);
+
+    services.AddServiceBusMessaging(configuration);
 
     services.AddConsumer<IntraUpdateConsumer>(sp =>
         sp.GetRequiredService<IOptions<TracesUpdateConsumerOptions>>().Value.IntraQueueUrl

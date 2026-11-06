@@ -1,7 +1,7 @@
 using System.Net;
 using AwesomeAssertions;
-using Infrastructure.Messaging;
-using Infrastructure.Messaging.Publishing;
+using Defra.TradeImports.Messaging;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -141,6 +141,7 @@ public class TracesChedChangesJobTests
                 Arg.Any<IMessage>(),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }

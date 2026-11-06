@@ -1,15 +1,13 @@
 using System.Net;
 using System.Text.Json;
 using Amazon.SQS.Model;
-using Infrastructure.Messaging.Consuming;
-using Infrastructure.Messaging.Publishing;
+using Defra.TradeImports.Messaging.Consuming;
+using Defra.TradeImports.Messaging.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using Refit;
 using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Certificate;
-using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Features.ChedChanges;
 
 namespace TradeGatewayPublisher.Tests.Features.ChedChanges;
@@ -51,6 +49,8 @@ public class ChedUpdateConsumerTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => !string.IsNullOrWhiteSpace(duplicationId)),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -115,6 +115,8 @@ public class ChedUpdateConsumerTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
         await _sns.Received(1)
@@ -124,6 +126,8 @@ public class ChedUpdateConsumerTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => duplicationId.StartsWith("CHEDPP.XI.2026.0000160R_")),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -162,6 +166,8 @@ public class ChedUpdateConsumerTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -178,22 +184,24 @@ public class ChedUpdateConsumerTests
             new RefitSettings()
         );
 
-    private static MessageContext CreateContext(string id) =>
-        new()
-        {
-            Message = new Message
+    private static MessageContext CreateContext(string id)
+    {
+        var body = JsonSerializer.Serialize(
+            new DefraUNVTDCHEDSummaryProfileItem
             {
-                Body = JsonSerializer.Serialize(
-                    new DefraUNVTDCHEDSummaryProfileItem
-                    {
-                        Id = id,
-                        Origin = "Origin",
-                        Created = DateTime.UtcNow,
-                        Updated = DateTime.UtcNow,
-                    }
-                ),
-            },
+                Id = id,
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            }
+        );
+
+        return new MessageContext
+        {
+            Message = new Message { Body = body },
+            Body = body,
             QueueUrl = "queue-url",
             ConsumerType = typeof(ChedUpdateConsumer),
         };
+    }
 }

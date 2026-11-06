@@ -1,10 +1,7 @@
 using System.Net;
-using System.Net.Http;
 using AwesomeAssertions;
-using AwesomeAssertions.Common;
-using Infrastructure.Messaging.Publishing;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure.Scheduler;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -36,6 +33,7 @@ public class TracesClassificationTreeNodeChangesJobTests
                 ClassificationTreeNodeTopicArn = "test-classification-tree-node-topic",
                 ClassificationTreeNodeInternalTopicArn = "test-classification-tree-node-internal-topic",
                 ClassificationTreeIds = ["cheda"],
+                ReferenceDataCompressionThresholdBytes = 1024 * 768,
             }
         );
 
@@ -90,6 +88,8 @@ public class TracesClassificationTreeNodeChangesJobTests
                 ),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => !string.IsNullOrWhiteSpace(duplicationId)),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -137,6 +137,8 @@ public class TracesClassificationTreeNodeChangesJobTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
 
@@ -208,6 +210,8 @@ public class TracesClassificationTreeNodeChangesJobTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
 

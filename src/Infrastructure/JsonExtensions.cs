@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Trade.Gateway.Api.Contract.Events;
 
 namespace Infrastructure;
 

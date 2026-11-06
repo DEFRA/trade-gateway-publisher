@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Amazon.SQS.Model;
-using Infrastructure.Messaging.Consuming;
-using Infrastructure.Messaging.Publishing;
+using Defra.TradeImports.Messaging.Consuming;
+using Defra.TradeImports.Messaging.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Refit;
@@ -74,26 +74,31 @@ public class ClassificationTreeNodeUpdateConsumerTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 expectedDuplicationId,
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
 
-    private static MessageContext CreateContext(string nodeId, string treeId, string duplicationId) =>
-        new()
+    private static MessageContext CreateContext(string nodeId, string treeId, string duplicationId)
+    {
+        var body = JsonSerializer.Serialize(
+            new ClassificationTreeNode
+            {
+                NodeId = nodeId,
+                Path = "/root/a",
+                Label = "Mules",
+                NodeType = "nomenclature",
+                Selectable = true,
+                CnCode = "12345",
+            }
+        );
+
+        return new MessageContext
         {
             Message = new Message
             {
-                Body = JsonSerializer.Serialize(
-                    new ClassificationTreeNode
-                    {
-                        NodeId = nodeId,
-                        Path = "/root/a",
-                        Label = "Mules",
-                        NodeType = "nomenclature",
-                        Selectable = true,
-                        CnCode = "12345",
-                    }
-                ),
+                Body = body,
                 MessageAttributes = new Dictionary<string, MessageAttributeValue>
                 {
                     {
@@ -107,6 +112,8 @@ public class ClassificationTreeNodeUpdateConsumerTests
                 },
             },
             QueueUrl = "queue-url",
+            Body = body,
             ConsumerType = typeof(ClassificationTreeNodeUpdateConsumer),
         };
+    }
 }
