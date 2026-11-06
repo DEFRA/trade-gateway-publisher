@@ -96,8 +96,8 @@ public class ClassificationTreeNodePollingAsbCompressedIntegrationTest(
             fixture.Factory.WireMockBaseUrl,
             NodeId,
             "cheda",
-            CancellationToken.None,
-            nodeLabel: LargeNodeLabel
+            LargeNodeLabel,
+            CancellationToken.None
         );
 
         await fixture.DeleteDatabaseAsync();

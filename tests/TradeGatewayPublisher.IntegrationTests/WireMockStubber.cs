@@ -159,8 +159,8 @@ internal static class WireMockStubber
         string wireMockBaseUrl,
         string nodeId,
         string treeId,
-        CancellationToken cancellationToken = default,
-        string? nodeLabel = null
+        string? nodeLabel = null,
+        CancellationToken cancellationToken = default
     )
     {
         using var http = new HttpClient();

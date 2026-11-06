@@ -54,7 +54,7 @@ public class ClassificationTreeNodePollingSnsIntegrationTest(
             fixture.Factory.WireMockBaseUrl,
             NodeId,
             "cheda",
-            CancellationToken.None
+            cancellationToken: CancellationToken.None
         );
 
         await fixture.DeleteDatabaseAsync();
