@@ -1,5 +1,5 @@
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure;
-using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
 using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Certificate;

@@ -1,8 +1,8 @@
 using System.Text.Json;
 using Amazon.SQS.Model;
 using AwesomeAssertions;
+using Defra.TradeImports.Messaging.Consuming;
 using Infrastructure.Messaging;
-using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -84,31 +84,34 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
         rendered.Should().Contain(m => m.Contains("Published Classification Tree Node event"));
     }
 
-    private static MessageContext CreateContext(string id) =>
-        new()
+    private static MessageContext CreateContext(string id)
+    {
+        var body = JsonSerializer.Serialize(
+            new EventEnvelope<object>
+            {
+                EventId = Guid.Parse(TestEventId),
+                AggregateId = "123",
+                AggregateType = "aggType",
+                EventType = "eventType",
+                Data = """
+                {"test":"data"}
+                """,
+                Metadata = new EventEnvelopeMetadata
+                {
+                    CorrelationId = "00000000-0000-0000-0000-222222222222",
+                    SchemaUri = new Uri("http://uri"),
+                    SchemaVersion = "1.0",
+                },
+                SubType = "subtype",
+                Timestamp = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
+            }
+        );
+
+        return new MessageContext
         {
             Message = new Message
             {
-                Body = JsonSerializer.Serialize(
-                    new EventEnvelope<object>
-                    {
-                        EventId = Guid.Parse(TestEventId),
-                        AggregateId = "123",
-                        AggregateType = "aggType",
-                        EventType = "eventType",
-                        Data = """
-                        {"test":"data"}
-                        """,
-                        Metadata = new EventEnvelopeMetadata
-                        {
-                            CorrelationId = "00000000-0000-0000-0000-222222222222",
-                            SchemaUri = new Uri("http://uri"),
-                            SchemaVersion = "1.0",
-                        },
-                        SubType = "subtype",
-                        Timestamp = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
-                    }
-                ),
+                Body = body,
                 MessageId = id,
                 MessageAttributes = new Dictionary<string, MessageAttributeValue>
                 {
@@ -120,7 +123,9 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
                     },
                 },
             },
+            Body = body,
             QueueUrl = "queue-url",
             ConsumerType = typeof(AsbClassificationTreeNodeUpdateConsumer),
         };
+    }
 }

@@ -1,22 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Metrics;
 using System.Net;
-using Amazon;
-using Amazon.Runtime;
 using Amazon.SecurityToken;
-using Amazon.SimpleNotificationService;
-using Amazon.SQS;
 using Azure.Core;
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Messaging.Authentication;
-using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
-using Infrastructure.Messaging.Publishing.Middleware;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 
@@ -25,92 +17,16 @@ namespace Infrastructure.Messaging.Extensions;
 [ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddServiceBusMessaging(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
-        services.AddOptions<FlociOptions>().Bind(configuration);
-        services.AddSingleton<ISnsPublisher, SnsPublisher>();
-
-        services.AddSingleton<IPublishMiddleware, MetricsPublishMiddleware>();
-        services.AddSingleton<IPublishMiddleware, TracingPublishMiddleware>();
-
-        services.AddSingleton<IConsumeMiddleware, TracingConsumeMiddleware>();
-        services.AddSingleton<IConsumeMiddleware, MetricsConsumeMiddleware>();
-        services.AddSingleton<IConsumeMiddleware, LoggingConsumeMiddleware>();
-
-        services.AddFeatureManagement();
-
-        services.AddSingleton<ConsumerMetrics>(sp => new ConsumerMetrics(
-            sp.GetRequiredService<IMeterFactory>(),
-            MetricNames.MeterName
-        ));
-
-        services.AddSingleton<PublishMetrics>(sp => new PublishMetrics(
-            sp.GetRequiredService<IMeterFactory>(),
-            MetricNames.MeterName
-        ));
-
-        services.AddSingleton<IAmazonSimpleNotificationService>(sp =>
-        {
-            var flociOptions = sp.GetRequiredService<IOptions<FlociOptions>>().Value;
-            if (flociOptions.UseFloci == false)
-                return new AmazonSimpleNotificationServiceClient();
-
-            return new AmazonSimpleNotificationServiceClient(
-                new BasicAWSCredentials(flociOptions.AccessKeyId, flociOptions.SecretAccessKey),
-                new AmazonSimpleNotificationServiceConfig
-                {
-                    // https://github.com/aws/aws-sdk-net/issues/1781
-                    AuthenticationRegion = flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
-                    RegionEndpoint = RegionEndpoint.GetBySystemName(
-                        flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
-                    ),
-                    ServiceURL = flociOptions.SnsEndpoint,
-                }
-            );
-        });
-
-        services.AddSingleton<IAmazonSQS>(sp =>
-        {
-            var flociOptions = sp.GetRequiredService<IOptions<FlociOptions>>().Value;
-            if (flociOptions.UseFloci == false)
-                return new AmazonSQSClient();
-
-            return new AmazonSQSClient(
-                new BasicAWSCredentials(flociOptions.AccessKeyId, flociOptions.SecretAccessKey),
-                new AmazonSQSConfig
-                {
-                    // https://github.com/aws/aws-sdk-net/issues/1781
-                    AuthenticationRegion = flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString(),
-                    RegionEndpoint = RegionEndpoint.GetBySystemName(
-                        flociOptions.AwsRegion ?? RegionEndpoint.EUWest2.ToString()
-                    ),
-                    ServiceURL = flociOptions.SqsEndpoint,
-                }
-            );
-        });
-
         services.AddOptions<CdpOptions>().Bind(configuration);
 
         services.AddTradeGatewayServiceBus(configuration);
 
         return services;
-    }
-
-    public static void AddConsumer<TConsumer>(
-        this IServiceCollection services,
-        Func<IServiceProvider, string> queueUrlFactory
-    )
-        where TConsumer : class, IMessageConsumer
-    {
-        services.AddSingleton<IMessageConsumer, TConsumer>();
-        services.AddSingleton<TConsumer>();
-        services.AddHostedService(sp => new SqsConsumerBackgroundService<TConsumer>(
-            queueUrl: queueUrlFactory(sp),
-            sqsClient: sp.GetRequiredService<IAmazonSQS>(),
-            consumer: sp.GetRequiredService<TConsumer>(),
-            logger: sp.GetRequiredService<ILogger<SqsConsumerBackgroundService<TConsumer>>>(),
-            middlewares: sp.GetServices<IConsumeMiddleware>()
-        ));
     }
 
     internal static IServiceCollection AddTradeGatewayServiceBus(

@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Azure;
 using Microsoft.FeatureManagement;
