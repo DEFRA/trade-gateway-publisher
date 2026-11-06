@@ -1,6 +1,6 @@
+using Defra.TradeImports.Messaging.Consuming;
 using Infrastructure;
 using Infrastructure.Messaging;
-using Infrastructure.Messaging.Consuming;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
 using Trade.Gateway.Api.Contract.Events;

@@ -1,6 +1,6 @@
 using System.Text.Json;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure;
-using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Refit;
 

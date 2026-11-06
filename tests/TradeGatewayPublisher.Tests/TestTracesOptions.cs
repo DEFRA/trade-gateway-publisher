@@ -28,6 +28,7 @@ namespace TradeGatewayPublisher.Tests
                     ClassificationTreeNodeTopicArn = "test-classification-tree-node-topic",
                     ClassificationTreeNodeInternalTopicArn = "test-classification-tree-node-internal-topic",
                     ClassificationTreeIds = ["cheda", "chedp", "intra_trade"],
+                    ReferenceDataCompressionThresholdBytes = 1024 * 768,
                 }
             );
     }

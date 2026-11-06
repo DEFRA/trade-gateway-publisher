@@ -1,6 +1,6 @@
 using System.Text.Json;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure;
-using Infrastructure.Messaging.Publishing;
 using Infrastructure.Scheduler;
 using Microsoft.Extensions.Options;
 using Refit;
@@ -56,6 +56,7 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
                             { ClassificationTreeMessageHeaderKeys.TreeId, treeId },
                             { ClassificationTreeMessageHeaderKeys.DuplicationId, duplicationId },
                         },
+                        compressionThresholdBytes: options.Value.ReferenceDataCompressionThresholdBytes,
                         cancellationToken: cancellationToken,
                         duplicationId: duplicationId
                     );

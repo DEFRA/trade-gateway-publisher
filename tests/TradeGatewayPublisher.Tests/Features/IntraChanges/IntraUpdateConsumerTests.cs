@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Amazon.SQS.Model;
-using Infrastructure.Messaging.Consuming;
-using Infrastructure.Messaging.Publishing;
+using Defra.TradeImports.Messaging.Consuming;
+using Defra.TradeImports.Messaging.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -50,26 +50,30 @@ public class IntraUpdateConsumerTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => !string.IsNullOrWhiteSpace(duplicationId)),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
 
-    private static MessageContext CreateContext(string id) =>
-        new()
-        {
-            Message = new Message
+    private static MessageContext CreateContext(string id)
+    {
+        var body = JsonSerializer.Serialize(
+            new DefraUNVTDINTRASummaryProfileItem
             {
-                Body = JsonSerializer.Serialize(
-                    new DefraUNVTDINTRASummaryProfileItem
-                    {
-                        Id = id,
-                        Origin = "Origin",
-                        Created = DateTime.UtcNow,
-                        Updated = DateTime.UtcNow,
-                    }
-                ),
-            },
+                Id = id,
+                Origin = "Origin",
+                Created = DateTime.UtcNow,
+                Updated = DateTime.UtcNow,
+            }
+        );
+
+        return new MessageContext
+        {
+            Message = new Message { Body = body },
             QueueUrl = "queue-url",
+            Body = body,
             ConsumerType = typeof(IntraUpdateConsumer),
         };
+    }
 }

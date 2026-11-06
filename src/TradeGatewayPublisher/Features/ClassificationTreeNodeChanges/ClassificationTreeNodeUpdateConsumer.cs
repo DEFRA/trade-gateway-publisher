@@ -1,6 +1,6 @@
+using Defra.TradeImports.Messaging.Consuming;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure;
-using Infrastructure.Messaging.Consuming;
-using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Options;
 using Trade.Gateway.Api.Client.Clients;
 using Trade.Gateway.Api.Contract.Events;
@@ -48,6 +48,7 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
                 options.Value.ClassificationTreeNodeTopicArn,
                 @event.ToJson(),
                 duplicationId: duplicationId,
+                compressionThresholdBytes: options.Value.ReferenceDataCompressionThresholdBytes,
                 cancellationToken: cancellationToken
             );
 

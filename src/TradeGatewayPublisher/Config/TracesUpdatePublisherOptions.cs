@@ -26,4 +26,6 @@ public class TracesUpdatePublisherOptions
 
     [Required]
     public required string[] ClassificationTreeIds { get; init; }
+
+    public required int ReferenceDataCompressionThresholdBytes { get; init; } = 1024 * 768;
 }

@@ -1,5 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
+using Defra.TradeImports.Messaging.Publishing;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
@@ -48,6 +49,8 @@ public class EndpointRouteBuilderExtensionsTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Is<string>(duplicationId => !string.IsNullOrWhiteSpace(duplicationId)),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -78,6 +81,8 @@ public class EndpointRouteBuilderExtensionsTests
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
                 Arg.Any<CancellationToken>()
             );
     }
