@@ -234,6 +234,184 @@ public class TracesClassificationTreeNodeChangesJobTests
         rendered.Should().Contain(m => m.Contains("failed validation with validation error"));
     }
 
+    [Fact]
+    public async Task ExecuteAsync_should_publish_all_recursive_children()
+    {
+        // Arrange
+        var options = TestTracesOptions.TracesUpdatePublisherOptions;
+
+        var sut = new TracesClassificationTreeNodeChangesJob(
+            _referenceDataClient,
+            _sns,
+            options,
+            NullLogger<TracesClassificationTreeNodeChangesJob>.Instance
+        );
+
+        var response = new ApiResponse<DefraUNVTDProfileClassificationTreeResponse>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDProfileClassificationTreeResponse
+            {
+                Nodes =
+                [
+                    new ClassificationTreeNode
+                    {
+                        NodeId = "Node-1",
+                        Path = "/root",
+                        Label = "Root",
+                        NodeType = "nomenclature",
+                        Selectable = false,
+                        Children =
+                        [
+                            new ClassificationTreeNode
+                            {
+                                NodeId = "Node-1-1",
+                                Path = "/root/a",
+                                Label = "Child",
+                                NodeType = "nomenclature",
+                                Selectable = false,
+                                Children =
+                                [
+                                    new ClassificationTreeNode
+                                    {
+                                        NodeId = "Node-1-1-1",
+                                        Path = "/root/a/b",
+                                        Label = "Grandchild",
+                                        NodeType = "nomenclature",
+                                        Selectable = true,
+                                        CnCode = "12345",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                RetrievedAt = new DateTimeOffset(2026, 10, 21, 14, 0, 0, TimeSpan.Zero),
+            },
+            new RefitSettings()
+        );
+
+        _referenceDataClient
+            .FindCommodityTreeUpdates(
+                Arg.Any<string>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(response);
+
+        // Act
+        await sut.ExecuteAsync(CreateContext(), CancellationToken.None);
+
+        // Assert — root + child + grandchild published once per tree ID
+        var expectedCallCount = options.Value.ClassificationTreeIds.Length * 3;
+        await _sns.Received(expectedCallCount)
+            .PublishAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Is<Dictionary<string, string>>(headers =>
+                    !string.IsNullOrWhiteSpace(headers[ClassificationTreeMessageHeaderKeys.DuplicationId])
+                ),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
+                Arg.Any<CancellationToken>()
+            );
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_should_publish_correct_total_count_across_multiple_roots_and_nested_children()
+    {
+        // Arrange
+        var options = Options.Create(
+            new TracesUpdatePublisherOptions
+            {
+                IntraTopicArn = "test-intra-topic",
+                IntraInternalTopicArn = "test-intra-internal-topic",
+                ChedTopicArn = "test-ched-topic",
+                ChedInternalTopicArn = "test-ched-internal-topic",
+                ClassificationTreeNodeTopicArn = "test-classification-tree-node-topic",
+                ClassificationTreeNodeInternalTopicArn = "test-classification-tree-node-internal-topic",
+                ClassificationTreeIds = ["cheda"],
+                ReferenceDataCompressionThresholdBytes = 1024 * 768,
+            }
+        );
+
+        var sut = new TracesClassificationTreeNodeChangesJob(
+            _referenceDataClient,
+            _sns,
+            options,
+            NullLogger<TracesClassificationTreeNodeChangesJob>.Instance
+        );
+
+        // Two root nodes: first has one child (2 total), second is flat (1 total) → 3 total
+        var response = new ApiResponse<DefraUNVTDProfileClassificationTreeResponse>(
+            new HttpResponseMessage(HttpStatusCode.OK),
+            new DefraUNVTDProfileClassificationTreeResponse
+            {
+                Nodes =
+                [
+                    new ClassificationTreeNode
+                    {
+                        NodeId = "Node-1",
+                        Path = "/root/a",
+                        Label = "Parent",
+                        NodeType = "nomenclature",
+                        Selectable = false,
+                        Children =
+                        [
+                            new ClassificationTreeNode
+                            {
+                                NodeId = "Node-1-1",
+                                Path = "/root/a/b",
+                                Label = "Child",
+                                NodeType = "nomenclature",
+                                Selectable = true,
+                                CnCode = "11111",
+                            },
+                        ],
+                    },
+                    new ClassificationTreeNode
+                    {
+                        NodeId = "Node-2",
+                        Path = "/root/b",
+                        Label = "Standalone",
+                        NodeType = "nomenclature",
+                        Selectable = true,
+                        CnCode = "22222",
+                    },
+                ],
+                RetrievedAt = new DateTimeOffset(2026, 10, 21, 14, 0, 0, TimeSpan.Zero),
+            },
+            new RefitSettings()
+        );
+
+        _referenceDataClient
+            .FindCommodityTreeUpdates(
+                "cheda",
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(response);
+
+        // Act
+        await sut.ExecuteAsync(CreateContext(), CancellationToken.None);
+
+        // Assert — parent + child + standalone = 3 publishes total
+        await _sns.Received(3)
+            .PublishAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<Dictionary<string, string>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int?>(),
+                Arg.Any<CancellationToken>()
+            );
+    }
+
     private static JobContext CreateContext(WatermarkContext? watermark = null)
     {
         var context = new JobContext("JobId", "TestJob", new JobSettings());
