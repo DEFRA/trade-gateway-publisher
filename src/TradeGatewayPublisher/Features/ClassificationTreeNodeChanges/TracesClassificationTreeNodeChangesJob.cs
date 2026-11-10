@@ -1,10 +1,12 @@
 using System.Text.Json;
 using Defra.TradeImports.Messaging.Publishing;
+using Elastic.CommonSchema;
 using Infrastructure;
 using Infrastructure.Scheduler;
 using Microsoft.Extensions.Options;
 using Refit;
 using Trade.Gateway.Api.Client.Clients;
+using Trade.Gateway.Api.Contract.ReferenceData;
 using TradeGatewayPublisher.Config;
 using TradeGatewayPublisher.Utils;
 
@@ -43,27 +45,9 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
 
                 var topicArn = GetTopicArn();
 
-                foreach (var update in updatesResponse.Content?.Nodes ?? [])
+                foreach (var rootNode in updatesResponse.Content?.Nodes ?? [])
                 {
-                    var updateJson = update.ToJson();
-                    var duplicationId = updateJson.GenerateHash();
-                    // Publish each update to SNS - this could prob become a batch
-                    await snsPublisher.PublishAsync(
-                        topicArn,
-                        updateJson,
-                        headers: new Dictionary<string, string>()
-                        {
-                            { ClassificationTreeMessageHeaderKeys.TreeId, treeId },
-                            { ClassificationTreeMessageHeaderKeys.DuplicationId, duplicationId },
-                        },
-                        compressionThresholdBytes: options.Value.ReferenceDataCompressionThresholdBytes,
-                        cancellationToken: cancellationToken,
-                        duplicationId: duplicationId
-                    );
-
-                    LogPublishedTreeNode(SourceTag, duplicationId, topicArn);
-
-                    changesFoundCount++;
+                    changesFoundCount += await ProcessNode(topicArn, treeId, rootNode, cancellationToken);
                 }
             }
 #pragma warning disable S2139
@@ -76,6 +60,41 @@ public sealed partial class TracesClassificationTreeNodeChangesJob(
         }
 
         LogJobComplete(Name, changesFoundCount);
+    }
+
+    private async Task<int> ProcessNode(
+        string topicArn,
+        string treeId,
+        ClassificationTreeNode node,
+        CancellationToken cancellationToken
+    )
+    {
+        var updateJson = node.ToJson();
+        var duplicationId = updateJson.GenerateHash();
+
+        await snsPublisher.PublishAsync(
+            topicArn,
+            updateJson,
+            headers: new Dictionary<string, string>()
+            {
+                { ClassificationTreeMessageHeaderKeys.TreeId, treeId },
+                { ClassificationTreeMessageHeaderKeys.DuplicationId, duplicationId },
+            },
+            compressionThresholdBytes: options.Value.ReferenceDataCompressionThresholdBytes,
+            cancellationToken: cancellationToken,
+            duplicationId: duplicationId
+        );
+
+        LogPublishedTreeNode(SourceTag, duplicationId, topicArn);
+
+        var count = 1;
+
+        foreach (var child in node.Children ?? [])
+        {
+            count += await ProcessNode(topicArn, treeId, child, cancellationToken);
+        }
+
+        return count;
     }
 
     [LoggerMessage(
