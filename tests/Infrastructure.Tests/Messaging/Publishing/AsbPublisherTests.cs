@@ -64,6 +64,7 @@ public class AsbPublisherTests
         Assert.True(sent.ApplicationProperties.ContainsKey("h1"));
         Assert.Equal("v1", sent.ApplicationProperties["h1"]);
         Assert.Contains("hello-body", sent.Body.ToString());
+        Assert.Equal(TimeSpan.MaxValue, sent.TimeToLive);
     }
 
     /// <summary>
@@ -119,5 +120,30 @@ public class AsbPublisherTests
         // middlewares that set after-next headers will have modified the original headers dictionary after send
         Assert.Equal("done", headers["mw1-after"]);
         Assert.Equal("done", headers["mw2-after"]);
+    }
+
+    [Fact]
+    public async Task PublishAsync_sends_message_with_ttl()
+    {
+        _featureManager.IsEnabledAsync(FeatureFlags.AzureServiceBusPublishing).Returns(Task.FromResult(true));
+
+        var sender = Substitute.For<ServiceBusSender>();
+        _factory.CreateClient("topic1").Returns(sender);
+
+        ServiceBusMessage? sent = null;
+        sender
+            .SendMessageAsync(Arg.Do<ServiceBusMessage>(m => sent = m), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var headers = new Dictionary<string, string> { ["h1"] = "v1" };
+
+        await _sut.PublishAsync("topic1", "msg-1", headers, "hello-body", 1);
+
+        Assert.NotNull(sent);
+        Assert.Equal("msg-1", sent.MessageId);
+        Assert.True(sent.ApplicationProperties.ContainsKey("h1"));
+        Assert.Equal("v1", sent.ApplicationProperties["h1"]);
+        Assert.Contains("hello-body", sent.Body.ToString());
+        Assert.Equal(TimeSpan.FromSeconds(1), sent.TimeToLive);
     }
 }

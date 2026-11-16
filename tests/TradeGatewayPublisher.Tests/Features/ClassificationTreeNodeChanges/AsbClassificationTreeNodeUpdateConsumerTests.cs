@@ -24,15 +24,7 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
 
     public AsbClassificationTreeNodeUpdateConsumerTests()
     {
-        var options = Options.Create(
-            new TracesServiceBusOptions
-            {
-                Intra = new ServiceBusTopic { TopicName = "intra-topic" },
-                Ched = new ServiceBusTopic { TopicName = "ched-topic" },
-                ClassificationTreeNode = new ServiceBusTopic { TopicName = "classificationtreenode-topic" },
-                ConnectionString = "Endpoint=sb://127.0.0.1;",
-            }
-        );
+        var options = TestTracesOptions.TracesServiceBusOptions();
 
         _sut = new AsbClassificationTreeNodeUpdateConsumer(_asbPublisher, options, _logger);
     }
@@ -60,6 +52,7 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
                     && headers[ClassificationTreeMessageHeaderKeys.DuplicationId] == "node-1_1720000000000"
                 ),
                 Arg.Is<string>(body => body == ctx.Body),
+                Arg.Is<double?>(ttl => ttl == null),
                 Arg.Any<CancellationToken>()
             );
 
@@ -82,6 +75,34 @@ public class AsbClassificationTreeNodeUpdateConsumerTests
         rendered.Should().Contain(m => m.Contains("Publishing Classification Tree Node event"));
 
         rendered.Should().Contain(m => m.Contains("Published Classification Tree Node event"));
+    }
+
+    [Fact]
+    public async Task ConsumeAsync_should_publish_to_service_bus_with_message_ttl()
+    {
+        var options = TestTracesOptions.TracesServiceBusOptions(classificationTreeNodeMessageTtl: 1);
+
+        var sut = new AsbClassificationTreeNodeUpdateConsumer(_asbPublisher, options, _logger);
+
+        var ctx = CreateContext("msg-classification");
+
+        await sut.ConsumeAsync(ctx, CancellationToken.None);
+
+        await _asbPublisher
+            .Received(1)
+            .PublishAsync(
+                Arg.Is<string>(topic => topic == "classificationtreenode-topic"),
+                Arg.Is<string>(id => id == ctx.MessageId),
+                Arg.Is<Dictionary<string, string>>(headers =>
+                    headers.ContainsKey(ClassificationTreeMessageHeaderKeys.TreeId)
+                    && headers[ClassificationTreeMessageHeaderKeys.TreeId] == "cheda"
+                    && headers.ContainsKey(ClassificationTreeMessageHeaderKeys.DuplicationId)
+                    && headers[ClassificationTreeMessageHeaderKeys.DuplicationId] == "node-1_1720000000000"
+                ),
+                Arg.Is<string>(body => body == ctx.Body),
+                Arg.Is<double?>(1),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     private static MessageContext CreateContext(string id)

@@ -24,6 +24,7 @@ namespace TradeGatewayPublisher.Features.ClassificationTreeNodeChanges
                 messageId: context.MessageId,
                 context.Headers.ToDictionary(header => header.Key, header => header.Value.StringValue),
                 context.Body,
+                options.Value.ClassificationTreeNode.MessageTtl,
                 cancellationToken: cancellationToken
             );
 

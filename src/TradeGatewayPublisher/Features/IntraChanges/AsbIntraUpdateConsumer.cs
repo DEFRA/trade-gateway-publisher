@@ -29,6 +29,7 @@ namespace TradeGatewayPublisher.Features.IntraChanges
                 messageId: context.MessageId,
                 context.Headers.ToDictionary(header => header.Key, header => header.Value.StringValue),
                 context.Body,
+                options.Value.Intra.MessageTtl,
                 cancellationToken: cancellationToken
             );
 

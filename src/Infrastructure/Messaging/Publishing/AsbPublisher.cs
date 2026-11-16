@@ -17,6 +17,7 @@ public class AsbPublisher(
         string messageId,
         Dictionary<string, string> messageHeaders,
         string messageBody,
+        double? messageTtl = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -37,7 +38,7 @@ public class AsbPublisher(
 
         Task PublishCore()
         {
-            var request = publishContext.ToServiceBusMessage();
+            var request = publishContext.ToServiceBusMessage().WithMessageTtl(messageTtl);
             request.MessageId = messageId;
             return sender.SendMessageAsync(request, cancellationToken);
         }
