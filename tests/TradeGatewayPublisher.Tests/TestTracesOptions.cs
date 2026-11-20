@@ -6,13 +6,21 @@ namespace TradeGatewayPublisher.Tests
 {
     internal static class TestTracesOptions
     {
-        public static IOptions<TracesServiceBusOptions> TracesServiceBusOptions =>
+        public static IOptions<TracesServiceBusOptions> TracesServiceBusOptions(
+            double? intraMessageTtl = null,
+            double? chedMessageTtl = null,
+            double? classificationTreeNodeMessageTtl = null
+        ) =>
             Options.Create(
                 new TracesServiceBusOptions
                 {
-                    Intra = new ServiceBusTopic { TopicName = "intra-topic" },
-                    Ched = new ServiceBusTopic { TopicName = "ched-topic" },
-                    ClassificationTreeNode = new ServiceBusTopic { TopicName = "classificationtreenode-topic" },
+                    Intra = new ServiceBusTopic { TopicName = "intra-topic", MessageTtl = intraMessageTtl },
+                    Ched = new ServiceBusTopic { TopicName = "ched-topic", MessageTtl = chedMessageTtl },
+                    ClassificationTreeNode = new ServiceBusTopic
+                    {
+                        TopicName = "classificationtreenode-topic",
+                        MessageTtl = classificationTreeNodeMessageTtl,
+                    },
                     ConnectionString = "Endpoint=sb://127.0.0.1;",
                 }
             );

@@ -21,15 +21,7 @@ public class AsbIntraUpdateConsumerTests
 
     public AsbIntraUpdateConsumerTests()
     {
-        var options = Options.Create(
-            new TracesServiceBusOptions
-            {
-                Intra = new ServiceBusTopic { TopicName = "intra-topic" },
-                Ched = new ServiceBusTopic { TopicName = "ched-topic" },
-                ClassificationTreeNode = new ServiceBusTopic { TopicName = "classificationtreenode-topic" },
-                ConnectionString = "Endpoint=sb://127.0.0.1;",
-            }
-        );
+        var options = TestTracesOptions.TracesServiceBusOptions();
 
         _sut = new AsbIntraUpdateConsumer(_asbPublisher, options, _logger);
     }
@@ -51,6 +43,7 @@ public class AsbIntraUpdateConsumerTests
                 Arg.Is<string>(id => id == ctx.MessageId),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Is<string>(body => body == ctx.Body),
+                Arg.Is<double?>(ttl => ttl == null),
                 Arg.Any<CancellationToken>()
             );
 
@@ -62,6 +55,29 @@ public class AsbIntraUpdateConsumerTests
                 Arg.Is<object>(o => o.ToString()!.Contains(TestEventId)),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>()
+            );
+    }
+
+    [Fact]
+    public async Task ConsumeAsync_should_publish_to_service_bus_with_message_ttl()
+    {
+        var options = TestTracesOptions.TracesServiceBusOptions(intraMessageTtl: 1);
+
+        var sut = new AsbIntraUpdateConsumer(_asbPublisher, options, _logger);
+
+        var ctx = CreateContext("msg-1");
+
+        await sut.ConsumeAsync(ctx, CancellationToken.None);
+
+        await _asbPublisher
+            .Received(1)
+            .PublishAsync(
+                Arg.Is<string>(q => q == "intra-topic"),
+                Arg.Is<string>(id => id == ctx.MessageId),
+                Arg.Any<Dictionary<string, string>>(),
+                Arg.Is<string>(body => body == ctx.Body),
+                Arg.Is<double?>(1),
+                Arg.Any<CancellationToken>()
             );
     }
 

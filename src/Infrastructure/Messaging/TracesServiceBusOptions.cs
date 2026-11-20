@@ -23,6 +23,8 @@ public class TracesServiceBusOptions
 public class ServiceBusTopic
 {
     public required string TopicName { get; init; }
+
+    public double? MessageTtl { get; init; }
 }
 
 [ExcludeFromCodeCoverage]

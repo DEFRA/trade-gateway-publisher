@@ -8,16 +8,20 @@ namespace TradeGatewayPublisher.IntegrationTests
             ServiceBusReceiver receiver,
             string expectedId,
             ITestOutputHelper testOutputHelper,
-            CancellationToken cancellationToken
+            CancellationToken cancellationToken,
+            bool peekMessage = false,
+            Func<ServiceBusReceivedMessage, bool>? messageVerifier = null
         )
         {
             try
             {
-                var messages = await receiver.ReceiveMessagesAsync(
-                    maxMessages: 10,
-                    maxWaitTime: TimeSpan.FromSeconds(5),
-                    cancellationToken: cancellationToken
-                );
+                var messages = peekMessage
+                    ? await receiver.PeekMessagesAsync(maxMessages: 10, cancellationToken: cancellationToken)
+                    : await receiver.ReceiveMessagesAsync(
+                        maxMessages: 10,
+                        maxWaitTime: TimeSpan.FromSeconds(5),
+                        cancellationToken: cancellationToken
+                    );
 
                 if (messages == null || messages.Count == 0)
                     return false;
@@ -27,7 +31,10 @@ namespace TradeGatewayPublisher.IntegrationTests
                     var body = msg.Body.ToString();
                     try
                     {
-                        await receiver.CompleteMessageAsync(msg, cancellationToken);
+                        if (!peekMessage)
+                        {
+                            await receiver.CompleteMessageAsync(msg, cancellationToken);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -35,7 +42,10 @@ namespace TradeGatewayPublisher.IntegrationTests
                         testOutputHelper.WriteLine(ex.Message);
                     }
 
-                    if (body.Contains(expectedId, StringComparison.Ordinal))
+                    if (
+                        body.Contains(expectedId, StringComparison.Ordinal)
+                        && (messageVerifier is null || messageVerifier.Invoke(msg))
+                    )
                         return true;
                 }
             }
