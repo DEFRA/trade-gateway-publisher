@@ -37,7 +37,7 @@ jobs:
           dotnet nuget remove source defra
           dotnet nuget add source --username USERNAME --password $GITHUB_TOKEN --store-password-in-clear-text --name defra "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --configfile NuGet.config
       - name: Build and Publish
-        uses: DEFRA/cdp-build-action/build@4ab1468825e6361dc8503863359ca38d7234153d
+        uses: DEFRA/cdp-build-action/build@10141cebedff360cd6a088f647f7e8be52e20f53
         with:
           github-token: ${{ env.GITHUB_TOKEN }}
   sonarcloud-scan:
