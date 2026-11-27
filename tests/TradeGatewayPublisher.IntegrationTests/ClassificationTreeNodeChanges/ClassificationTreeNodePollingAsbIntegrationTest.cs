@@ -14,6 +14,8 @@ public class ClassificationTreeNodePollingAsbIntegrationTest(
     ITestOutputHelper testOutputHelper
 ) : IAsyncLifetime
 {
+    private const string Subscription = "trade-gateway-publisher-refdata-test-sub";
+
     private IDisposable? _logCapture;
 
     private readonly string NodeId = $"Node-{Random.Shared.Next(1, 100000)}";
@@ -39,13 +41,11 @@ public class ClassificationTreeNodePollingAsbIntegrationTest(
         var connectionString = tracesOptions.ConnectionString;
         var topicName = tracesOptions.ClassificationTreeNode.TopicName;
 
-        var subscription = "trade-gateway-publisher-refdata-test-sub";
-
         await using var client = new ServiceBusClient(connectionString);
         // Receive from the topic's subscription (receive from topic-subscription pair)
         var receiver = client.CreateReceiver(
             topicName,
-            subscription,
+            Subscription,
             new ServiceBusReceiverOptions { ReceiveMode = ServiceBusReceiveMode.PeekLock }
         );
 
@@ -64,6 +64,62 @@ public class ClassificationTreeNodePollingAsbIntegrationTest(
             .Should()
             .BeTrue(
                 "The Classification Tree Node polling job should have published a message to the Service Bus topic subscription within 120s"
+            );
+    }
+
+    [Fact]
+    public async Task ClassificationTreeNodeJobPublishesExpiringMessageToAsb()
+    {
+        if (!fixture.ServiceBusIsEnabled)
+        {
+            testOutputHelper.WriteLine("Service bus not enabled, test not run");
+            return;
+        }
+
+        fixture.StartClient();
+
+        var config = fixture.Factory.Services.GetRequiredService<IConfiguration>();
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        var tracesOptions = config.GetSection(TracesServiceBusOptions.SectionName).Get<TracesServiceBusOptions>()!;
+        var connectionString = tracesOptions.ConnectionString;
+        var topicName = tracesOptions.ClassificationTreeNode.TopicName;
+
+        await using var client = new ServiceBusClient(connectionString);
+        var receiver = client.CreateReceiver(
+            topicName,
+            Subscription,
+            new ServiceBusReceiverOptions { ReceiveMode = ServiceBusReceiveMode.PeekLock }
+        );
+
+        Func<ServiceBusReceivedMessage, bool> messageVerifier = message =>
+        {
+            var expectedExpiry = DateTime.UtcNow.AddSeconds(tracesOptions.ClassificationTreeNode.MessageTtl!.Value);
+            return message.ExpiresAt <= expectedExpiry;
+        };
+
+        var receivedOnAsb = await WaitHelper.WaitUntilAsync(
+            () =>
+                ServiceBusUtilities
+                    .ServiceBusQueueContainsExpectedAsync(
+                        receiver,
+                        NodeId,
+                        testOutputHelper,
+                        cancellationToken,
+                        true,
+                        messageVerifier
+                    )
+                    .GetAwaiter()
+                    .GetResult(),
+            TimeSpan.FromSeconds(120),
+            TimeSpan.FromMilliseconds(500),
+            cancellationToken
+        );
+
+        receivedOnAsb
+            .Should()
+            .BeTrue(
+                "The Classification Tree Node polling job should have published an expiring message to the Service Bus topic subscription within 120s"
             );
     }
 

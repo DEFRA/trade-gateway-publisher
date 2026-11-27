@@ -1,10 +1,8 @@
 using System.Text.Json;
 using Amazon.SQS.Model;
 using Defra.TradeImports.Messaging.Consuming;
-using Infrastructure.Messaging;
 using Infrastructure.Messaging.Publishing;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using Trade.Gateway.Api.Contract.Events;
 using TradeGatewayPublisher.Features.ChedChanges;
@@ -20,15 +18,7 @@ public class AsbChedUpdateConsumerTests
 
     public AsbChedUpdateConsumerTests()
     {
-        var options = Options.Create(
-            new TracesServiceBusOptions
-            {
-                Intra = new ServiceBusTopic { TopicName = "intra-topic" },
-                Ched = new ServiceBusTopic { TopicName = "ched-topic" },
-                ClassificationTreeNode = new ServiceBusTopic { TopicName = "classificationtreenode-topic" },
-                ConnectionString = "Endpoint=sb://127.0.0.1;",
-            }
-        );
+        var options = TestTracesOptions.TracesServiceBusOptions();
 
         _sut = new AsbChedUpdateConsumer(_asbPublisher, options, _logger);
     }
@@ -50,6 +40,7 @@ public class AsbChedUpdateConsumerTests
                 Arg.Is<string>(id => id == ctx.MessageId),
                 Arg.Any<Dictionary<string, string>>(),
                 Arg.Is<string>(body => body == ctx.Body),
+                Arg.Is<double?>(ttl => ttl == null),
                 Arg.Any<CancellationToken>()
             );
 
@@ -62,6 +53,29 @@ public class AsbChedUpdateConsumerTests
                 Arg.Is<object>(o => o.ToString()!.Contains(TestEventId)),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>()
+            );
+    }
+
+    [Fact]
+    public async Task ConsumeAsync_should_publish_to_service_bus_with_message_ttl()
+    {
+        var options = TestTracesOptions.TracesServiceBusOptions(chedMessageTtl: 1);
+
+        var sut = new AsbChedUpdateConsumer(_asbPublisher, options, _logger);
+
+        var ctx = CreateContext("msg-ched");
+
+        await sut.ConsumeAsync(ctx, CancellationToken.None);
+
+        await _asbPublisher
+            .Received(1)
+            .PublishAsync(
+                Arg.Is<string>(q => q == "ched-topic"),
+                Arg.Is<string>(id => id == ctx.MessageId),
+                Arg.Any<Dictionary<string, string>>(),
+                Arg.Is<string>(body => body == ctx.Body),
+                Arg.Is<double?>(1),
+                Arg.Any<CancellationToken>()
             );
     }
 

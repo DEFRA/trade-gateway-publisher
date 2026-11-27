@@ -30,6 +30,7 @@ namespace TradeGatewayPublisher.Features.ChedChanges
                 messageId: context.MessageId,
                 context.Headers.ToDictionary(header => header.Key, header => header.Value.StringValue),
                 context.Body,
+                options.Value.Ched.MessageTtl,
                 cancellationToken: cancellationToken
             );
 

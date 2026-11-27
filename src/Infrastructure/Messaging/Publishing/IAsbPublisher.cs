@@ -7,6 +7,7 @@ public interface IAsbPublisher
         string messageId,
         Dictionary<string, string> messageHeaders,
         string messageBody,
+        double? messageTtl = null,
         CancellationToken cancellationToken = default
     );
 }
